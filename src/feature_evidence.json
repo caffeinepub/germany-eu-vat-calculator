@@ -1,0 +1,70 @@
+{
+  "kind": "feature_evidence_report",
+  "features": [
+    {
+      "featureId": "feature-fix-the-service-product-category-dropdown-ui-so-the-selected-value-is-always-clearly-readable-and-never-overlaps-with-other-text-in-the-control-including-in-narrow-mobile-layouts",
+      "featureTitle": "Fix the “Service/Product Category” dropdown UI so the selected value is always clearly readable and never overlaps with other text in the control (including in narrow/mobile layouts).",
+      "files": [
+        "frontend/src/components/vat/TransactionDetailsStep.tsx",
+        "frontend/src/index.css"
+      ],
+      "components": [
+        "stripe@3.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0",
+        "http-outcalls@3.0.0",
+        "authorization@4.0.0"
+      ],
+      "testIds": [
+        "REQ-1"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-when-the-vat-result-is-reverse-charge-with-0-vat-display-a-two-line-comment-directly-under-the-reverse-charge-output-line-1-german-must-be-exactly-steuerschuldnerschaft-des-leistungsempf-ngers-13b-ustg-line-2-english-must-be-exactly-tax-liability-of-the-recipient-of-services-13b-ustg",
+      "featureTitle": "When the VAT result is reverse-charge with 0% VAT, display a two-line comment directly under the reverse-charge output: line 1 (German) must be exactly “Steuerschuldnerschaft des Leistungsempfängers (§13b UStG)”; line 2 (English) must be exactly “Tax liability of the recipient of services (§13b UStG)”.",
+      "files": [
+        "frontend/src/components/vat/VatResultsStep.tsx"
+      ],
+      "components": [
+        "stripe@3.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0",
+        "http-outcalls@3.0.0",
+        "authorization@4.0.0"
+      ],
+      "testIds": [
+        "REQ-2"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-when-generating-the-invoice-preview-for-a-reverse-charge-0-result-include-the-same-bilingual-13b-comment-as-the-legal-vat-note-in-the-invoice-content-first-the-german-line-steuerschuldnerschaft-des-leistungsempf-ngers-13b-ustg-then-a-new-line-with-the-english-line-tax-liability-of-the-recipient-of-services-13b-ustg",
+      "featureTitle": "When generating the invoice preview for a reverse-charge (0%) result, include the same bilingual §13b comment as the legal VAT note in the invoice content: first the German line “Steuerschuldnerschaft des Leistungsempfängers (§13b UStG)”, then a new line with the English line “Tax liability of the recipient of services (§13b UStG)”.",
+      "files": [
+        "frontend/src/lib/invoice/buildInvoiceHtml.ts",
+        "frontend/src/lib/invoice/getAutoLegalVatText.ts"
+      ],
+      "components": [
+        "stripe@3.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0",
+        "http-outcalls@3.0.0",
+        "authorization@4.0.0"
+      ],
+      "testIds": [
+        "REQ-3"
+      ],
+      "confidence": "high"
+    }
+  ]
+}

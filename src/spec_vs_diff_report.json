@@ -1,0 +1,43 @@
+{
+  "kind": "spec_vs_diff_report",
+  "version": "1.0",
+  "generatedAt": "2026-02-09T08:23:31.033Z",
+  "summary": "REQ-2 and REQ-3 appear implemented via a conditional reverse-charge UI note and an auto legal VAT text for reverse-charge that includes both German+English lines with a newline converted to <br> in invoice HTML. REQ-1 likely addressed via a new Tailwind utility for SelectTrigger padding, but the diff excerpt for TransactionDetailsStep.tsx is truncated before showing the SelectTrigger usage, so it cannot be conclusively verified from the provided evidence. Some unrelated styling/legal-text changes were introduced.",
+  "missing_requirements": [
+    {
+      "id": "REQ-1",
+      "requirement": "Fix the “Service/Product Category” dropdown UI so the selected value is always clearly readable and never overlaps with other text in the control (including in narrow/mobile layouts).",
+      "reason": "The diff adds a CSS utility intended to prevent select text overlap, but the TransactionDetailsStep.tsx excerpt is truncated before the SelectTrigger/SelectValue markup, so it’s not possible to verify from the provided diff summary that the utility (or equivalent trigger/value classes) is actually applied to the specific “Service/Product Category” select and works in narrow/mobile layouts.",
+      "evidence": [
+        "frontend/src/components/vat/TransactionDetailsStep.tsx (truncated before showing SelectTrigger usage)",
+        "frontend/src/index.css (adds .select-trigger-safe with pr-8)"
+      ]
+    }
+  ],
+  "hallucinated_features": [
+    {
+      "description": "Global theme/color variable changes (Graphite + Warm Amber theme) in the base CSS variables.",
+      "reason": "Not requested by any requirement; requirements were limited to a dropdown overlap fix and adding a bilingual §13b note in results and invoice preview.",
+      "evidence": [
+        "frontend/src/index.css"
+      ]
+    },
+    {
+      "description": "Added/changed auto legal VAT texts for multiple scenarios beyond reverse-charge (e.g., kleinunternehmer, intra-eu-supply, digital-b2c-eu).",
+      "reason": "REQ-3 only requests adding the bilingual §13b note for reverse-charge invoices; adding or changing other scenario texts was not requested and risks altering displayed wording outside the reverse-charge case (explicitly listed as a non-goal).",
+      "evidence": [
+        "frontend/src/lib/invoice/getAutoLegalVatText.ts"
+      ]
+    }
+  ],
+  "confidence": 0.67,
+  "changed_files": [
+    "frontend-file-summaries.txt",
+    "frontend/src/components/vat/TransactionDetailsStep.tsx",
+    "frontend/src/components/vat/VatResultsStep.tsx",
+    "frontend/src/index.css",
+    "frontend/src/lib/invoice/buildInvoiceHtml.ts",
+    "frontend/src/lib/invoice/getAutoLegalVatText.ts",
+    "project_state.json"
+  ]
+}

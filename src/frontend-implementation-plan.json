@@ -1,0 +1,65 @@
+{
+  "kind": "implementation_plan",
+  "version": "1.0",
+  "title": "Fix category select overlap and add bilingual §13b reverse-charge note (UI + invoice preview)",
+  "requirements": [
+    {
+      "id": "REQ-1",
+      "summary": "Prevent overlap in the “Service/Product Category” select so the chosen value stays readable across viewport sizes.",
+      "acceptanceCriteria": [
+        "On the Transaction Details step, the “Service/Product Category” select shows the current selection without text overlapping the dropdown chevron, label, or adjacent UI.",
+        "Long option labels (e.g., “Consulting / freelance”) remain readable via truncation/wrapping rules without causing overlap or layout breakage.",
+        "Verified on both desktop and mobile viewport widths."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/components/vat/TransactionDetailsStep.tsx",
+          "operation": "modify",
+          "description": "Adjust the SelectTrigger/SelectValue styling for the “Service/Product Category” control to reserve space for the chevron and prevent text overlap (e.g., enforce text-left, proper padding-right, and truncation/wrapping behavior suitable for narrow/mobile layouts) without modifying vendor UI components under frontend/src/components/ui."
+        },
+        {
+          "path": "frontend/src/index.css",
+          "operation": "modify",
+          "description": "Add/adjust global utility styles (as needed) to support safe select-value rendering (e.g., reusable class for truncation/wrapping and chevron-safe padding) while keeping vendor UI components untouched."
+        }
+      ]
+    },
+    {
+      "id": "REQ-2",
+      "summary": "Show an exact bilingual §13b reverse-charge comment under the reverse-charge result when VAT is 0%.",
+      "acceptanceCriteria": [
+        "If the calculation scenario is reverse-charge (VAT 0%), the UI shows the German line followed immediately by the English line underneath.",
+        "If the scenario is not reverse-charge, this bilingual §13b comment is not shown.",
+        "The text matches exactly (including punctuation, capitalization, and the § symbol)."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/components/vat/VatResultsStep.tsx",
+          "operation": "modify",
+          "description": "When result indicates reverse-charge with 0% VAT, render a two-line note directly under the reverse-charge output (in the legal note area): line 1 exactly “Steuerschuldnerschaft des Leistungsempfängers (§13b UStG)”, line 2 exactly “Tax liability of the recipient of services (§13b UStG)”. Ensure it is not rendered for other scenarios and does not change calculation logic."
+        }
+      ]
+    },
+    {
+      "id": "REQ-3",
+      "summary": "Include the same bilingual §13b reverse-charge comment in the invoice preview legal VAT note for reverse-charge (0%) invoices.",
+      "acceptanceCriteria": [
+        "For reverse-charge invoices, the Legal Note section in the invoice preview contains both lines in the specified order, separated by a visible line break.",
+        "For non-reverse-charge invoices, the invoice legal note behavior remains unchanged.",
+        "The text matches exactly (including punctuation, capitalization, and the § symbol)."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/lib/invoice/getAutoLegalVatText.ts",
+          "operation": "modify",
+          "description": "Update the auto legal VAT text mapping so that for the reverse-charge scenario it returns the required bilingual §13b text with a clear line break between the German and English lines, while leaving other scenarios unchanged."
+        },
+        {
+          "path": "frontend/src/lib/invoice/buildInvoiceHtml.ts",
+          "operation": "modify",
+          "description": "Ensure the invoice HTML renders the reverse-charge legal note with a visible line break for the bilingual §13b text (e.g., by supporting HTML line breaks from getAutoLegalVatText or by applying appropriate rendering/whitespace rules in the Legal Note section), without altering invoice behavior for non-reverse-charge scenarios."
+        }
+      ]
+    }
+  ]
+}

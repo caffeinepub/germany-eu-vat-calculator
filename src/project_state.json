@@ -1,0 +1,53 @@
+{
+  "schemaVersion": "1.0.0",
+  "projectStateVersion": 3,
+  "summary": "App amendments requested: fix Service/Product category dropdown text overlap and add bilingual reverse-charge (0%) comment for §13b UStG.",
+  "architectural_notes": [],
+  "known_issues": [
+    "Service/Product category dropdown text overlaps other text (needs UI fix)."
+  ],
+  "isFixRequest": true,
+  "existing_features": [
+    {
+      "id": "feature-fix-the-service-product-category-dropdown-ui-so-the-selected-value-is-always-clearly-readable-and-never-overlaps-with-other-text-in-the-control-including-in-narrow-mobile-layouts",
+      "title": "Fix the “Service/Product Category” dropdown UI so the selected value is always clearly readable and never overlaps with other text in the control (including in narrow/mobile layouts).",
+      "reqIds": [
+        "REQ-1"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-when-the-vat-result-is-reverse-charge-with-0-vat-display-a-two-line-comment-directly-under-the-reverse-charge-output-line-1-german-must-be-exactly-steuerschuldnerschaft-des-leistungsempf-ngers-13b-ustg-line-2-english-must-be-exactly-tax-liability-of-the-recipient-of-services-13b-ustg",
+      "title": "When the VAT result is reverse-charge with 0% VAT, display a two-line comment directly under the reverse-charge output: line 1 (German) must be exactly “Steuerschuldnerschaft des Leistungsempfängers (§13b UStG)”; line 2 (English) must be exactly “Tax liability of the recipient of services (§13b UStG)”.",
+      "reqIds": [
+        "REQ-2"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-when-generating-the-invoice-preview-for-a-reverse-charge-0-result-include-the-same-bilingual-13b-comment-as-the-legal-vat-note-in-the-invoice-content-first-the-german-line-steuerschuldnerschaft-des-leistungsempf-ngers-13b-ustg-then-a-new-line-with-the-english-line-tax-liability-of-the-recipient-of-services-13b-ustg",
+      "title": "When generating the invoice preview for a reverse-charge (0%) result, include the same bilingual §13b comment as the legal VAT note in the invoice content: first the German line “Steuerschuldnerschaft des Leistungsempfängers (§13b UStG)”, then a new line with the English line “Tax liability of the recipient of services (§13b UStG)”.",
+      "reqIds": [
+        "REQ-3"
+      ],
+      "version": 1
+    }
+  ],
+  "new_feature_requests": [
+    {
+      "id": "AR-1",
+      "summary": "Fix Service/Product category dropdown so it displays clearly without text overlapping.",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-2",
+      "summary": "For reverse charge of 0%, display comment in German \"Steuerschuldnerschaft des Leistungsempfängers (§13b UStG)\" with English translation \"Tax liability of the recipient of services (§13b UStG)\" underneath.",
+      "reqIds": [],
+      "status": "pending"
+    }
+  ],
+  "projectName": "Fix Service/Product category dropdown overlap and add bilingual §13b reverse-charge note",
+  "clarification_mode": "instant",
+  "clarification_rounds": 0
+}

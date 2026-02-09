@@ -1,0 +1,102 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+    :root {
+        --radius: 0.5rem;
+        
+        /* Graphite + Warm Amber theme (avoiding blue/purple) */
+        --background: 0.98 0 0;
+        --foreground: 0.20 0 0;
+        
+        --card: 1 0 0;
+        --card-foreground: 0.20 0 0;
+        
+        --popover: 1 0 0;
+        --popover-foreground: 0.20 0 0;
+        
+        /* Warm amber/gold primary */
+        --primary: 0.65 0.15 65;
+        --primary-foreground: 0.98 0 0;
+        
+        --secondary: 0.95 0 0;
+        --secondary-foreground: 0.20 0 0;
+        
+        --muted: 0.96 0 0;
+        --muted-foreground: 0.50 0 0;
+        
+        --accent: 0.94 0.08 65;
+        --accent-foreground: 0.20 0 0;
+        
+        --destructive: 0.55 0.22 25;
+        --destructive-foreground: 0.98 0 0;
+        
+        --border: 0.90 0 0;
+        --input: 0.90 0 0;
+        --ring: 0.65 0.15 65;
+        
+        --chart-1: 0.65 0.15 65;
+        --chart-2: 0.60 0.12 120;
+        --chart-3: 0.55 0.10 180;
+        --chart-4: 0.70 0.18 40;
+        --chart-5: 0.50 0.08 200;
+    }
+
+    .dark {
+        --background: 0.15 0 0;
+        --foreground: 0.95 0 0;
+        
+        --card: 0.18 0 0;
+        --card-foreground: 0.95 0 0;
+        
+        --popover: 0.18 0 0;
+        --popover-foreground: 0.95 0 0;
+        
+        /* Brighter amber for dark mode */
+        --primary: 0.75 0.18 60;
+        --primary-foreground: 0.15 0 0;
+        
+        --secondary: 0.25 0 0;
+        --secondary-foreground: 0.95 0 0;
+        
+        --muted: 0.25 0 0;
+        --muted-foreground: 0.65 0 0;
+        
+        --accent: 0.30 0.10 60;
+        --accent-foreground: 0.95 0 0;
+        
+        --destructive: 0.60 0.25 25;
+        --destructive-foreground: 0.15 0 0;
+        
+        --border: 0.30 0 0;
+        --input: 0.30 0 0;
+        --ring: 0.75 0.18 60;
+        
+        --chart-1: 0.75 0.18 60;
+        --chart-2: 0.65 0.15 120;
+        --chart-3: 0.60 0.12 180;
+        --chart-4: 0.80 0.20 40;
+        --chart-5: 0.55 0.10 200;
+    }
+
+    * {
+        @apply border-border;
+    }
+    
+    body {
+        @apply bg-background text-foreground;
+        font-feature-settings: "rlig" 1, "calt" 1;
+    }
+    
+    h1, h2, h3, h4, h5, h6 {
+        @apply font-bold;
+    }
+}
+
+@layer utilities {
+    /* Utility for select triggers to prevent text overlap with chevron */
+    .select-trigger-safe {
+        @apply text-left pr-8;
+    }
+}

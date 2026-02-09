@@ -1,0 +1,73 @@
+{
+  "kind": "build_request",
+  "title": "Fix Service/Product category dropdown overlap and add bilingual §13b reverse-charge note",
+  "priority": "normal",
+  "requirements": [
+    {
+      "id": "REQ-1",
+      "text": "Fix the “Service/Product Category” dropdown UI so the selected value is always clearly readable and never overlaps with other text in the control (including in narrow/mobile layouts).",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-1"
+        ],
+        "quotes": [
+          "amend the APP, show the Service/ Product category clearly in the dropdown without overlapping over other text."
+        ]
+      },
+      "acceptanceCriteria": [
+        "On the Transaction Details step, the “Service/Product Category” select shows the current selection without text overlapping the dropdown chevron, label, or adjacent UI.",
+        "Long option labels (e.g., “Consulting / freelance”) remain readable via truncation/wrapping rules without causing overlap or layout breakage.",
+        "Verified on both desktop and mobile viewport widths."
+      ]
+    },
+    {
+      "id": "REQ-2",
+      "text": "When the VAT result is reverse-charge with 0% VAT, display a two-line comment directly under the reverse-charge output: line 1 (German) must be exactly “Steuerschuldnerschaft des Leistungsempfängers (§13b UStG)”; line 2 (English) must be exactly “Tax liability of the recipient of services (§13b UStG)”.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-1"
+        ],
+        "quotes": [
+          "For reverse charge of 0%, show the comments \"Steuerschuldnerschaft des Leistungsempfängers (§13b UStG)” in German language and English translation of \"Tax liability of the recipient of services (§13b UStG)”  under."
+        ]
+      },
+      "acceptanceCriteria": [
+        "If the calculation scenario is reverse-charge (VAT 0%), the UI shows the German line followed immediately by the English line underneath.",
+        "If the scenario is not reverse-charge, this bilingual §13b comment is not shown.",
+        "The text matches exactly (including punctuation, capitalization, and the § symbol)."
+      ]
+    },
+    {
+      "id": "REQ-3",
+      "text": "When generating the invoice preview for a reverse-charge (0%) result, include the same bilingual §13b comment as the legal VAT note in the invoice content: first the German line “Steuerschuldnerschaft des Leistungsempfängers (§13b UStG)”, then a new line with the English line “Tax liability of the recipient of services (§13b UStG)”.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-1"
+        ],
+        "quotes": [
+          "For reverse charge of 0%, show the comments \"Steuerschuldnerschaft des Leistungsempfängers (§13b UStG)” in German language and English translation of \"Tax liability of the recipient of services (§13b UStG)”  under."
+        ]
+      },
+      "acceptanceCriteria": [
+        "For reverse-charge invoices, the Legal Note section in the invoice preview contains both lines in the specified order, separated by a visible line break.",
+        "For non-reverse-charge invoices, the invoice legal note behavior remains unchanged.",
+        "The text matches exactly (including punctuation, capitalization, and the § symbol)."
+      ]
+    }
+  ],
+  "constraints": [
+    "Do not edit files under frontend/src/components/ui (these are read-only vendor components).",
+    "Keep all backend logic in the existing single Motoko actor (backend/main.mo); no new backend services."
+  ],
+  "nonGoals": [
+    "Changing VAT calculation rules or eligibility logic for reverse charge; only adjust displayed wording/presentation.",
+    "Adding new authentication providers or external integrations."
+  ],
+  "imageRequirements": {
+    "required": [],
+    "edits": []
+  }
+}
