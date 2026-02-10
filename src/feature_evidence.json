@@ -2,11 +2,12 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-fix-the-service-product-category-dropdown-ui-so-the-selected-value-is-always-clearly-readable-and-never-overlaps-with-other-text-in-the-control-including-in-narrow-mobile-layouts",
-      "featureTitle": "Fix the “Service/Product Category” dropdown UI so the selected value is always clearly readable and never overlaps with other text in the control (including in narrow/mobile layouts).",
+      "featureId": "feature-add-a-frontend-event-logging-utility-that-can-be-called-from-anywhere-in-the-ui-to-log-the-core-events-exactly-as-named-do-not-rename-along-with-country-page-device-timestamp-and-metadata-and-that-works-for-both-anonymous-and-authenticated-sessions",
+      "featureTitle": "Add a frontend event logging utility that can be called from anywhere in the UI to log the Core Events exactly as named (DO NOT rename) along with country, page, device, timestamp, and metadata, and that works for both anonymous and authenticated sessions.",
       "files": [
-        "frontend/src/components/vat/TransactionDetailsStep.tsx",
-        "frontend/src/index.css"
+        "frontend/src/hooks/useEventLogger.ts",
+        "frontend/src/lib/analytics/coreEvents.ts",
+        "frontend/src/lib/analytics/eventLogger.ts"
       ],
       "components": [
         "stripe@3.0.0",
@@ -19,14 +20,112 @@
         "authorization@4.0.0"
       ],
       "testIds": [
-        "REQ-1"
+        "REQ-5"
       ],
       "confidence": "high"
     },
     {
-      "featureId": "feature-when-the-vat-result-is-reverse-charge-with-0-vat-display-a-two-line-comment-directly-under-the-reverse-charge-output-line-1-german-must-be-exactly-steuerschuldnerschaft-des-leistungsempf-ngers-13b-ustg-line-2-english-must-be-exactly-tax-liability-of-the-recipient-of-services-13b-ustg",
-      "featureTitle": "When the VAT result is reverse-charge with 0% VAT, display a two-line comment directly under the reverse-charge output: line 1 (German) must be exactly “Steuerschuldnerschaft des Leistungsempfängers (§13b UStG)”; line 2 (English) must be exactly “Tax liability of the recipient of services (§13b UStG)”.",
+      "featureId": "feature-implement-the-specified-fingerprint-logic-on-the-frontend-and-pass-only-the-resulting-fingerprint-to-the-backend-no-raw-ip-user-agent-storage-fingerprint-must-be-stable-for-a-given-user-agent-ip-for-the-current-day-and-rotate-daily",
+      "featureTitle": "Implement the specified fingerprint logic on the frontend and pass only the resulting fingerprint to the backend (no raw IP/user agent storage). Fingerprint must be stable for a given user-agent+IP for the current day and rotate daily.",
       "files": [
+        "frontend/src/hooks/useDailyFingerprint.ts",
+        "frontend/src/lib/analytics/countryDetection.ts",
+        "frontend/src/lib/analytics/fingerprint.ts"
+      ],
+      "components": [
+        "stripe@3.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0",
+        "http-outcalls@3.0.0",
+        "authorization@4.0.0"
+      ],
+      "testIds": [
+        "REQ-6"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-instrument-the-exact-caffeine-ai-logic-flow-by-logging-the-specified-events-at-the-corresponding-user-actions-system-points-on-app-load-on-country-detection-on-vat-calculation-click-on-reverse-charge-check-on-invoice-preview-on-invoice-download-attempt-success-on-ai-vat-explanation-click-on-upgrade-modal-shown-on-stripe-checkout-click-and-on-payment-success",
+      "featureTitle": "Instrument the exact Caffeine AI Logic Flow by logging the specified events at the corresponding user actions/system points: on app load, on country detection, on VAT calculation click, on reverse charge check, on invoice preview, on invoice download attempt/success, on AI VAT explanation click, on upgrade modal shown, on Stripe checkout click, and on payment success.",
+      "files": [
+        "frontend/src/components/invoice/InvoicePreview.tsx",
+        "frontend/src/components/layout/AppLayout.tsx",
+        "frontend/src/components/payments/StripeCheckoutButton.tsx",
+        "frontend/src/components/usage/UpgradeModal.tsx",
+        "frontend/src/components/vat/ReverseChargeProofChecker.tsx",
+        "frontend/src/components/vat/TransactionDetailsStep.tsx",
+        "frontend/src/components/vat/VatResultsStep.tsx",
+        "frontend/src/pages/CalculatorFlowPage.tsx",
+        "frontend/src/pages/PaymentSuccessPage.tsx"
+      ],
+      "components": [
+        "stripe@3.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0",
+        "http-outcalls@3.0.0",
+        "authorization@4.0.0"
+      ],
+      "testIds": [
+        "REQ-7"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-replace-the-current-upgrade-limit-reached-messaging-with-the-provided-germany-optimized-copy-translated-into-english-and-ensure-the-limit-reached-ui-is-shown-when-the-free-limit-is-reached-invoice-download-gating-per-the-defined-flow",
+      "featureTitle": "Replace the current upgrade/limit-reached messaging with the provided Germany-optimized copy translated into English, and ensure the limit-reached UI is shown when the free limit is reached (invoice download gating) per the defined flow.",
+      "files": [
+        "frontend/src/components/invoice/InvoicePreview.tsx",
+        "frontend/src/components/usage/LimitReachedModal.tsx"
+      ],
+      "components": [
+        "stripe@3.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0",
+        "http-outcalls@3.0.0",
+        "authorization@4.0.0"
+      ],
+      "testIds": [
+        "REQ-8"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-add-an-inline-upsell-section-under-the-vat-result-in-the-results-step-using-the-provided-copy-translated-into-english-including-a-button-that-opens-upgrade-ui-and-logs-upgrade-cta-shown",
+      "featureTitle": "Add an inline upsell section under the VAT result (in the Results step) using the provided copy translated into English, including a button that opens upgrade UI and logs upgrade_cta_shown.",
+      "files": [
+        "frontend/src/components/vat/VatResultsStep.tsx",
+        "frontend/src/pages/CalculatorFlowPage.tsx"
+      ],
+      "components": [
+        "stripe@3.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0",
+        "http-outcalls@3.0.0",
+        "authorization@4.0.0"
+      ],
+      "testIds": [
+        "REQ-9"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-add-an-ai-explanation-paywall-message-english-aligned-to-the-provided-copy-so-that-when-a-non-paying-user-tries-to-access-gated-explanation-export-functionality-the-app-shows-the-paywall-copy-and-logs-ai-explain-clicked-click-and-upgrade-cta-shown-paywall-shown",
+      "featureTitle": "Add an AI explanation paywall message (English) aligned to the provided copy so that when a non-paying user tries to access gated explanation/export functionality, the app shows the paywall copy and logs ai_explain_clicked (click) and upgrade_cta_shown (paywall shown).",
+      "files": [
+        "frontend/src/components/vat/ExplainVatPanel.tsx",
+        "frontend/src/components/vat/ExplainVatPaywallDialog.tsx",
         "frontend/src/components/vat/VatResultsStep.tsx"
       ],
       "components": [
@@ -40,16 +139,16 @@
         "authorization@4.0.0"
       ],
       "testIds": [
-        "REQ-2"
+        "REQ-10"
       ],
       "confidence": "high"
     },
     {
-      "featureId": "feature-when-generating-the-invoice-preview-for-a-reverse-charge-0-result-include-the-same-bilingual-13b-comment-as-the-legal-vat-note-in-the-invoice-content-first-the-german-line-steuerschuldnerschaft-des-leistungsempf-ngers-13b-ustg-then-a-new-line-with-the-english-line-tax-liability-of-the-recipient-of-services-13b-ustg",
-      "featureTitle": "When generating the invoice preview for a reverse-charge (0%) result, include the same bilingual §13b comment as the legal VAT note in the invoice content: first the German line “Steuerschuldnerschaft des Leistungsempfängers (§13b UStG)”, then a new line with the English line “Tax liability of the recipient of services (§13b UStG)”.",
+      "featureId": "feature-update-pricing-presentation-to-be-germany-optimized-as-specified-free-5-invoices-month-starter-5-month-pro-12-month-and-add-micro-trust-text-in-english-gdpr-compliant-no-signup-required-no-ads",
+      "featureTitle": "Update pricing presentation to be Germany-optimized as specified (Free: 5 invoices/month, Starter: €5/month, Pro: €12/month) and add micro-trust text in English: \"GDPR-compliant • No signup required • No ads\".",
       "files": [
-        "frontend/src/lib/invoice/buildInvoiceHtml.ts",
-        "frontend/src/lib/invoice/getAutoLegalVatText.ts"
+        "frontend/src/components/usage/UpgradeModal.tsx",
+        "frontend/src/pages/UpgradePage.tsx"
       ],
       "components": [
         "stripe@3.0.0",
@@ -62,7 +161,7 @@
         "authorization@4.0.0"
       ],
       "testIds": [
-        "REQ-3"
+        "REQ-11"
       ],
       "confidence": "high"
     }

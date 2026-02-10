@@ -1,4 +1,4 @@
-export type ServiceCategory = 'digital' | 'physical' | 'consulting' | 'saas';
+export type ServiceCategory = 'digital' | 'physical' | 'consulting' | 'saas' | 'others';
 
 export interface VATCalculationInput {
   sellerCountry: string;

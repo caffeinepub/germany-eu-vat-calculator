@@ -10,6 +10,46 @@ import type { ActorMethod } from '@icp-sdk/core/agent';
 import type { IDL } from '@icp-sdk/core/candid';
 import type { Principal } from '@icp-sdk/core/principal';
 
+export interface CalculationResult {
+  'exchangeRateAdjustment' : number,
+  'priceNetEuros' : number,
+  'priceGrossEuros' : number,
+  'ifReverseChargeRequired' : boolean,
+}
+export interface CsvFile { 'content' : string, 'filename' : string }
+export interface EventRecord {
+  'id' : string,
+  'country' : string,
+  'metadata' : string,
+  'page' : string,
+  'device' : string,
+  'timestamp' : Time,
+  'event_name' : string,
+}
+export interface ExcelFile { 'content' : Uint8Array, 'filename' : string }
+export interface InvoiceRecord {
+  'id' : string,
+  'owner' : Principal,
+  'createdAt' : Time,
+  'invoiceDate' : string,
+  'invoiceNumber' : string,
+  'htmlSource' : string,
+}
+export interface MappedPlanUsage {
+  'plan' : PlanType,
+  'invoicesThisMonth' : bigint,
+}
+export interface PdfFile { 'content' : Uint8Array, 'filename' : string }
+export type PlanType = { 'pro' : null } |
+  { 'starter' : null } |
+  { 'free' : null } |
+  { 'unsubscribed' : null };
+export interface PlanUsage { 'plan' : PlanType, 'monthlyInvoices' : bigint }
+export type ServiceProductCategory = { 'consultingDevelopment' : null } |
+  { 'contentMediaDesign' : null } |
+  { 'others' : null } |
+  { 'hardware' : null } |
+  { 'hostingSupport' : null };
 export interface ShoppingItem {
   'productName' : string,
   'currency' : string,
@@ -25,6 +65,7 @@ export type StripeSessionStatus = {
     'completed' : { 'userPrincipal' : [] | [string], 'response' : string }
   } |
   { 'failed' : { 'error' : string } };
+export type Time = bigint;
 export interface TransformationInput {
   'context' : Uint8Array,
   'response' : http_request_result,
@@ -38,6 +79,14 @@ export interface UserProfile { 'name' : string }
 export type UserRole = { 'admin' : null } |
   { 'user' : null } |
   { 'guest' : null };
+export interface VatCalculation {
+  'vatIdNumber' : [] | [string],
+  'toCountry' : string,
+  'priceGrossCents' : bigint,
+  'category' : ServiceProductCategory,
+  'fromCountry' : string,
+}
+export interface ZipFile { 'content' : Uint8Array, 'filename' : string }
 export interface http_header { 'value' : string, 'name' : string }
 export interface http_request_result {
   'status' : bigint,
@@ -47,18 +96,39 @@ export interface http_request_result {
 export interface _SERVICE {
   '_initializeAccessControlWithSecret' : ActorMethod<[string], undefined>,
   'assignCallerUserRole' : ActorMethod<[Principal, UserRole], undefined>,
+  'calculate' : ActorMethod<[VatCalculation], CalculationResult>,
+  'canICallApi' : ActorMethod<[], string>,
+  'canSaveInvoice' : ActorMethod<[], boolean>,
   'createCheckoutSession' : ActorMethod<
     [Array<ShoppingItem>, string, string],
     string
   >,
+  'downloadInvoiceAsPdf' : ActorMethod<[string], PdfFile>,
+  'downloadInvoicesAsZip' : ActorMethod<[Array<string>], ZipFile>,
+  'downloadMonthInvoicesAsZip' : ActorMethod<[bigint, bigint], ZipFile>,
+  'exportInvoicesAsCsv' : ActorMethod<[], CsvFile>,
+  'exportInvoicesAsExcel' : ActorMethod<[], ExcelFile>,
   'getCallerUserProfile' : ActorMethod<[], [] | [UserProfile]>,
   'getCallerUserRole' : ActorMethod<[], UserRole>,
+  'getCurrentPlan' : ActorMethod<[], PlanType>,
+  'getCurrentPlanUsage' : ActorMethod<[], PlanUsage>,
+  'getEvents' : ActorMethod<[], Array<EventRecord>>,
+  'getEventsByName' : ActorMethod<[string], Array<EventRecord>>,
+  'getInvoice' : ActorMethod<[string], [] | [InvoiceRecord]>,
+  'getLastCalculation' : ActorMethod<[], [] | [VatCalculation]>,
+  'getMappedPlanUsage' : ActorMethod<[], MappedPlanUsage>,
   'getStripeSessionStatus' : ActorMethod<[string], StripeSessionStatus>,
+  'getUsage' : ActorMethod<[string], bigint>,
   'getUserProfile' : ActorMethod<[Principal], [] | [UserProfile]>,
+  'incrementUsage' : ActorMethod<[string], bigint>,
   'isCallerAdmin' : ActorMethod<[], boolean>,
   'isStripeConfigured' : ActorMethod<[], boolean>,
+  'listInvoices' : ActorMethod<[], Array<InvoiceRecord>>,
+  'logEvent' : ActorMethod<[EventRecord], undefined>,
   'saveCallerUserProfile' : ActorMethod<[UserProfile], undefined>,
+  'saveInvoice' : ActorMethod<[string, string, string, string], undefined>,
   'setStripeConfiguration' : ActorMethod<[StripeConfiguration], undefined>,
+  'setUserPlan' : ActorMethod<[Principal, PlanType], undefined>,
   'transform' : ActorMethod<[TransformationInput], TransformationOutput>,
 }
 export declare const idlService: IDL.ServiceClass;

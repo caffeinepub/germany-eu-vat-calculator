@@ -1,87 +1,72 @@
 import { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { AlertTriangle, ArrowLeft, Download } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Download } from 'lucide-react';
+import { type VATCalculationInput, type VATCalculationResult } from '../../lib/vat/calculateVat';
 import { explainGermanyVAT } from '../../lib/vat/explainVat';
 import { explainVatLikeIm12 } from '../../lib/vat/explainVatLikeIm12';
-import { type VATCalculationInput, type VATCalculationResult } from '../../lib/vat/calculateVat';
 import { usePlanAccess } from '../../hooks/usePlanAccess';
-import { toast } from 'sonner';
+import ExplainVatPaywallDialog from './ExplainVatPaywallDialog';
 
 interface ExplainVatPanelProps {
   formData: VATCalculationInput;
   result: VATCalculationResult;
-  onBack: () => void;
 }
 
-export default function ExplainVatPanel({ formData, result, onBack }: ExplainVatPanelProps) {
+export default function ExplainVatPanel({ formData, result }: ExplainVatPanelProps) {
   const { isPro } = usePlanAccess();
-  const [activeTab, setActiveTab] = useState<'standard' | 'simple'>('standard');
+  const [showPaywall, setShowPaywall] = useState(false);
   
   const standardExplanation = explainGermanyVAT(formData, result);
   const simpleExplanation = explainVatLikeIm12(formData, result);
 
-  const handleDownloadPDF = () => {
+  const handleExportPdf = () => {
     if (!isPro) {
-      toast.error('PDF export is only available for Pro users. Please upgrade.');
+      setShowPaywall(true);
       return;
     }
-    toast.info('PDF export feature coming soon!');
+    // Pro feature - PDF export
+    alert('PDF export feature coming soon for Pro users!');
   };
 
   return (
-    <div className="space-y-6">
+    <>
       <Card>
         <CardHeader>
-          <CardTitle>VAT Explanation</CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle>VAT Explanation</CardTitle>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleExportPdf}
+            >
+              <Download className="h-4 w-4 mr-2" />
+              Export as PDF {!isPro && '(Pro)'}
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
-          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'standard' | 'simple')}>
+          <Tabs defaultValue="standard" className="w-full">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="standard">Standard</TabsTrigger>
               <TabsTrigger value="simple">Explain like I'm 12</TabsTrigger>
             </TabsList>
-            <TabsContent value="standard" className="mt-4">
-              <div className="prose prose-sm max-w-none">
-                <p className="text-foreground leading-relaxed whitespace-pre-line">{standardExplanation}</p>
+            <TabsContent value="standard" className="space-y-4 mt-4">
+              <div className="prose prose-sm dark:prose-invert max-w-none">
+                <p className="whitespace-pre-wrap">{standardExplanation}</p>
               </div>
             </TabsContent>
-            <TabsContent value="simple" className="mt-4">
-              <div className="prose prose-sm max-w-none">
-                <p className="text-foreground leading-relaxed whitespace-pre-line">{simpleExplanation}</p>
+            <TabsContent value="simple" className="space-y-4 mt-4">
+              <div className="prose prose-sm dark:prose-invert max-w-none">
+                <p className="whitespace-pre-wrap">{simpleExplanation}</p>
               </div>
             </TabsContent>
           </Tabs>
-
-          <div className="mt-4 pt-4 border-t">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleDownloadPDF}
-              className="w-full sm:w-auto"
-            >
-              <Download className="h-4 w-4 mr-2" />
-              Download as PDF {!isPro && '(Pro only)'}
-            </Button>
-          </div>
         </CardContent>
       </Card>
 
-      <Alert variant="destructive">
-        <AlertTriangle className="h-4 w-4" />
-        <AlertDescription className="ml-2">
-          <strong>Disclaimer:</strong> This is not legal advice. This explanation is provided for
-          informational purposes only. Please consult a qualified tax advisor for specific guidance
-          on your situation.
-        </AlertDescription>
-      </Alert>
-
-      <Button variant="outline" onClick={onBack} className="w-full">
-        <ArrowLeft className="h-4 w-4 mr-2" />
-        Back to Results
-      </Button>
-    </div>
+      <ExplainVatPaywallDialog open={showPaywall} onOpenChange={setShowPaywall} />
+    </>
   );
 }

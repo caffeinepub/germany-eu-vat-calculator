@@ -1,8 +1,10 @@
-import { useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { CreditCard } from 'lucide-react';
 import { useCreateCheckoutSession } from '../../hooks/useCreateCheckoutSession';
+import { useEventLogger } from '../../hooks/useEventLogger';
+import { CORE_EVENTS } from '../../lib/analytics/coreEvents';
 import { toast } from 'sonner';
-import type { ShoppingItem } from '../../backend';
+import { useState } from 'react';
 
 interface StripeCheckoutButtonProps {
   planName: string;
@@ -11,13 +13,16 @@ interface StripeCheckoutButtonProps {
 }
 
 export default function StripeCheckoutButton({ planName, priceInCents, disabled }: StripeCheckoutButtonProps) {
-  const [isLoading, setIsLoading] = useState(false);
   const createCheckoutSession = useCreateCheckoutSession();
+  const { log } = useEventLogger();
+  const [isProcessing, setIsProcessing] = useState(false);
 
   const handleCheckout = async () => {
-    setIsLoading(true);
+    setIsProcessing(true);
     try {
-      const items: ShoppingItem[] = [
+      log(CORE_EVENTS.STRIPE_CHECKOUT_CLICKED, JSON.stringify({ plan: planName, price: priceInCents }));
+
+      const session = await createCheckoutSession.mutateAsync([
         {
           productName: `${planName} Plan`,
           productDescription: `Monthly subscription to ${planName} plan`,
@@ -25,32 +30,28 @@ export default function StripeCheckoutButton({ planName, priceInCents, disabled 
           quantity: BigInt(1),
           currency: 'EUR',
         },
-      ];
+      ]);
 
-      const session = await createCheckoutSession.mutateAsync(items);
-      
-      // Validate session URL before redirecting
       if (!session?.url) {
-        throw new Error('Checkout session URL is missing');
+        throw new Error('Stripe session missing url');
       }
 
-      // Only redirect after successful validation
       window.location.href = session.url;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Checkout error:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-      toast.error(`Failed to start checkout: ${errorMessage}. Please try again.`);
-      setIsLoading(false);
+      toast.error(error.message || 'Failed to start checkout');
+      setIsProcessing(false);
     }
   };
 
   return (
     <Button
       onClick={handleCheckout}
-      disabled={disabled || isLoading}
+      disabled={disabled || isProcessing}
       className="w-full"
     >
-      {isLoading ? 'Loading...' : disabled ? 'Current Plan' : 'Subscribe'}
+      <CreditCard className="h-4 w-4 mr-2" />
+      {isProcessing ? 'Processing...' : `Upgrade to ${planName}`}
     </Button>
   );
 }

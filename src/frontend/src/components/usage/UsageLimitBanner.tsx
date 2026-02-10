@@ -7,15 +7,20 @@ export default function UsageLimitBanner() {
 
   if (isLoading || !planData) return null;
 
-  const remaining = Number(planData.maxInvoices) - Number(planData.monthlyUsage);
-  const planName = planData.activePlan.charAt(0).toUpperCase() + planData.activePlan.slice(1);
+  const activePlan = planData.activePlan;
+  const invoicesThisMonth = planData.invoicesThisMonth;
+  
+  // Only show for Free plan
+  if (activePlan !== 'free') return null;
+
+  const remaining = Math.max(0, 5 - invoicesThisMonth);
+  const planName = activePlan.charAt(0).toUpperCase() + activePlan.slice(1);
 
   return (
     <Alert>
       <Info className="h-4 w-4" />
       <AlertDescription className="ml-2">
-        <strong>{planName} Plan:</strong> {remaining} of {planData.maxInvoices.toString()} invoices
-        remaining this month
+        <strong>{planName} Plan:</strong> {remaining} of 5 invoices remaining this month
       </AlertDescription>
     </Alert>
   );

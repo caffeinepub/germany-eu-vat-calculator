@@ -10,6 +10,8 @@ import { Info } from 'lucide-react';
 import { type VATCalculationInput, type ServiceCategory } from '../../lib/vat/calculateVat';
 import { getCurrentVatRate } from '../../lib/vat/germanyVatRateHistory';
 import ReverseChargeProofChecker from './ReverseChargeProofChecker';
+import { useEventLogger } from '../../hooks/useEventLogger';
+import { CORE_EVENTS } from '../../lib/analytics/coreEvents';
 
 interface TransactionDetailsStepProps {
   initialData: VATCalculationInput;
@@ -25,11 +27,20 @@ export default function TransactionDetailsStep({ initialData, onNext, onBack }: 
   const [vatRate, setVatRate] = useState<'standard' | 'reduced'>(initialData.vatRate);
   const [previousYearTurnover, setPreviousYearTurnover] = useState(initialData.previousYearTurnover.toString());
   const [currentYearTurnover, setCurrentYearTurnover] = useState(initialData.currentYearTurnover.toString());
+  const { log } = useEventLogger();
 
   const currentStandardRate = getCurrentVatRate('standard');
   const currentReducedRate = getCurrentVatRate('reduced');
 
   const handleNext = () => {
+    // Log VAT calculation event
+    log(CORE_EVENTS.VAT_CALCULATED, JSON.stringify({
+      customerType,
+      serviceCategory,
+      netAmount: parseFloat(netAmount) || 0,
+      vatRate,
+    }));
+
     onNext({
       customerType,
       vatId: customerType === 'B2B' ? vatId : '',
@@ -85,54 +96,57 @@ export default function TransactionDetailsStep({ initialData, onNext, onBack }: 
         />
       )}
 
-      <div>
-        <div className="flex items-center gap-2 mb-2">
-          <Label htmlFor="service-category">Service/Product Category</Label>
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Info className="h-4 w-4 text-muted-foreground cursor-help" />
-              </TooltipTrigger>
-              <TooltipContent className="max-w-xs">
-                <p>Digital services to EU consumers use customer's VAT rate.</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div>
+          <div className="flex items-center gap-2 mb-2">
+            <Label>VAT Rate</Label>
+            <Badge variant="outline" className="text-xs">
+              Valid as of today
+            </Badge>
+          </div>
+          <RadioGroup value={vatRate} onValueChange={(v) => setVatRate(v as 'standard' | 'reduced')} className="mt-2">
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="standard" id="standard" />
+              <Label htmlFor="standard" className="font-normal cursor-pointer">
+                Standard ({currentStandardRate}%)
+              </Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="reduced" id="reduced" />
+              <Label htmlFor="reduced" className="font-normal cursor-pointer">
+                Reduced ({currentReducedRate}%) - books, food, cultural services
+              </Label>
+            </div>
+          </RadioGroup>
         </div>
-        <Select value={serviceCategory} onValueChange={(v) => setServiceCategory(v as ServiceCategory)}>
-          <SelectTrigger id="service-category" className="text-left">
-            <SelectValue className="truncate" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="digital">Digital service</SelectItem>
-            <SelectItem value="saas">SaaS</SelectItem>
-            <SelectItem value="consulting">Consulting / freelance</SelectItem>
-            <SelectItem value="physical">Physical goods</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
 
-      <div>
-        <div className="flex items-center gap-2 mb-2">
-          <Label>VAT Rate</Label>
-          <Badge variant="outline" className="text-xs">
-            Valid as of today
-          </Badge>
+        <div>
+          <div className="flex items-center gap-2 mb-2">
+            <Label htmlFor="service-category">Service/Product Category</Label>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Info className="h-4 w-4 text-muted-foreground cursor-help" />
+                </TooltipTrigger>
+                <TooltipContent className="max-w-xs">
+                  <p>Digital services to EU consumers use customer's VAT rate.</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
+          <Select value={serviceCategory} onValueChange={(v) => setServiceCategory(v as ServiceCategory)}>
+            <SelectTrigger id="service-category" className="select-trigger-safe w-full min-w-0">
+              <SelectValue className="truncate" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="digital">Digital service</SelectItem>
+              <SelectItem value="saas">SaaS</SelectItem>
+              <SelectItem value="consulting">Consulting / freelance</SelectItem>
+              <SelectItem value="physical">Physical goods</SelectItem>
+              <SelectItem value="others">Others</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
-        <RadioGroup value={vatRate} onValueChange={(v) => setVatRate(v as 'standard' | 'reduced')} className="mt-2">
-          <div className="flex items-center space-x-2">
-            <RadioGroupItem value="standard" id="standard" />
-            <Label htmlFor="standard" className="font-normal cursor-pointer">
-              Standard ({currentStandardRate}%)
-            </Label>
-          </div>
-          <div className="flex items-center space-x-2">
-            <RadioGroupItem value="reduced" id="reduced" />
-            <Label htmlFor="reduced" className="font-normal cursor-pointer">
-              Reduced ({currentReducedRate}%) - books, food, cultural services
-            </Label>
-          </div>
-        </RadioGroup>
       </div>
 
       <div>

@@ -1,10 +1,11 @@
 import { useQuery } from '@tanstack/react-query';
 import { useActor } from './useActor';
+import { type UserProfile } from '../backend';
 
 export function useGetCallerUserProfile() {
   const { actor, isFetching: actorFetching } = useActor();
 
-  const query = useQuery({
+  const query = useQuery<UserProfile | null>({
     queryKey: ['currentUserProfile'],
     queryFn: async () => {
       if (!actor) throw new Error('Actor not available');
@@ -19,4 +20,17 @@ export function useGetCallerUserProfile() {
     isLoading: actorFetching || query.isLoading,
     isFetched: !!actor && query.isFetched,
   };
+}
+
+export function useIsStripeConfigured() {
+  const { actor } = useActor();
+
+  return useQuery({
+    queryKey: ['stripeConfigured'],
+    queryFn: async () => {
+      if (!actor) return false;
+      return actor.isStripeConfigured();
+    },
+    enabled: !!actor,
+  });
 }

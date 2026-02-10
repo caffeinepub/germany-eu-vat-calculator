@@ -5,6 +5,7 @@ import CalculatorFlowPage from './pages/CalculatorFlowPage';
 import UpgradePage from './pages/UpgradePage';
 import PaymentSuccessPage from './pages/PaymentSuccessPage';
 import PaymentFailurePage from './pages/PaymentFailurePage';
+import InvoicesPage from './pages/InvoicesPage';
 import AppLayout from './components/layout/AppLayout';
 import { Toaster } from '@/components/ui/sonner';
 
@@ -22,6 +23,12 @@ const calculatorRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/calculator',
   component: CalculatorFlowPage,
+});
+
+const invoicesRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/invoices',
+  component: InvoicesPage,
 });
 
 const upgradeRoute = createRoute({
@@ -45,6 +52,7 @@ const paymentFailureRoute = createRoute({
 const routeTree = rootRoute.addChildren([
   indexRoute,
   calculatorRoute,
+  invoicesRoute,
   upgradeRoute,
   paymentSuccessRoute,
   paymentFailureRoute,

@@ -13,6 +13,26 @@ export const UserRole = IDL.Variant({
   'user' : IDL.Null,
   'guest' : IDL.Null,
 });
+export const ServiceProductCategory = IDL.Variant({
+  'consultingDevelopment' : IDL.Null,
+  'contentMediaDesign' : IDL.Null,
+  'others' : IDL.Null,
+  'hardware' : IDL.Null,
+  'hostingSupport' : IDL.Null,
+});
+export const VatCalculation = IDL.Record({
+  'vatIdNumber' : IDL.Opt(IDL.Text),
+  'toCountry' : IDL.Text,
+  'priceGrossCents' : IDL.Nat,
+  'category' : ServiceProductCategory,
+  'fromCountry' : IDL.Text,
+});
+export const CalculationResult = IDL.Record({
+  'exchangeRateAdjustment' : IDL.Float64,
+  'priceNetEuros' : IDL.Float64,
+  'priceGrossEuros' : IDL.Float64,
+  'ifReverseChargeRequired' : IDL.Bool,
+});
 export const ShoppingItem = IDL.Record({
   'productName' : IDL.Text,
   'currency' : IDL.Text,
@@ -20,7 +40,55 @@ export const ShoppingItem = IDL.Record({
   'priceInCents' : IDL.Nat,
   'productDescription' : IDL.Text,
 });
+export const PdfFile = IDL.Record({
+  'content' : IDL.Vec(IDL.Nat8),
+  'filename' : IDL.Text,
+});
+export const ZipFile = IDL.Record({
+  'content' : IDL.Vec(IDL.Nat8),
+  'filename' : IDL.Text,
+});
+export const CsvFile = IDL.Record({
+  'content' : IDL.Text,
+  'filename' : IDL.Text,
+});
+export const ExcelFile = IDL.Record({
+  'content' : IDL.Vec(IDL.Nat8),
+  'filename' : IDL.Text,
+});
 export const UserProfile = IDL.Record({ 'name' : IDL.Text });
+export const PlanType = IDL.Variant({
+  'pro' : IDL.Null,
+  'starter' : IDL.Null,
+  'free' : IDL.Null,
+  'unsubscribed' : IDL.Null,
+});
+export const PlanUsage = IDL.Record({
+  'plan' : PlanType,
+  'monthlyInvoices' : IDL.Nat,
+});
+export const Time = IDL.Int;
+export const EventRecord = IDL.Record({
+  'id' : IDL.Text,
+  'country' : IDL.Text,
+  'metadata' : IDL.Text,
+  'page' : IDL.Text,
+  'device' : IDL.Text,
+  'timestamp' : Time,
+  'event_name' : IDL.Text,
+});
+export const InvoiceRecord = IDL.Record({
+  'id' : IDL.Text,
+  'owner' : IDL.Principal,
+  'createdAt' : Time,
+  'invoiceDate' : IDL.Text,
+  'invoiceNumber' : IDL.Text,
+  'htmlSource' : IDL.Text,
+});
+export const MappedPlanUsage = IDL.Record({
+  'plan' : PlanType,
+  'invoicesThisMonth' : IDL.Nat,
+});
 export const StripeSessionStatus = IDL.Variant({
   'completed' : IDL.Record({
     'userPrincipal' : IDL.Opt(IDL.Text),
@@ -54,23 +122,44 @@ export const TransformationOutput = IDL.Record({
 export const idlService = IDL.Service({
   '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
   'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
+  'calculate' : IDL.Func([VatCalculation], [CalculationResult], []),
+  'canICallApi' : IDL.Func([], [IDL.Text], ['query']),
+  'canSaveInvoice' : IDL.Func([], [IDL.Bool], ['query']),
   'createCheckoutSession' : IDL.Func(
       [IDL.Vec(ShoppingItem), IDL.Text, IDL.Text],
       [IDL.Text],
       [],
     ),
+  'downloadInvoiceAsPdf' : IDL.Func([IDL.Text], [PdfFile], []),
+  'downloadInvoicesAsZip' : IDL.Func([IDL.Vec(IDL.Text)], [ZipFile], []),
+  'downloadMonthInvoicesAsZip' : IDL.Func([IDL.Int, IDL.Nat], [ZipFile], []),
+  'exportInvoicesAsCsv' : IDL.Func([], [CsvFile], []),
+  'exportInvoicesAsExcel' : IDL.Func([], [ExcelFile], []),
   'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
   'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
+  'getCurrentPlan' : IDL.Func([], [PlanType], ['query']),
+  'getCurrentPlanUsage' : IDL.Func([], [PlanUsage], ['query']),
+  'getEvents' : IDL.Func([], [IDL.Vec(EventRecord)], ['query']),
+  'getEventsByName' : IDL.Func([IDL.Text], [IDL.Vec(EventRecord)], ['query']),
+  'getInvoice' : IDL.Func([IDL.Text], [IDL.Opt(InvoiceRecord)], ['query']),
+  'getLastCalculation' : IDL.Func([], [IDL.Opt(VatCalculation)], ['query']),
+  'getMappedPlanUsage' : IDL.Func([], [MappedPlanUsage], ['query']),
   'getStripeSessionStatus' : IDL.Func([IDL.Text], [StripeSessionStatus], []),
+  'getUsage' : IDL.Func([IDL.Text], [IDL.Nat], ['query']),
   'getUserProfile' : IDL.Func(
       [IDL.Principal],
       [IDL.Opt(UserProfile)],
       ['query'],
     ),
+  'incrementUsage' : IDL.Func([IDL.Text], [IDL.Nat], []),
   'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
   'isStripeConfigured' : IDL.Func([], [IDL.Bool], ['query']),
+  'listInvoices' : IDL.Func([], [IDL.Vec(InvoiceRecord)], ['query']),
+  'logEvent' : IDL.Func([EventRecord], [], []),
   'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
+  'saveInvoice' : IDL.Func([IDL.Text, IDL.Text, IDL.Text, IDL.Text], [], []),
   'setStripeConfiguration' : IDL.Func([StripeConfiguration], [], []),
+  'setUserPlan' : IDL.Func([IDL.Principal, PlanType], [], []),
   'transform' : IDL.Func(
       [TransformationInput],
       [TransformationOutput],
@@ -86,6 +175,26 @@ export const idlFactory = ({ IDL }) => {
     'user' : IDL.Null,
     'guest' : IDL.Null,
   });
+  const ServiceProductCategory = IDL.Variant({
+    'consultingDevelopment' : IDL.Null,
+    'contentMediaDesign' : IDL.Null,
+    'others' : IDL.Null,
+    'hardware' : IDL.Null,
+    'hostingSupport' : IDL.Null,
+  });
+  const VatCalculation = IDL.Record({
+    'vatIdNumber' : IDL.Opt(IDL.Text),
+    'toCountry' : IDL.Text,
+    'priceGrossCents' : IDL.Nat,
+    'category' : ServiceProductCategory,
+    'fromCountry' : IDL.Text,
+  });
+  const CalculationResult = IDL.Record({
+    'exchangeRateAdjustment' : IDL.Float64,
+    'priceNetEuros' : IDL.Float64,
+    'priceGrossEuros' : IDL.Float64,
+    'ifReverseChargeRequired' : IDL.Bool,
+  });
   const ShoppingItem = IDL.Record({
     'productName' : IDL.Text,
     'currency' : IDL.Text,
@@ -93,7 +202,52 @@ export const idlFactory = ({ IDL }) => {
     'priceInCents' : IDL.Nat,
     'productDescription' : IDL.Text,
   });
+  const PdfFile = IDL.Record({
+    'content' : IDL.Vec(IDL.Nat8),
+    'filename' : IDL.Text,
+  });
+  const ZipFile = IDL.Record({
+    'content' : IDL.Vec(IDL.Nat8),
+    'filename' : IDL.Text,
+  });
+  const CsvFile = IDL.Record({ 'content' : IDL.Text, 'filename' : IDL.Text });
+  const ExcelFile = IDL.Record({
+    'content' : IDL.Vec(IDL.Nat8),
+    'filename' : IDL.Text,
+  });
   const UserProfile = IDL.Record({ 'name' : IDL.Text });
+  const PlanType = IDL.Variant({
+    'pro' : IDL.Null,
+    'starter' : IDL.Null,
+    'free' : IDL.Null,
+    'unsubscribed' : IDL.Null,
+  });
+  const PlanUsage = IDL.Record({
+    'plan' : PlanType,
+    'monthlyInvoices' : IDL.Nat,
+  });
+  const Time = IDL.Int;
+  const EventRecord = IDL.Record({
+    'id' : IDL.Text,
+    'country' : IDL.Text,
+    'metadata' : IDL.Text,
+    'page' : IDL.Text,
+    'device' : IDL.Text,
+    'timestamp' : Time,
+    'event_name' : IDL.Text,
+  });
+  const InvoiceRecord = IDL.Record({
+    'id' : IDL.Text,
+    'owner' : IDL.Principal,
+    'createdAt' : Time,
+    'invoiceDate' : IDL.Text,
+    'invoiceNumber' : IDL.Text,
+    'htmlSource' : IDL.Text,
+  });
+  const MappedPlanUsage = IDL.Record({
+    'plan' : PlanType,
+    'invoicesThisMonth' : IDL.Nat,
+  });
   const StripeSessionStatus = IDL.Variant({
     'completed' : IDL.Record({
       'userPrincipal' : IDL.Opt(IDL.Text),
@@ -124,23 +278,44 @@ export const idlFactory = ({ IDL }) => {
   return IDL.Service({
     '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
     'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
+    'calculate' : IDL.Func([VatCalculation], [CalculationResult], []),
+    'canICallApi' : IDL.Func([], [IDL.Text], ['query']),
+    'canSaveInvoice' : IDL.Func([], [IDL.Bool], ['query']),
     'createCheckoutSession' : IDL.Func(
         [IDL.Vec(ShoppingItem), IDL.Text, IDL.Text],
         [IDL.Text],
         [],
       ),
+    'downloadInvoiceAsPdf' : IDL.Func([IDL.Text], [PdfFile], []),
+    'downloadInvoicesAsZip' : IDL.Func([IDL.Vec(IDL.Text)], [ZipFile], []),
+    'downloadMonthInvoicesAsZip' : IDL.Func([IDL.Int, IDL.Nat], [ZipFile], []),
+    'exportInvoicesAsCsv' : IDL.Func([], [CsvFile], []),
+    'exportInvoicesAsExcel' : IDL.Func([], [ExcelFile], []),
     'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
     'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
+    'getCurrentPlan' : IDL.Func([], [PlanType], ['query']),
+    'getCurrentPlanUsage' : IDL.Func([], [PlanUsage], ['query']),
+    'getEvents' : IDL.Func([], [IDL.Vec(EventRecord)], ['query']),
+    'getEventsByName' : IDL.Func([IDL.Text], [IDL.Vec(EventRecord)], ['query']),
+    'getInvoice' : IDL.Func([IDL.Text], [IDL.Opt(InvoiceRecord)], ['query']),
+    'getLastCalculation' : IDL.Func([], [IDL.Opt(VatCalculation)], ['query']),
+    'getMappedPlanUsage' : IDL.Func([], [MappedPlanUsage], ['query']),
     'getStripeSessionStatus' : IDL.Func([IDL.Text], [StripeSessionStatus], []),
+    'getUsage' : IDL.Func([IDL.Text], [IDL.Nat], ['query']),
     'getUserProfile' : IDL.Func(
         [IDL.Principal],
         [IDL.Opt(UserProfile)],
         ['query'],
       ),
+    'incrementUsage' : IDL.Func([IDL.Text], [IDL.Nat], []),
     'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
     'isStripeConfigured' : IDL.Func([], [IDL.Bool], ['query']),
+    'listInvoices' : IDL.Func([], [IDL.Vec(InvoiceRecord)], ['query']),
+    'logEvent' : IDL.Func([EventRecord], [], []),
     'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
+    'saveInvoice' : IDL.Func([IDL.Text, IDL.Text, IDL.Text, IDL.Text], [], []),
     'setStripeConfiguration' : IDL.Func([StripeConfiguration], [], []),
+    'setUserPlan' : IDL.Func([IDL.Principal, PlanType], [], []),
     'transform' : IDL.Func(
         [TransformationInput],
         [TransformationOutput],

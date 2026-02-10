@@ -2,6 +2,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { CheckCircle2, XCircle, AlertCircle } from 'lucide-react';
 import { validateReverseChargeProof } from '../../lib/vat/validateReverseChargeProof';
+import { useEventLogger } from '../../hooks/useEventLogger';
+import { CORE_EVENTS } from '../../lib/analytics/coreEvents';
+import { useEffect, useRef } from 'react';
 
 interface ReverseChargeProofCheckerProps {
   vatId: string;
@@ -15,6 +18,20 @@ export default function ReverseChargeProofChecker({
   customerType,
 }: ReverseChargeProofCheckerProps) {
   const validation = validateReverseChargeProof(vatId, customerCountry, customerType);
+  const { log } = useEventLogger();
+  const hasLoggedReverseCharge = useRef(false);
+
+  useEffect(() => {
+    // Log reverse_charge_checked when validation is allowed
+    if (validation.conclusion === 'allowed' && !hasLoggedReverseCharge.current) {
+      hasLoggedReverseCharge.current = true;
+      log(CORE_EVENTS.REVERSE_CHARGE_CHECKED, JSON.stringify({
+        vatId,
+        customerCountry,
+        conclusion: validation.conclusion,
+      }));
+    }
+  }, [validation.conclusion, vatId, customerCountry, log]);
 
   return (
     <Card>
