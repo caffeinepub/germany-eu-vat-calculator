@@ -16,6 +16,9 @@ export default function AppLayout() {
   const hasLoggedAppOpened = useRef(false);
 
   useEffect(() => {
+    // Ensure document title stays consistent across route transitions
+    document.title = APP_META.displayName;
+
     // Log app_opened once per page load
     if (!hasLoggedAppOpened.current) {
       hasLoggedAppOpened.current = true;

@@ -2,6 +2,15 @@
 
 This document provides a quick verification runbook for testing the deployed production application.
 
+## Console Production Marker (CRITICAL)
+
+**Check immediately after opening the app:**
+
+1. Open the deployed frontend canister URL in a browser
+2. Open browser DevTools (F12) → Console tab
+3. **Expected:** Console shows `🚀 Germany EU VAT Calculator v5 - Production Build` immediately on page load
+4. **Note:** This marker appears before any user interaction or navigation
+
 ## Required Routes Check
 
 Test that all main routes render without errors:
@@ -33,6 +42,11 @@ Test that all main routes render without errors:
 - **URL:** `/payment-failure`
 - **Expected:** Failure message and retry options
 - **Check:** Page renders (can be tested directly via URL)
+
+### 6. Invoices Page (Authenticated Users)
+- **URL:** `/invoices`
+- **Expected:** Requires login; shows saved invoices list
+- **Check:** Page renders after authentication
 
 ## Internet Identity Authentication
 
@@ -86,10 +100,11 @@ Test that all main routes render without errors:
 - **Error Check:** If redirect fails, check console for error message
 
 #### 3. Invalid URL Protection (Automatic)
-- **Validation:** The app validates that session URLs are Stripe-hosted HTTPS URLs
+- **Validation:** The checkout hook validates that session URLs are Stripe-hosted HTTPS URLs
 - **Expected:** If backend returns invalid URL, user sees error toast (not redirect to `/undefined`)
-- **Expected:** If session URL is missing, user sees error: "Stripe session missing url"
-- **Expected:** If session URL doesn't start with `https://checkout.stripe.com/`, user sees error: "Invalid Stripe checkout URL"
+- **Expected:** If session URL is missing, user sees error toast: "Stripe session missing url"
+- **Expected:** If session URL doesn't start with `https://checkout.stripe.com/`, user sees error toast: "Invalid Stripe checkout URL"
+- **Test:** This validation happens automatically in `useCreateCheckoutSession` hook before any redirect
 
 #### 4. Stripe Not Configured (Non-Admin or Pre-Configuration)
 - Log out and log in as non-admin user (or test before admin configures Stripe)
@@ -135,7 +150,7 @@ Test that all main routes render without errors:
 
 Open browser console (F12) and check for:
 
-- ✅ **Version marker:** `🚀 Germany EU VAT Calculator v5 - Production Build`
+- ✅ **Version marker:** `🚀 Germany EU VAT Calculator v5 - Production Build` (appears immediately on page load)
 - ✅ **No errors:** No red error messages during normal navigation
 - ⚠️ **Warnings:** Minor warnings are acceptable (e.g., React DevTools, third-party extensions)
 
@@ -143,7 +158,8 @@ Open browser console (F12) and check for:
 
 ### Browser Tab Title
 - **Check:** Browser tab shows "Germany EU Vat Calculator"
-- **Test:** Navigate between routes, title should remain consistent
+- **Test:** Navigate between routes (`/`, `/calculator`, `/upgrade`, `/invoices`), title should remain consistent
+- **Note:** Title is set in `main.tsx` and reinforced in `AppLayout.tsx` on mount
 
 ### App Header
 - **Check:** Header displays "Germany EU Vat Calculator"
@@ -155,23 +171,36 @@ Open browser console (F12) and check for:
 
 ## Quick Smoke Test Checklist
 
+- [ ] Console shows production marker immediately on page load
 - [ ] Landing page loads (`/`)
 - [ ] Calculator page loads (`/calculator`)
 - [ ] Upgrade page loads (`/upgrade`)
 - [ ] Payment success page loads (`/payment-success`)
 - [ ] Payment failure page loads (`/payment-failure`)
-- [ ] Browser tab title shows "Germany EU Vat Calculator"
+- [ ] Invoices page loads for authenticated users (`/invoices`)
+- [ ] Browser tab title shows "Germany EU Vat Calculator" consistently across routes
 - [ ] Header displays app name correctly
 - [ ] Login/logout works (Internet Identity)
 - [ ] Profile setup works for new users (modal appears once)
 - [ ] Admin can configure Stripe (if not configured)
 - [ ] Checkout creates session and redirects to `https://checkout.stripe.com/` URL
+- [ ] Invalid/missing session URLs show error toast (not redirect to `/undefined`)
 - [ ] Stripe not configured: alert shows, buttons disabled
 - [ ] No Stripe secrets in page source, network logs, local storage, session storage, or console
-- [ ] Console shows Version 5 marker
 - [ ] No critical console errors
 
 ## Troubleshooting
+
+### Issue: Console marker not appearing
+- Verify you're testing the production build (not development)
+- Check that `pnpm build` completed successfully
+- Verify `frontend/dist/` contains the built files
+- Clear browser cache and hard reload (Ctrl+Shift+R)
+
+### Issue: Browser tab title incorrect or changes unexpectedly
+- Check that `main.tsx` sets `document.title` on initialization
+- Verify `AppLayout.tsx` reinforces title in `useEffect`
+- Clear browser cache and reload
 
 ### Issue: Checkout button does nothing
 - Check browser console for errors
@@ -184,6 +213,7 @@ Open browser console (F12) and check for:
 - If it does: Check console error message
 - Verify backend `createCheckoutSession` returns valid JSON with `url` field
 - Confirm URL starts with `https://checkout.stripe.com/`
+- Check `useCreateCheckoutSession` hook for validation logic
 
 ### Issue: "Actor not available" error
 - Refresh the page
@@ -205,5 +235,5 @@ Open browser console (F12) and check for:
 ---
 
 **Version:** 5  
-**Last Updated:** February 8, 2026  
+**Last Updated:** February 11, 2026  
 **Language:** English

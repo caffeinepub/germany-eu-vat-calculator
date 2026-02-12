@@ -1,6 +1,6 @@
 {
   "frontend/src/App.tsx": "Main app component with TanStack Router setup defining routes for landing, calculator, invoices, upgrade, payment-success, and payment-failure pages, wrapped in ThemeProvider and Toaster.",
-  "frontend/src/components/layout/AppLayout.tsx": "Shared layout component with header navigation, logs app_opened and country_detected events once per page load, dynamic year in footer, and UTM-tracked caffeine.ai attribution link.",
+  "frontend/src/components/layout/AppLayout.tsx": "Shared layout component with header navigation, logs app_opened and country_detected events once per page load, reinforces document.title on mount for consistency across route transitions, dynamic year in footer, and UTM-tracked caffeine.ai attribution link.",
   "frontend/src/components/auth/LoginButton.tsx": "Internet Identity login/logout button component with loading states and query cache clearing on logout.",
   "frontend/src/pages/LandingPage.tsx": "Landing page with prominent tagline badge, updated features list including audit-safe invoices and OSS indicator.",
   "frontend/src/pages/CalculatorFlowPage.tsx": "Main calculator flow orchestrator managing 6 steps with proper Step type objects, logs invoice_previewed when entering Invoice Details step, passes all required props including formData and onRecalculate to InvoiceDetailsStep, uses calculateGermanyVAT function.",
@@ -43,9 +43,9 @@
   "frontend/src/components/vat/ReverseChargeProofChecker.tsx": "Real-time reverse charge validation UI showing VAT ID format and country match checks, logs reverse_charge_checked when validation is allowed.",
   "frontend/src/components/invoice/InvoiceMandatoryFieldsChecklist.tsx": "Real-time checklist UI showing mandatory invoice fields with red/green indicators and missing field warnings.",
   "frontend/src/components/invoice/InvoiceRiskCheckPanel.tsx": "Dialog displaying deterministic invoice risk check results with critical issues, warnings, and non-legal disclaimer.",
-  "frontend/src/main.tsx": "Application entry point with React Query and Internet Identity providers, sets document.title from APP_META at runtime, includes Version 5 production build marker for deployment verification.",
-  "frontend/PRODUCTION_PUBLISH_V4.md": "Version 5 production publish checklist with enhanced sections for recording live canister URLs, browser tab title verification, and comprehensive post-deployment security checks.",
-  "frontend/PRODUCTION_SMOKE_CHECK.md": "Version 5 production smoke test runbook covering all required routes, Internet Identity authentication flows, Stripe checkout validation (configured vs not-configured states), comprehensive security checks for secrets exposure, and metadata verification.",
+  "frontend/src/main.tsx": "Application entry point with React Query and Internet Identity providers, sets document.title from APP_META at runtime, and invokes logProductionMarker() for deployment verification immediately on page load.",
+  "frontend/PRODUCTION_PUBLISH_V4.md": "Version 5 production publish checklist with enhanced sections for console production marker verification, browser tab title consistency checks across routes, Stripe URL validation, and comprehensive post-deployment security checks.",
+  "frontend/PRODUCTION_SMOKE_CHECK.md": "Version 5 production smoke test runbook covering console marker verification on page load, all required routes, Internet Identity authentication flows, Stripe checkout validation (configured vs not-configured states), comprehensive security checks for secrets exposure, and metadata verification including tab title consistency.",
   "frontend/src/hooks/useInvoiceOperations.ts": "React Query hooks for invoice operations including list, single PDF download, batch ZIP, month ZIP, CSV export, and Excel export with backend actor calls.",
   "frontend/src/utils/downloadFile.ts": "Utility function to download files from Uint8Array (binary) or string (CSV) content with provided filename and MIME type, creating a new Uint8Array instance to ensure Blob compatibility.",
   "frontend/src/pages/InvoicesPage.tsx": "Authenticated invoices area listing saved invoices with single PDF download (Starter/Pro), Pro-only batch ZIP/month ZIP/CSV/Excel exports, multi-select UI, and XML/ZUGFeRD \"Coming Soon\" section.",
@@ -57,5 +57,6 @@
   "frontend/src/hooks/useEventLogger.ts": "Hook that wraps the logger with app context (actor, cached country, daily fingerprint) and exposes a single call-site API usable from any component.",
   "frontend/src/hooks/useAnonymousUsage.ts": "Hook managing anonymous usage tracking with fingerprint-based quota (5 invoices/month), increment mutation, and remaining count calculation.",
   "frontend/src/components/usage/LimitReachedModal.tsx": "Modal dialog displaying Germany-optimized English copy when free limit is reached, with upgrade CTA routing to /upgrade and upgrade_cta_shown event logging.",
-  "frontend/src/components/vat/ExplainVatPaywallDialog.tsx": "Paywall dialog for explanation-related premium actions showing English copy with upgrade button and upgrade_cta_shown event logging."
+  "frontend/src/components/vat/ExplainVatPaywallDialog.tsx": "Paywall dialog for explanation-related premium actions showing English copy with upgrade button and upgrade_cta_shown event logging.",
+  "frontend/src/lib/production/productionMarker.ts": "Production build marker helper that logs version marker to console for deployment verification, only in production mode."
 }

@@ -29,8 +29,8 @@
 
 ### 5. Live App Checks
 - [ ] **App loads without errors:** Open the live URL and verify no console errors
-- [ ] **Version marker:** Check browser console for "🚀 Germany EU VAT Calculator v5 - Production Build"
-- [ ] **Browser tab title:** Verify tab shows "Germany EU Vat Calculator"
+- [ ] **Console production marker:** Open browser DevTools Console and verify the marker appears immediately on page load: `🚀 Germany EU VAT Calculator v5 - Production Build`
+- [ ] **Browser tab title:** Verify tab shows "Germany EU Vat Calculator" (check immediately after load and after navigating between routes)
 - [ ] **Routes accessible:** Test all main routes (see PRODUCTION_SMOKE_CHECK.md)
 - [ ] **Authentication works:** Test Internet Identity login/logout flow
 - [ ] **Stripe configuration:** Admin can configure Stripe (if not already done)
@@ -39,13 +39,14 @@
 ### 6. Metadata Verification
 - [ ] **Display name:** Confirm "Germany EU Vat Calculator" appears in UI header
 - [ ] **Deployment slug:** Verify slug is "germany-eu-vat-calculator" (check deployment output)
-- [ ] **Page title:** Check browser tab shows "Germany EU Vat Calculator"
+- [ ] **Page title consistency:** Check browser tab shows "Germany EU Vat Calculator" on initial load and after route transitions
 - [ ] **Build-time validation:** Confirm slug validation passed (no build errors)
 
 ### 7. Security Checks
 - [ ] **No Stripe secrets exposed:** Run full security checklist from PRODUCTION_SMOKE_CHECK.md
 - [ ] **Checkout URL validation:** Verify only `https://checkout.stripe.com/` URLs are accepted
-- [ ] **Error handling:** Test that invalid session URLs show error (not redirect to `/undefined`)
+- [ ] **Error handling:** Test that invalid/missing session URLs show error toast (not redirect to `/undefined`)
+- [ ] **Stripe checkout validation:** Confirm the checkout hook validates session URL before redirect and shows user-friendly error messages
 
 ## Rollback Plan
 If critical issues are discovered:
@@ -57,12 +58,13 @@ If critical issues are discovered:
 ## Success Criteria
 ✅ Production deployment completes without errors  
 ✅ Live app is reachable at recorded frontend canister URL  
-✅ Browser tab title shows "Germany EU Vat Calculator"  
+✅ Console shows Version 5 marker immediately on page load  
+✅ Browser tab title shows "Germany EU Vat Calculator" consistently across routes  
 ✅ All routes render correctly without runtime errors  
 ✅ Internet Identity login/logout works  
 ✅ Stripe checkout creates sessions and redirects to valid Stripe URLs  
+✅ Invalid/missing Stripe URLs show error toasts instead of redirecting  
 ✅ No sensitive data exposed in frontend bundle, page source, storage, or network  
-✅ Console shows Version 5 marker  
 
 ## Live URLs (Record After Deployment)
 **Backend Canister:** `https://________.icp0.io`  
@@ -73,4 +75,4 @@ If critical issues are discovered:
 ---
 
 **Version:** 5  
-**Last Updated:** February 8, 2026
+**Last Updated:** February 11, 2026

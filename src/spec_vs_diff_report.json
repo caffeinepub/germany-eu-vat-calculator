@@ -1,114 +1,59 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-10T08:18:18.374Z",
-  "summary": "Diff implements substantial frontend instrumentation (core event constants, logger hook, fingerprint + country detection, multiple UI modals/copy updates, and Stripe/payment success tracking) and adds basic backend methods for logging events and anonymous usage. However, several backend storage/upgrade/admin-analytics requirements and some frontend flow requirements are either missing or implemented with schema/semantics mismatches (e.g., client-generated timestamps/IDs, missing fingerprint in event records, missing stable persistence and aggregation endpoints).",
+  "generatedAt": "2026-02-12T08:42:16.900Z",
+  "summary": "The BuildRequest is a publish-only task with explicit constraints to avoid new product features and to follow existing production publish + smoke-check checklists. The diff shows multiple new backend capabilities (event tracking, usage limits, admin analytics) and substantial frontend behavior/content changes (new routes/pages, event logging, usage-limit UX, pricing/Stripe UI, VAT flow changes), which appear to be unrequested feature work. There is also no evidence that the publish checklist and smoke check steps were followed/recorded.",
   "missing_requirements": [
     {
-      "id": "REQ-1",
-      "requirement": "Backend events store must assign a monotonically increasing numeric id and server-side timestamp (Time.now()), accept append fields (event_name, country, page, device, metadata, optional fingerprint) rather than a full client-created record, and persist across upgrades in stable state.",
-      "reason": "Diff shows backend `logEvent(event : EventRecord)` storing a Text `id` provided by the caller, and the frontend creates both `id` and `timestamp` client-side. No stable persistence for `_events` is shown, and EventRecord lacks `fingerprint`.",
+      "requirement": "Follow the existing production publish checklist in `frontend/PRODUCTION_PUBLISH_V4.md`.",
+      "reason": "The diff summary does not show any changes or artifacts indicating the production publish checklist was executed (e.g., updates to the checklist file, release notes, or verification outputs). Only backend/main.mo, a frontend file summary text, and project_state.json were modified.",
       "evidence": [
-        "backend/main.mo",
-        "frontend/src/lib/analytics/eventLogger.ts"
+        "MODIFIED FILES list contains no `frontend/PRODUCTION_PUBLISH_V4.md` changes"
       ]
     },
     {
-      "id": "REQ-2",
-      "requirement": "Usage limits must reset monthly based on calendar month and enforce 5 invoices/month; anonymous usage state must be persisted across upgrades (stable).",
-      "reason": "Backend reset logic uses a fixed 30-day interval (`2_592_000_000_000_000`) rather than a month boundary, and stable persistence/migration for `_usageLimits` is not shown.",
+      "requirement": "Complete the verification steps in `frontend/PRODUCTION_SMOKE_CHECK.md`.",
+      "reason": "No evidence in the diff summary indicates smoke-check steps were completed or documented (no modifications to the smoke check file or related verification logs).",
       "evidence": [
-        "backend/main.mo"
-      ]
-    },
-    {
-      "id": "REQ-3",
-      "requirement": "Admin-only query endpoints to list events with optional filters (event_name, time range) and return weekly aggregated counts + specified ratios (free_limit_reached/invoice_previewed, ai_explain_clicked count, stripe_checkout_clicked/upgrade_cta_shown), denying non-admins.",
-      "reason": "Only a `getEvents()` admin check is visible; optional filters and weekly aggregation/ratio endpoints are not evidenced in the diff (file is truncated before showing them).",
-      "evidence": [
-        "backend/main.mo"
-      ]
-    },
-    {
-      "id": "REQ-4",
-      "requirement": "Conditional upgrade migration support initializing new stable fields for events and usage_limits so upgrades from prior versions do not trap and do not lose existing data.",
-      "reason": "No `stable` variables and no `preupgrade/postupgrade` migration logic for the new `_events`/`_usageLimits` stores is evidenced in the diff summary.",
-      "evidence": [
-        "backend/main.mo"
-      ]
-    },
-    {
-      "id": "REQ-5",
-      "requirement": "Frontend reusable logger must log to backend including event_name, country, page, device, metadata, and fingerprint when available; failures must not break flow.",
-      "reason": "`useEventLogger` passes fingerprint in params, but `logEvent()` builds an `EventRecord` that does not include fingerprint and sends a full record including client-generated id/timestamp. This does not match the requested backend append shape/semantics.",
-      "evidence": [
-        "frontend/src/hooks/useEventLogger.ts",
-        "frontend/src/lib/analytics/eventLogger.ts"
-      ]
-    },
-    {
-      "id": "REQ-7",
-      "requirement": "On invoice preview step, log invoice_previewed and increment anonymous invoices_count via backend usage-limits API (when fingerprint is available).",
-      "reason": "Diff shows `invoice_previewed` being logged when entering step 3 in `CalculatorFlowPage`, but there is no corresponding call to `anonymousUsage.increment()` on preview; incrementing occurs in `InvoicePreview.handleDownloadPdf` instead.",
-      "evidence": [
-        "frontend/src/pages/CalculatorFlowPage.tsx",
-        "frontend/src/components/invoice/InvoicePreview.tsx",
-        "frontend/src/hooks/useAnonymousUsage.ts"
-      ]
-    },
-    {
-      "id": "REQ-10",
-      "requirement": "When a user engages with the VAT explanation feature, the click is logged as ai_explain_clicked; if blocked by plan gating for explanation/export, showing the paywall logs upgrade_cta_shown.",
-      "reason": "Paywall dialog logs `upgrade_cta_shown` on open, but `ExplainVatPanel` does not log `ai_explain_clicked` when the user clicks the gated explanation/export action (it only opens the paywall). The only `ai_explain_clicked` log evidenced is in `VatResultsStep.handleExplainVat`.",
-      "evidence": [
-        "frontend/src/components/vat/ExplainVatPanel.tsx",
-        "frontend/src/components/vat/ExplainVatPaywallDialog.tsx",
-        "frontend/src/components/vat/VatResultsStep.tsx"
+        "MODIFIED FILES list contains no `frontend/PRODUCTION_SMOKE_CHECK.md` changes"
       ]
     }
   ],
   "hallucinated_features": [
     {
-      "description": "Frontend sends a full `EventRecord` including client-generated `id` and `timestamp` to the backend (`actor.logEvent(eventRecord)`), rather than sending only append fields and letting the backend assign id/timestamp.",
-      "reason": "Not requested; conflicts with REQ-1 semantics (server-side timestamp and monotonically increasing numeric id).",
+      "description": "Backend anonymous event tracking store and logging endpoint (`EventRecord`, `_events`, `logEvent`) plus admin-only analytics retrieval (`getEvents`).",
+      "reason": "BuildRequest explicitly says publish-only and 'Do not add new product features'. The diff introduces new event types, persistent stores, and methods.",
       "evidence": [
-        "frontend/src/lib/analytics/eventLogger.ts",
         "backend/main.mo"
       ]
     },
     {
-      "description": "Country detection via external public geolocation API `https://ipapi.co/json/`.",
-      "reason": "BuildRequest did not request using a third-party IP geolocation service specifically (it only required best-effort IP determination and graceful degradation).",
+      "description": "Backend anonymous usage tracking with 30-day reset logic and query endpoint (`UsageLimit`, `_usageLimits`, `incrementUsage`, `getUsage`).",
+      "reason": "Not requested; constitutes new product behavior (usage limiting/tracking) beyond a publish-only change.",
       "evidence": [
-        "frontend/src/lib/analytics/countryDetection.ts"
+        "backend/main.mo"
+      ]
+    },
+    {
+      "description": "Frontend routing/pages and UI changes including landing/calculator/invoices/upgrade/payment-success/payment-failure routes, and multiple new/changed components (stepper flow, VAT flow orchestration, invoice preview watermark/limit modal, upgrade/pricing modals, Stripe admin setup).",
+      "reason": "The BuildRequest has no feature requirements and explicitly forbids adding new product features; these changes represent new/expanded functionality rather than a publish-only action.",
+      "evidence": [
+        "frontend-file-summaries.txt"
+      ]
+    },
+    {
+      "description": "New/expanded client-side analytics event logging (e.g., app_opened, country_detected, invoice_previewed, vat_calculated, ai_explain_clicked, free_limit_reached, invoice_downloaded, upgrade_cta_shown, stripe_checkout_clicked, payment_success).",
+      "reason": "Not requested; adds tracking behavior (a product feature) contrary to 'publish only' constraint.",
+      "evidence": [
+        "frontend-file-summaries.txt",
+        "backend/main.mo"
       ]
     }
   ],
-  "confidence": 0.73,
+  "confidence": 0.78,
   "changed_files": [
     "backend/main.mo",
     "frontend-file-summaries.txt",
-    "frontend/src/components/invoice/InvoicePreview.tsx",
-    "frontend/src/components/layout/AppLayout.tsx",
-    "frontend/src/components/payments/StripeCheckoutButton.tsx",
-    "frontend/src/components/usage/LimitReachedModal.tsx",
-    "frontend/src/components/usage/UpgradeModal.tsx",
-    "frontend/src/components/vat/ExplainVatPanel.tsx",
-    "frontend/src/components/vat/ExplainVatPaywallDialog.tsx",
-    "frontend/src/components/vat/ReverseChargeProofChecker.tsx",
-    "frontend/src/components/vat/TransactionDetailsStep.tsx",
-    "frontend/src/components/vat/VatResultsStep.tsx",
-    "frontend/src/hooks/useAnonymousUsage.ts",
-    "frontend/src/hooks/useDailyFingerprint.ts",
-    "frontend/src/hooks/useEventLogger.ts",
-    "frontend/src/hooks/useQueries.ts",
-    "frontend/src/lib/analytics/coreEvents.ts",
-    "frontend/src/lib/analytics/countryDetection.ts",
-    "frontend/src/lib/analytics/eventLogger.ts",
-    "frontend/src/lib/analytics/fingerprint.ts",
-    "frontend/src/pages/CalculatorFlowPage.tsx",
-    "frontend/src/pages/PaymentSuccessPage.tsx",
-    "frontend/src/pages/UpgradePage.tsx",
     "project_state.json"
   ]
 }
