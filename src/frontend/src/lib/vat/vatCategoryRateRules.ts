@@ -42,7 +42,7 @@ export const VAT_CATEGORIES: VatCategory[] = [
 
 /**
  * Computes the VAT rate percent for a given country and VAT category.
- * Implements reduced rate logic for DE, FR, IT, SE, BE.
+ * Implements reduced rate logic for DE, FR, IT, SE, BE, ES.
  * For all other countries or when category is not eligible, returns standard rate.
  */
 export function computeVatRateForCategory(
@@ -66,6 +66,8 @@ export function computeVatRateForCategory(
       return computeSwedenRate(category, standardRate);
     case 'BE':
       return computeBelgiumRate(category, standardRate);
+    case 'ES':
+      return computeSpainRate(category, standardRate);
     default:
       // For all other countries, return standard rate
       return standardRate;
@@ -189,6 +191,34 @@ function computeBelgiumRate(category: VatCategory, standardRate: number): number
 
   if (rate6Categories.includes(category)) {
     return 6;
+  }
+
+  return standardRate; // 21%
+}
+
+function computeSpainRate(category: VatCategory, standardRate: number): number {
+  // Standard = 21%, Reduced = 10% / 4% (super-reduced)
+  const rate10Categories: VatCategory[] = [
+    'restaurant',
+    'accommodation',
+    'transport',
+    'cultural',
+    'utilities',
+    'construction',
+  ];
+
+  const rate4Categories: VatCategory[] = [
+    'food',
+    'books',
+    'medical',
+  ];
+
+  if (rate10Categories.includes(category)) {
+    return 10;
+  }
+
+  if (rate4Categories.includes(category)) {
+    return 4;
   }
 
   return standardRate; // 21%

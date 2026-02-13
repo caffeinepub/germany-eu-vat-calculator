@@ -1,90 +1,67 @@
 {
   "kind": "build_request",
-  "title": "Reorganize VAT calculator UI: move Service/Product Category to Invoice step, compact controls, and improve VAT Category selector",
+  "title": "Complete Spain (ES) VAT country configuration",
   "priority": "normal",
   "requirements": [
     {
       "id": "REQ-1",
-      "text": "Move the “Service/Product Category” field out of the Results flow and into the Invoice step: remove the Service/Product Category selector from the VAT calculator Transaction/Results UI and add it under the Invoice tab/step, positioned before the item description field/column.",
+      "text": "Fully configure Spain (country code \"ES\") in the EU country configuration so it is treated as a supported/ready country in the VAT calculator (correct standard VAT rate, reduced VAT rates list, reverse charge text, and configured=true).",
       "target": "frontend",
       "source": {
         "messageIds": [
           "msg-4"
         ],
         "quotes": [
-          "remove the Service Product category from the Results tab and add it under the Invoice tab before the description column."
+          "Complete the spain configuration fully"
         ]
       },
       "acceptanceCriteria": [
-        "In the VAT calculation flow, the user can no longer select or view “Service/Product Category” in the Results UI.",
-        "In the Invoice step (Invoice details), “Service/Product Category” is available as an input and appears before the item description input/column.",
-        "Existing invoice generation/preview still works and includes the selected category in the invoice line-item layout (as a column before Description, when a columnar line-item table is used)."
+        "In frontend/src/lib/vat/euCountryConfig.ts, the ES entry has a non-zero standardRate, a non-empty reducedRates array (when applicable), a non-empty reverseChargeText, and configured is set to true.",
+        "Spain no longer shows \"Configuration Pending\" messaging in the VAT country details/transaction steps and the \"Start Calculator\" action is enabled for ES."
       ]
     },
     {
       "id": "REQ-2",
-      "text": "Reduce the visual size (compact the layout) of the “Enable Reverse Charge” and “VAT Treatment” UI controls so they take less space, especially on desktop/tablet widths.",
+      "text": "Implement Spain-specific VAT category-to-rate mapping so that selecting a VAT Category in the transaction step can compute an appropriate reduced/super-reduced rate for Spain where applicable, otherwise falling back to Spain's standard rate.",
       "target": "frontend",
       "source": {
         "messageIds": [
           "msg-4"
         ],
         "quotes": [
-          "Reduce the Box size of Enable Reverse charge  and VAT Treatment columns."
+          "Complete the spain configuration fully"
         ]
       },
       "acceptanceCriteria": [
-        "The “Enable Reverse Charge” control is rendered with reduced padding/height compared to the current card layout while remaining readable and clickable.",
-        "The “VAT Treatment” control group is rendered more compactly (reduced padding/spacing), without truncating labels or rate badges.",
-        "No overlap/clipping occurs in common viewports (mobile + md/lg breakpoints)."
+        "In frontend/src/lib/vat/vatCategoryRateRules.ts, Spain (\"ES\") is handled explicitly (e.g., within computeVatRateForCategory switch) and returns Spain-appropriate reduced rates for relevant categories and the standard rate for non-eligible categories.",
+        "When the selected country is ES, the VAT Category selection influences the effective VAT rate shown/used by the calculator (i.e., reduced categories result in a reduced rate and standard/others remain at the standard rate)."
       ]
     },
     {
       "id": "REQ-3",
-      "text": "Reposition the “VAT Category” control to the right side of the “Transaction Details” section layout (i.e., right column on md+ breakpoints), while keeping a sensible stacked layout on mobile.",
+      "text": "Ensure the Spain configuration integrates cleanly with the existing transaction flow reduced-rate selection (vatTreatment=\"reduced\" and selectedReducedRate), so Spain’s reduced rates are selectable and used consistently in the calculation result.",
       "target": "frontend",
       "source": {
         "messageIds": [
           "msg-4"
         ],
         "quotes": [
-          "Move the VAT Category to the right side of transaction details."
+          "Complete the spain configuration fully"
         ]
       },
       "acceptanceCriteria": [
-        "On md+ breakpoints, the “VAT Category” selector appears in the right column of the Transaction Details inputs area.",
-        "On mobile, the Transaction Details inputs remain in a single-column stacked layout with a logical field order.",
-        "No validation or calculation behavior changes as a result of the layout move."
-      ]
-    },
-    {
-      "id": "REQ-4",
-      "text": "Update the VAT Category dropdown so that only 5 VAT Category options are visible at once, with vertical scrolling enabled to reach the remaining categories.",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-4"
-        ],
-        "quotes": [
-          "Ensure only 5 items are visible at any given time along with the option to scroll down and select the correct VAT Category."
-        ]
-      },
-      "acceptanceCriteria": [
-        "When opening the VAT Category dropdown, the options list shows a maximum of ~5 items without scrolling.",
-        "If more than 5 categories exist, the dropdown list is scrollable and all categories remain selectable.",
-        "Keyboard navigation still works within the scrollable dropdown (up/down + enter)."
+        "When ES is selected and the user chooses reduced VAT treatment, the UI offers Spain’s configured reduced rate options and uses the chosen rate as effectiveVatRate for calculations.",
+        "VAT results for ES reflect the selected reduced rate (vatRatePercent in the result matches the chosen reduced rate) and gross/vat amounts update accordingly."
       ]
     }
   ],
   "constraints": [
-    "Do not edit files under frontend/src/components/ui (compose existing UI components instead).",
-    "Do not modify immutable hook entrypoints (e.g., frontend/src/hooks/useInternetIdentity.ts / useActor.ts).",
-    "Keep all changes within the existing React + TypeScript + Tailwind + shadcn component patterns already used in the app."
+    "Do not modify any files under frontend/src/components/ui or any frontend immutablePaths listed in SYSTEM_CONTEXT.",
+    "Keep all VAT logic changes confined to the existing frontend VAT configuration/rules modules (no new backend services)."
   ],
   "nonGoals": [
-    "No changes to VAT calculation logic or VAT scenario determination.",
-    "No backend (Motoko) changes or data migrations.",
-    "No changes to Stripe, plans, or invoice storage behavior beyond displaying the moved field."
+    "Adding non-Spain country configurations beyond what is required for Spain to be fully supported.",
+    "Changing authentication, payments, or invoice persistence behavior."
   ],
   "imageRequirements": {
     "required": [],

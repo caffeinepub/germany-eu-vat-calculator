@@ -1,57 +1,42 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-13T08:47:20.637Z",
+  "generatedAt": "2026-02-13T10:37:15.558Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 4,
-    "implemented": 4,
+    "total": 3,
+    "implemented": 3,
     "items": [
       {
         "id": "REQ-1",
-        "summary": "Move the “Service/Product Category” field out of the Results flow and into the Invoice step: remove the Service/Product Category selector from the VAT calculator Transaction/Results UI and add it under the Invoice tab/step, positioned before the item description field/column.",
+        "summary": "Fully configure Spain (country code \"ES\") in the EU country configuration so it is treated as a supported/ready country in the VAT calculator (correct standard VAT rate, reduced VAT rates list, reverse charge text, and configured=true).",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/components/vat/CountryTransactionStep.tsx",
-          "frontend/src/components/vat/TransactionDetailsStep.tsx",
-          "frontend/src/components/invoice/InvoiceDetailsStep.tsx",
-          "frontend/src/lib/invoice/buildInvoiceHtml.ts"
+          "frontend/src/lib/vat/euCountryConfig.ts"
         ],
         "matchedFiles": [
-          "frontend/src/components/vat/CountryTransactionStep.tsx",
-          "frontend/src/components/vat/TransactionDetailsStep.tsx",
-          "frontend/src/components/invoice/InvoiceDetailsStep.tsx",
-          "frontend/src/lib/invoice/buildInvoiceHtml.ts"
+          "frontend/src/lib/vat/euCountryConfig.ts"
         ]
       },
       {
         "id": "REQ-2",
-        "summary": "Reduce the visual size (compact the layout) of the “Enable Reverse Charge” and “VAT Treatment” UI controls so they take less space, especially on desktop/tablet widths.",
+        "summary": "Implement Spain-specific VAT category-to-rate mapping so that selecting a VAT Category in the transaction step can compute an appropriate reduced/super-reduced rate for Spain where applicable, otherwise falling back to Spain's standard rate.",
         "status": "implemented",
         "plannedFiles": [
+          "frontend/src/lib/vat/vatCategoryRateRules.ts",
           "frontend/src/components/vat/CountryTransactionStep.tsx"
         ],
         "matchedFiles": [
+          "frontend/src/lib/vat/vatCategoryRateRules.ts",
           "frontend/src/components/vat/CountryTransactionStep.tsx"
         ]
       },
       {
         "id": "REQ-3",
-        "summary": "Reposition the “VAT Category” control to the right side of the “Transaction Details” section layout (i.e., right column on md+ breakpoints), while keeping a sensible stacked layout on mobile.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/components/vat/CountryTransactionStep.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/components/vat/CountryTransactionStep.tsx"
-        ]
-      },
-      {
-        "id": "REQ-4",
-        "summary": "Update the VAT Category dropdown so that only 5 VAT Category options are visible at once, with vertical scrolling enabled to reach the remaining categories.",
+        "summary": "Ensure the Spain configuration integrates cleanly with the existing transaction flow reduced-rate selection (vatTreatment=\"reduced\" and selectedReducedRate), so Spain’s reduced rates are selectable and used consistently in the calculation result.",
         "status": "implemented",
         "plannedFiles": [
           "frontend/src/components/vat/CountryTransactionStep.tsx"
@@ -67,10 +52,9 @@
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
-    "frontend/src/components/invoice/InvoiceDetailsStep.tsx",
     "frontend/src/components/vat/CountryTransactionStep.tsx",
-    "frontend/src/components/vat/TransactionDetailsStep.tsx",
-    "frontend/src/lib/invoice/buildInvoiceHtml.ts",
+    "frontend/src/lib/vat/euCountryConfig.ts",
+    "frontend/src/lib/vat/vatCategoryRateRules.ts",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

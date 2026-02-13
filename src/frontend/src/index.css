@@ -69,13 +69,19 @@
   }
 }
 
-/* Safe dropdown styling to prevent overlap and ensure scrollability */
+/* Safe dropdown styling to prevent overlap and ensure proper layering */
 @layer components {
   .dropdown-safe {
-    @apply z-[100] max-h-[300px] overflow-y-auto;
+    @apply z-[200] max-h-[240px] overflow-y-auto;
   }
 
   .select-trigger-safe {
-    @apply relative z-10;
+    @apply relative z-[50];
+  }
+
+  /* Transaction VAT Category wrapper with extra bottom spacing to prevent dropdown overlap */
+  .transaction-vat-category-wrapper {
+    @apply pb-2 md:pb-0;
+    min-height: 80px;
   }
 }

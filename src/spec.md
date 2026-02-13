@@ -1,12 +1,11 @@
 # Specification
 
 ## Summary
-**Goal:** Reorganize the VAT calculator UI to improve the transaction/invoice flow and make key controls more compact and usable.
+**Goal:** Make Spain (ES) a fully supported/ready country in the VAT calculator with correct VAT rates and category-based rate selection.
 
 **Planned changes:**
-- Move the “Service/Product Category” field from the Transaction/Results UI into the Invoice step, placing it before the item Description field/column, and ensure invoice preview/layout includes it as a column before Description where applicable.
-- Compact the “Enable Reverse Charge” and “VAT Treatment” controls by reducing spacing/padding while keeping readability and avoiding clipping across common breakpoints.
-- Reposition the “VAT Category” selector to the right column of the Transaction Details section on md+ breakpoints, keeping a sensible stacked order on mobile.
-- Update the “VAT Category” dropdown menu so only ~5 options are visible at once, with vertical scrolling to access remaining categories while preserving keyboard navigation.
+- Complete the Spain (ES) entry in `frontend/src/lib/vat/euCountryConfig.ts` with a valid standard VAT rate, applicable reduced rates list, reverse charge text, and `configured=true`.
+- Add explicit Spain (ES) handling in `frontend/src/lib/vat/vatCategoryRateRules.ts` so VAT Category selection yields Spain-appropriate reduced/super-reduced rates when applicable, otherwise uses Spain’s standard rate.
+- Ensure Spain’s reduced rates integrate with the existing reduced treatment flow so users can select Spain reduced rates and calculations consistently use the selected reduced rate.
 
-**User-visible outcome:** Users select Service/Product Category during the Invoice step (not in Results), see a cleaner/compact Transaction Details area with VAT Category on the right on larger screens, and can scroll a constrained VAT Category dropdown list that shows about five options at a time.
+**User-visible outcome:** Spain no longer shows “Configuration Pending”; users can start the calculator for ES, select VAT Categories that affect the effective VAT rate, and choose Spain reduced rates that correctly update VAT and gross/net results.

@@ -26,7 +26,7 @@
   "frontend/src/lib/invoice/buildInvoiceHtml.ts": "Invoice HTML generator with Service/Product Category column added before Description in line-item table, preserved line breaks for legal VAT text rendering, country-specific VAT labels, and bilingual legal notes formatted for readability.",
   "frontend/src/lib/vat/promptFlowGermany.ts": "Developer-facing constants containing VAT engine system prompt and 7-screen flow prompts for Germany, not shown to end users.",
   "frontend/src/lib/vat/index.ts": "Barrel export for VAT-related modules (calculation, explanation, prompt flow).",
-  "frontend/src/index.css": "Global styles with OKLCH color system and new dropdown-safe utility classes to ensure Select dropdowns layer correctly (z-index 100) with max-height and scrollability to prevent overlap issues.",
+  "frontend/src/index.css": "Global styles with OKLCH color system, enhanced dropdown-safe utility classes with z-index layering, and new transaction-vat-category-wrapper class providing minimum height and spacing to prevent VAT Category dropdown from overlapping content below.",
   "frontend/src/config/appMeta.ts": "Centralized application metadata with display name \"Germany EU Vat Calculator\", deployment slug \"germany-eu-vat-calculator\", and build-time slug validation helper enforcing platform constraints.",
   "frontend/index.html": "HTML entry point with updated title tag using the clean app name without special characters.",
   "frontend/DEPLOYMENT_SLUG.md": "Deployment configuration documentation explaining app display name, deployment slug validation, platform constraints, and metadata consistency across browser title, HTML, UI, and console markers.",
@@ -59,12 +59,12 @@
   "frontend/src/components/usage/LimitReachedModal.tsx": "Modal dialog displaying Germany-optimized English copy when free limit is reached, with upgrade CTA routing to /upgrade and upgrade_cta_shown event logging.",
   "frontend/src/components/vat/ExplainVatPaywallDialog.tsx": "Paywall dialog for explanation-related premium actions showing English copy with upgrade button and upgrade_cta_shown event logging.",
   "frontend/src/lib/production/productionMarker.ts": "Production build marker helper that logs version marker to console for deployment verification, only in production mode.",
-  "frontend/src/lib/vat/euCountryConfig.ts": "EU country configuration mapping with standard/reduced VAT rates, invoice labels, and reverse charge text for 10 countries (9 configured, Spain pending).",
+  "frontend/src/lib/vat/euCountryConfig.ts": "EU country configuration mapping with standard/reduced VAT rates, invoice labels, and reverse charge text for all 10 countries including fully configured Spain (ES) with 21% standard rate, 10% and 4% reduced rates, and Spanish reverse charge text.",
   "frontend/src/components/vat/EuVatIntroStep.tsx": "Initial country selection step showing all 10 EU countries with flags, standard rates, and configuration status.",
   "frontend/src/components/vat/CountryVatDetailsStep.tsx": "Country-specific VAT summary screen displaying rates, features checklist, and blocking progression for unconfigured countries (Spain).",
   "frontend/src/components/vat/GlobalDisclaimer.tsx": "Reusable disclaimer component displaying the exact user-provided legal disclaimer text for all countries.",
   "frontend/src/hooks/usePreferredLanguage.ts": "Hook that detects browser's preferred language and exposes normalized language code for UI defaults.",
   "frontend/tailwind.config.js": "Tailwind configuration with OKLCH color tokens for neutral minimalist palette with green accent.",
-  "frontend/src/components/vat/CountryTransactionStep.tsx": "Combined transaction step with VAT treatment selection, compact Reverse Charge and VAT Treatment controls, responsive grid layout placing VAT Category in right column on md+ breakpoints, and VAT Category dropdown limited to 5 visible items with scrolling.",
-  "frontend/src/lib/vat/vatCategoryRateRules.ts": "New module defining VAT category types, labels, and country-specific reduced rate computation logic for DE/FR/IT/SE/BE with automatic fallback to standard rates for ineligible categories or other countries."
+  "frontend/src/components/vat/CountryTransactionStep.tsx": "Combined transaction step with VAT Category positioned at top-right of Transaction Details section, responsive layout with proper spacing, automatic VAT rate computation from category selection for Spain and other configured countries, all transaction form fields stacked below, and ReverseChargeProofChecker now receives all required props including customerType.",
+  "frontend/src/lib/vat/vatCategoryRateRules.ts": "VAT category types, labels, and country-specific reduced rate computation logic for DE/FR/IT/SE/BE/ES with automatic fallback to standard rates for ineligible categories or other countries, including Spain's 10% and 4% reduced rate mappings."
 }

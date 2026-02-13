@@ -1,62 +1,43 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-13T08:47:20.634Z",
-  "summary": "REQ-1 appears partially implemented (serviceCategory added to InvoiceDetailsStep state and invoice HTML now derives a category label), but the diff summary does not provide enough evidence that the Service/Product Category selector was removed from the Results UI, that it was added to the Invoice step UI positioned before Description, or that the invoice preview line-item layout renders it as a column before Description. REQ-2/REQ-3/REQ-4 are not verifiably implemented from the provided truncated diffs.",
+  "generatedAt": "2026-02-13T10:37:15.555Z",
+  "summary": "Spain (ES) was added to the EU country config with standard/reduced rates and reverse-charge text, and VAT category rate computation now explicitly handles ES. However, due to truncation and lack of diffs for the broader flow/results files, it’s not fully evidenced that ES no longer shows “Configuration Pending”/enables “Start Calculator”, nor that selected reduced rates are carried through consistently into calculation results.",
   "missing_requirements": [
     {
       "id": "REQ-1",
-      "requirement": "Remove the Service/Product Category selector from the VAT calculator Results UI, and add it under the Invoice step positioned before the item description field/column; invoice preview/layout should include it as a column before Description when using a columnar table.",
-      "reason": "InvoiceDetailsStep shows serviceCategory in the data model/state, and buildInvoiceHtml computes a categoryLabel, but the truncated diff does not show the Invoice step UI rendering the selector (nor its position relative to Description), does not show removal from the Results UI, and does not show a columnar line-item layout including Category before Description.",
+      "requirement": "Spain no longer shows \"Configuration Pending\" messaging in the VAT country details/transaction steps and the \"Start Calculator\" action is enabled for ES.",
+      "reason": "While ES is marked configured=true in the country config, the diff summary does not show any UI logic or gating logic changes that remove \"Configuration Pending\" messaging or enable the CTA based on ES readiness. The only UI diff shown is CountryTransactionStep.tsx and it is truncated before any such messaging/CTA logic could be verified.",
       "evidence": [
-        "frontend/src/components/invoice/InvoiceDetailsStep.tsx (truncated: shows serviceCategory in InvoiceDetails/state but not the rendered form layout)",
-        "frontend/src/lib/invoice/buildInvoiceHtml.ts (truncated: computes categoryLabel but truncated before the items table markup)",
-        "frontend-file-summaries.txt (VatResultsStep summary does not mention service category removal; cannot confirm change)"
+        "frontend/src/lib/vat/euCountryConfig.ts",
+        "frontend/src/components/vat/CountryTransactionStep.tsx (truncated)"
       ]
     },
     {
       "id": "REQ-2",
-      "requirement": "Reduce the visual size (compact the layout) of the “Enable Reverse Charge” and “VAT Treatment” UI controls.",
-      "reason": "The modified VAT step files are truncated before the relevant JSX/layout for these controls, and no explicit evidence (e.g., className changes, removal of Card wrappers, spacing adjustments) is shown to confirm compaction.",
+      "requirement": "Spain-specific VAT category-to-rate mapping returns Spain-appropriate reduced rates for relevant categories and standard rate for non-eligible categories.",
+      "reason": "The diff shows ES is routed to computeSpainRate(...), but the actual implementation of computeSpainRate is not visible in the provided truncated excerpt, so the specific Spain category mapping and rates cannot be verified from the diff summary alone.",
       "evidence": [
-        "frontend/src/components/vat/CountryTransactionStep.tsx (truncated)",
-        "frontend/src/components/vat/TransactionDetailsStep.tsx (truncated)"
+        "frontend/src/lib/vat/vatCategoryRateRules.ts (truncated)"
       ]
     },
     {
       "id": "REQ-3",
-      "requirement": "Reposition the “VAT Category” control to the right side of the Transaction Details section on md+ breakpoints, with sensible stacked mobile layout.",
-      "reason": "CountryTransactionStep contains vatCategory state and imports VAT_CATEGORIES, but the truncated diff does not show the layout/grid placement of the VAT Category selector to verify it is on the right column at md+ and stacked on mobile.",
+      "requirement": "When ES is selected and the user chooses reduced VAT treatment, the UI offers Spain’s reduced rate options and uses the chosen rate as effectiveVatRate for calculations; results reflect the selected reduced rate.",
+      "reason": "CountryTransactionStep.tsx introduces reducedRates reading from the country config and auto-select logic, but the key logic that sets/exports an effectiveVatRate and ensures downstream calculation/results use selectedReducedRate is truncated. Also, no concrete diff is shown for the calculator orchestration/results components to confirm the effective rate is used end-to-end.",
       "evidence": [
         "frontend/src/components/vat/CountryTransactionStep.tsx (truncated)",
-        "frontend/src/components/vat/TransactionDetailsStep.tsx (truncated: no VAT Category shown in visible portion)"
-      ]
-    },
-    {
-      "id": "REQ-4",
-      "requirement": "Update the VAT Category dropdown so only ~5 options are visible at once with vertical scrolling; keyboard navigation must still work.",
-      "reason": "No visible evidence of SelectContent max-height/overflow-y styling or other dropdown list constraints is present in the truncated diffs, so the 5-item visible limit and scroll behavior cannot be confirmed.",
-      "evidence": [
-        "frontend/src/components/vat/CountryTransactionStep.tsx (truncated: imports Select components but does not show SelectContent styling/props)"
+        "frontend/src/lib/vat/euCountryConfig.ts"
       ]
     }
   ],
-  "hallucinated_features": [
-    {
-      "description": "Calculator flow orchestrator updated to use an `effectiveVatRate` from transaction step data and to preserve VAT treatment selections through the flow.",
-      "reason": "Not requested by any requirement (and the BuildRequest explicitly states no changes to VAT calculation logic or scenario determination). Even if intended as a refactor, it is outside the stated UI reorganization/compactness/dropdown requirements.",
-      "evidence": [
-        "frontend-file-summaries.txt (\"frontend/src/pages/CalculatorFlowPage.tsx\": \"updated to use effectiveVatRate... preserving VAT treatment selections through the flow\")"
-      ]
-    }
-  ],
-  "confidence": 0.46,
+  "hallucinated_features": [],
+  "confidence": 0.58,
   "changed_files": [
     "frontend-file-summaries.txt",
-    "frontend/src/components/invoice/InvoiceDetailsStep.tsx",
     "frontend/src/components/vat/CountryTransactionStep.tsx",
-    "frontend/src/components/vat/TransactionDetailsStep.tsx",
-    "frontend/src/lib/invoice/buildInvoiceHtml.ts",
+    "frontend/src/lib/vat/euCountryConfig.ts",
+    "frontend/src/lib/vat/vatCategoryRateRules.ts",
     "project_state.json"
   ]
 }

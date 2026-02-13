@@ -104,11 +104,11 @@ export const EU_COUNTRIES: Record<string, EUCountryConfig> = {
     code: 'ES',
     name: 'Spain',
     flag: '🇪🇸',
-    standardRate: 0,
-    reducedRates: [],
+    standardRate: 21,
+    reducedRates: [10, 4],
     invoiceLabel: 'IVA',
-    reverseChargeText: '',
-    configured: false,
+    reverseChargeText: 'Inversión del sujeto pasivo',
+    configured: true,
   },
 };
 
