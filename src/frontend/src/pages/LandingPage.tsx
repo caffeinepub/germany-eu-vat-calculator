@@ -8,12 +8,12 @@ export default function LandingPage() {
   const navigate = useNavigate();
 
   const features = [
-    { icon: Calculator, text: 'German VAT (19% / 7%)' },
+    { icon: Calculator, text: 'Multi-country EU VAT rates' },
     { icon: FileText, text: 'Reverse charge checker' },
-    { icon: Zap, text: 'Kleinunternehmer exemption' },
+    { icon: Zap, text: 'Country-specific rules' },
     { icon: Brain, text: 'AI VAT explanation' },
     { icon: Shield, text: 'Audit-safe invoices' },
-    { icon: Globe, text: 'OSS readiness indicator' },
+    { icon: Globe, text: 'EU compliant formatting' },
   ];
 
   return (
@@ -21,13 +21,13 @@ export default function LandingPage() {
       <div className="max-w-4xl mx-auto">
         <div className="text-center mb-16">
           <Badge variant="outline" className="mb-4">
-            Built specifically for German VAT rules — not a generic EU calculator.
+            Supporting 10 EU countries with country-specific VAT rules
           </Badge>
           <h1 className="text-5xl md:text-6xl font-bold mb-6 text-foreground leading-tight">
-            Free German VAT Calculator & Invoice Generator
+            Free EU VAT Calculator & Invoice Generator
           </h1>
           <p className="text-xl md:text-2xl text-muted-foreground mb-8 max-w-2xl mx-auto">
-            Calculate VAT correctly for Germany. Generate compliant invoices. No signup required.
+            Calculate VAT correctly for multiple EU countries. Generate compliant invoices. No signup required.
           </p>
           <Button
             size="lg"
@@ -52,25 +52,15 @@ export default function LandingPage() {
           </CardContent>
         </Card>
 
-        <div className="grid md:grid-cols-3 gap-6">
-          <Card>
-            <CardContent className="pt-6 text-center">
-              <div className="text-4xl font-bold text-primary mb-2">19%</div>
-              <p className="text-muted-foreground">Standard VAT Rate</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-6 text-center">
-              <div className="text-4xl font-bold text-primary mb-2">7%</div>
-              <p className="text-muted-foreground">Reduced VAT Rate</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-6 text-center">
-              <div className="text-4xl font-bold text-primary mb-2">0%</div>
-              <p className="text-muted-foreground">Reverse Charge</p>
-            </CardContent>
-          </Card>
+        <div className="text-center mb-8">
+          <h3 className="text-xl font-semibold mb-4">Supported Countries</h3>
+          <div className="flex flex-wrap justify-center gap-3">
+            {['🇩🇪 Germany', '🇫🇷 France', '🇪🇸 Spain', '🇳🇱 Netherlands', '🇵🇱 Poland', '🇸🇪 Sweden', '🇮🇹 Italy', '🇧🇪 Belgium', '🇦🇹 Austria', '🇭🇺 Hungary'].map((country) => (
+              <Badge key={country} variant="outline" className="text-sm">
+                {country}
+              </Badge>
+            ))}
+          </div>
         </div>
       </div>
     </div>

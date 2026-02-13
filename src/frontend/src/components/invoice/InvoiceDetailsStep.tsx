@@ -14,6 +14,7 @@ import { checkHistoricalRateDifference } from '../../lib/vat/germanyVatRateHisto
 import { calculateGermanyVAT } from '../../lib/vat/calculateVat';
 import InvoiceMandatoryFieldsChecklist from './InvoiceMandatoryFieldsChecklist';
 import { usePlanAccess } from '../../hooks/usePlanAccess';
+import { usePreferredLanguage } from '../../hooks/usePreferredLanguage';
 import { toast } from 'sonner';
 
 export interface InvoiceDetails {
@@ -48,6 +49,7 @@ export default function InvoiceDetailsStep({
   onRecalculate,
 }: InvoiceDetailsStepProps) {
   const { isPaid } = usePlanAccess();
+  const { isEnglish } = usePreferredLanguage();
   const today = new Date().toISOString().split('T')[0];
   
   const [invoiceData, setInvoiceData] = useState<InvoiceDetails>({
@@ -57,7 +59,7 @@ export default function InvoiceDetailsStep({
     customerName: initialData?.customerName || formData.customerName || '',
     customerAddress: initialData?.customerAddress || formData.customerAddress || '',
     itemDescription: initialData?.itemDescription || formData.itemDescription || '',
-    translateToEnglish: initialData?.translateToEnglish || formData.translateToEnglish || false,
+    translateToEnglish: initialData?.translateToEnglish ?? formData.translateToEnglish ?? isEnglish,
     invoiceNumber: initialData?.invoiceNumber || formData.invoiceNumber || '',
     invoiceDate: initialData?.invoiceDate || formData.invoiceDate || today,
     taxPointDate: initialData?.taxPointDate || formData.taxPointDate || today,
@@ -130,7 +132,7 @@ export default function InvoiceDetailsStep({
             Translation Mode
           </CardTitle>
           <CardDescription>
-            Enable to input invoice details in German and display them in English on the final invoice
+            Automatically translate invoice details from your input language to English for the final invoice
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -142,8 +144,8 @@ export default function InvoiceDetailsStep({
             />
             <Label htmlFor="translate-mode" className="cursor-pointer">
               {invoiceData.translateToEnglish 
-                ? 'German input → English output' 
-                : 'Standard mode (English)'}
+                ? 'Translation enabled' 
+                : 'Translation disabled'}
             </Label>
           </div>
         </CardContent>
@@ -212,118 +214,102 @@ export default function InvoiceDetailsStep({
               disabled={!isPaid}
             >
               {!isPaid && <Lock className="h-3 w-3 mr-2" />}
-              Recalculate with historical rate {!isPaid && '(Paid)'}
+              Recalculate with historical rate
             </Button>
           </AlertDescription>
         </Alert>
       )}
 
-      <div className="space-y-4">
-        <div className="space-y-2">
-          <Label htmlFor="seller-name">
-            Seller Name {invoiceData.translateToEnglish && '(German)'}
-          </Label>
-          <Input
-            id="seller-name"
-            value={invoiceData.sellerName}
-            onChange={(e) => updateField('sellerName', e.target.value)}
-            placeholder={invoiceData.translateToEnglish ? 'z.B. Mustermann GmbH' : 'e.g. Your Company Name'}
-            required
-          />
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="seller-address">
-            Seller Address {invoiceData.translateToEnglish && '(German)'}
-          </Label>
-          <Textarea
-            id="seller-address"
-            value={invoiceData.sellerAddress}
-            onChange={(e) => updateField('sellerAddress', e.target.value)}
-            placeholder={invoiceData.translateToEnglish 
-              ? 'z.B. Musterstraße 123\n12345 Berlin\nDeutschland' 
-              : 'e.g. 123 Main Street\nBerlin 12345\nGermany'}
-            rows={3}
-            required
-          />
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="customer-name">
-            Customer Name {invoiceData.translateToEnglish && '(German)'}
-          </Label>
-          <Input
-            id="customer-name"
-            value={invoiceData.customerName}
-            onChange={(e) => updateField('customerName', e.target.value)}
-            placeholder={invoiceData.translateToEnglish ? 'z.B. Kunde GmbH' : 'e.g. Customer Company'}
-            required
-          />
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="customer-address">
-            Customer Address {invoiceData.translateToEnglish && '(German)'}
-          </Label>
-          <Textarea
-            id="customer-address"
-            value={invoiceData.customerAddress}
-            onChange={(e) => updateField('customerAddress', e.target.value)}
-            placeholder={invoiceData.translateToEnglish 
-              ? 'z.B. Kundenstraße 456\n54321 München\nDeutschland' 
-              : 'e.g. 456 Customer Street\nMunich 54321\nGermany'}
-            rows={3}
-            required
-          />
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="item-description">
-            Item/Service Description {invoiceData.translateToEnglish && '(German)'}
-          </Label>
-          <Textarea
-            id="item-description"
-            value={invoiceData.itemDescription}
-            onChange={(e) => updateField('itemDescription', e.target.value)}
-            placeholder={invoiceData.translateToEnglish 
-              ? 'z.B. Software Entwicklung und Beratung' 
-              : 'e.g. Software Development and Consulting'}
-            rows={2}
-            required
-          />
-        </div>
-
-        {displayLegalText && (
-          <div className="space-y-2">
-            <Label htmlFor="legal-vat-text">
-              Legal VAT Text
-              {!isPaid && <span className="text-xs text-muted-foreground ml-2">(Read-only - Upgrade to edit)</span>}
-            </Label>
-            <Textarea
-              id="legal-vat-text"
-              value={displayLegalText}
-              onChange={(e) => isPaid && updateField('legalVatTextOverride', e.target.value)}
-              onClick={handleLegalTextEdit}
-              readOnly={!isPaid}
-              className={!isPaid ? 'cursor-not-allowed bg-muted' : ''}
-              rows={3}
-            />
-            {!isPaid && (
-              <p className="text-xs text-muted-foreground flex items-center gap-1">
-                <Lock className="h-3 w-3" />
-                Upgrade to Starter or Pro to customize legal VAT text
-              </p>
-            )}
-          </div>
-        )}
+      <div className="space-y-2">
+        <Label htmlFor="seller-name">Seller Name *</Label>
+        <Input
+          id="seller-name"
+          value={invoiceData.sellerName}
+          onChange={(e) => updateField('sellerName', e.target.value)}
+          placeholder="Your Company Name"
+          required
+        />
       </div>
 
-      <div className="flex gap-3 pt-4 border-t">
+      <div className="space-y-2">
+        <Label htmlFor="seller-address">Seller Address *</Label>
+        <Textarea
+          id="seller-address"
+          value={invoiceData.sellerAddress}
+          onChange={(e) => updateField('sellerAddress', e.target.value)}
+          placeholder="Street, City, Postal Code, Country"
+          rows={3}
+          required
+        />
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="customer-name">Customer Name *</Label>
+        <Input
+          id="customer-name"
+          value={invoiceData.customerName}
+          onChange={(e) => updateField('customerName', e.target.value)}
+          placeholder="Customer Company Name"
+          required
+        />
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="customer-address">Customer Address *</Label>
+        <Textarea
+          id="customer-address"
+          value={invoiceData.customerAddress}
+          onChange={(e) => updateField('customerAddress', e.target.value)}
+          placeholder="Street, City, Postal Code, Country"
+          rows={3}
+          required
+        />
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="item-description">Item Description *</Label>
+        <Textarea
+          id="item-description"
+          value={invoiceData.itemDescription}
+          onChange={(e) => updateField('itemDescription', e.target.value)}
+          placeholder="Description of service or product"
+          rows={2}
+          required
+        />
+      </div>
+
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <Label htmlFor="legal-vat-text">Legal VAT Text</Label>
+          {!isPaid && <Lock className="h-4 w-4 text-muted-foreground" />}
+        </div>
+        <Textarea
+          id="legal-vat-text"
+          value={displayLegalText}
+          onChange={(e) => {
+            if (isPaid) {
+              updateField('legalVatTextOverride', e.target.value);
+            }
+          }}
+          onFocus={handleLegalTextEdit}
+          placeholder="Auto-generated legal text"
+          rows={3}
+          disabled={!isPaid}
+          className={!isPaid ? 'opacity-60 cursor-not-allowed' : ''}
+        />
+        <p className="text-xs text-muted-foreground">
+          {isPaid 
+            ? 'Edit to customize the legal VAT text on your invoice' 
+            : 'Upgrade to Pro to customize legal VAT text'}
+        </p>
+      </div>
+
+      <div className="flex gap-3">
         <Button type="button" variant="outline" onClick={onBack} className="flex-1">
           <ArrowLeft className="h-4 w-4 mr-2" />
           Back
         </Button>
-        <Button type="submit" className="flex-1">
+        <Button type="submit" disabled={!validation.allPassed} className="flex-1">
           <FileText className="h-4 w-4 mr-2" />
           Preview Invoice
         </Button>

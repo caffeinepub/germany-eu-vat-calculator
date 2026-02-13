@@ -4,11 +4,12 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Badge } from '@/components/ui/badge';
 import { Info } from 'lucide-react';
 import { type VATCalculationInput, type ServiceCategory } from '../../lib/vat/calculateVat';
-import { getCurrentVatRate } from '../../lib/vat/germanyVatRateHistory';
+import { getCountryConfig } from '../../lib/vat/euCountryConfig';
 import ReverseChargeProofChecker from './ReverseChargeProofChecker';
 import { useEventLogger } from '../../hooks/useEventLogger';
 import { CORE_EVENTS } from '../../lib/analytics/coreEvents';
@@ -25,20 +26,20 @@ export default function TransactionDetailsStep({ initialData, onNext, onBack }: 
   const [serviceCategory, setServiceCategory] = useState<ServiceCategory>(initialData.serviceCategory || 'digital');
   const [netAmount, setNetAmount] = useState(initialData.netAmount.toString());
   const [vatRate, setVatRate] = useState<'standard' | 'reduced'>(initialData.vatRate);
-  const [previousYearTurnover, setPreviousYearTurnover] = useState(initialData.previousYearTurnover.toString());
-  const [currentYearTurnover, setCurrentYearTurnover] = useState(initialData.currentYearTurnover.toString());
+  const [reverseCharge, setReverseCharge] = useState(initialData.reverseCharge || false);
   const { log } = useEventLogger();
 
-  const currentStandardRate = getCurrentVatRate('standard');
-  const currentReducedRate = getCurrentVatRate('reduced');
+  const country = getCountryConfig(initialData.selectedCountry || 'DE');
+  const standardRate = country?.standardRate || 19;
+  const reducedRates = country?.reducedRates || [7];
 
   const handleNext = () => {
-    // Log VAT calculation event
     log(CORE_EVENTS.VAT_CALCULATED, JSON.stringify({
       customerType,
       serviceCategory,
       netAmount: parseFloat(netAmount) || 0,
       vatRate,
+      reverseCharge,
     }));
 
     onNext({
@@ -47,8 +48,7 @@ export default function TransactionDetailsStep({ initialData, onNext, onBack }: 
       serviceCategory,
       netAmount: parseFloat(netAmount) || 0,
       vatRate,
-      previousYearTurnover: parseFloat(previousYearTurnover) || 0,
-      currentYearTurnover: parseFloat(currentYearTurnover) || 0,
+      reverseCharge,
     });
   };
 
@@ -83,7 +83,7 @@ export default function TransactionDetailsStep({ initialData, onNext, onBack }: 
             className="mt-2"
           />
           <p className="text-xs text-muted-foreground mt-1">
-            Valid EU VAT ID enables reverse charge (0% VAT)
+            Valid EU VAT ID enables reverse charge validation
           </p>
         </div>
       )}
@@ -100,23 +100,22 @@ export default function TransactionDetailsStep({ initialData, onNext, onBack }: 
         <div>
           <div className="flex items-center gap-2 mb-2">
             <Label>VAT Rate</Label>
-            <Badge variant="outline" className="text-xs">
-              Valid as of today
-            </Badge>
           </div>
           <RadioGroup value={vatRate} onValueChange={(v) => setVatRate(v as 'standard' | 'reduced')} className="mt-2">
             <div className="flex items-center space-x-2">
               <RadioGroupItem value="standard" id="standard" />
               <Label htmlFor="standard" className="font-normal cursor-pointer">
-                Standard ({currentStandardRate}%)
+                Standard ({standardRate}%)
               </Label>
             </div>
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="reduced" id="reduced" />
-              <Label htmlFor="reduced" className="font-normal cursor-pointer">
-                Reduced ({currentReducedRate}%) - books, food, cultural services
-              </Label>
-            </div>
+            {reducedRates.length > 0 && (
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="reduced" id="reduced" />
+                <Label htmlFor="reduced" className="font-normal cursor-pointer">
+                  Reduced ({reducedRates.join(' / ')}%)
+                </Label>
+              </div>
+            )}
           </RadioGroup>
         </div>
 
@@ -129,7 +128,7 @@ export default function TransactionDetailsStep({ initialData, onNext, onBack }: 
                   <Info className="h-4 w-4 text-muted-foreground cursor-help" />
                 </TooltipTrigger>
                 <TooltipContent className="max-w-xs">
-                  <p>Digital services to EU consumers use customer's VAT rate.</p>
+                  <p>Select the category that best describes your service or product.</p>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
@@ -162,36 +161,21 @@ export default function TransactionDetailsStep({ initialData, onNext, onBack }: 
         />
       </div>
 
-      <div className="border-t pt-4">
-        <h3 className="font-medium mb-3">Kleinunternehmer Check (§19 UStG)</h3>
-        <div className="space-y-3">
+      <div className="border rounded-lg p-4 bg-muted/30">
+        <div className="flex items-center justify-between">
           <div>
-            <Label htmlFor="prev-turnover">Previous Year Turnover (€)</Label>
-            <Input
-              id="prev-turnover"
-              type="number"
-              step="0.01"
-              value={previousYearTurnover}
-              onChange={(e) => setPreviousYearTurnover(e.target.value)}
-              placeholder="0.00"
-              className="mt-2"
-            />
+            <Label htmlFor="reverse-charge" className="text-base font-medium">
+              Reverse Charge
+            </Label>
+            <p className="text-xs text-muted-foreground mt-1">
+              Enable if reverse charge applies (VAT = 0%)
+            </p>
           </div>
-          <div>
-            <Label htmlFor="curr-turnover">Current Year Expected Turnover (€)</Label>
-            <Input
-              id="curr-turnover"
-              type="number"
-              step="0.01"
-              value={currentYearTurnover}
-              onChange={(e) => setCurrentYearTurnover(e.target.value)}
-              placeholder="0.00"
-              className="mt-2"
-            />
-          </div>
-          <p className="text-xs text-muted-foreground">
-            If previous year &lt; €22,000 AND current year &lt; €50,000, you may qualify for VAT exemption
-          </p>
+          <Switch
+            id="reverse-charge"
+            checked={reverseCharge}
+            onCheckedChange={setReverseCharge}
+          />
         </div>
       </div>
 

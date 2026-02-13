@@ -1,19 +1,20 @@
 import { type VATCalculationInput, type VATCalculationResult } from '../vat/calculateVat';
 import { translateGermanToEnglish } from '../translation/deToEn';
 import { getAutoLegalVatText } from './getAutoLegalVatText';
+import { getCountryConfig } from '../vat/euCountryConfig';
 
 export function buildInvoiceHtml(input: VATCalculationInput, result: VATCalculationResult): string {
   const formatCurrency = (cents: number) => {
-    return new Intl.NumberFormat('de-DE', {
+    return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: 'EUR',
     }).format(cents / 100);
   };
 
-  const today = new Date().toLocaleDateString('de-DE');
+  const today = new Date().toLocaleDateString('en-US');
   const invoiceNumber = input.invoiceNumber || `INV-${Date.now()}`;
-  const invoiceDate = input.invoiceDate ? new Date(input.invoiceDate).toLocaleDateString('de-DE') : today;
-  const taxPointDate = input.taxPointDate ? new Date(input.taxPointDate).toLocaleDateString('de-DE') : invoiceDate;
+  const invoiceDate = input.invoiceDate ? new Date(input.invoiceDate).toLocaleDateString('en-US') : today;
+  const taxPointDate = input.taxPointDate ? new Date(input.taxPointDate).toLocaleDateString('en-US') : invoiceDate;
 
   // Apply translation if enabled
   const shouldTranslate = input.translateToEnglish || false;
@@ -38,8 +39,18 @@ export function buildInvoiceHtml(input: VATCalculationInput, result: VATCalculat
     ? translateGermanToEnglish(input.itemDescription) 
     : (input.itemDescription || getDefaultItemDescription(input.serviceCategory));
 
-  // Get legal VAT text (override or auto)
-  const autoLegalText = getAutoLegalVatText(result.scenario);
+  // Get country-specific VAT label
+  const country = getCountryConfig(input.selectedCountry || 'DE');
+  const vatLabel = country?.invoiceLabel || 'VAT';
+
+  // Get legal VAT text (override or auto, with country-specific reverse charge text)
+  let autoLegalText = getAutoLegalVatText(result.scenario);
+  
+  // If reverse charge and country-specific text available, use it
+  if (result.scenario === 'reverse-charge' && country && input.reverseCharge) {
+    autoLegalText = country.reverseChargeText;
+  }
+  
   const legalVatText = input.legalVatTextOverride || autoLegalText;
 
   // Convert newlines to HTML line breaks for display
@@ -93,7 +104,7 @@ export function buildInvoiceHtml(input: VATCalculationInput, result: VATCalculat
           <span>${formatCurrency(result.netAmountCents)}</span>
         </div>
         <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #ddd;">
-          <span>VAT (${result.vatRatePercent}%):</span>
+          <span>${vatLabel} (${result.vatRatePercent}%):</span>
           <span>${formatCurrency(result.vatAmountCents)}</span>
         </div>
         <div style="display: flex; justify-content: space-between; padding: 12px 0; font-size: 18px; font-weight: bold; border-top: 2px solid #333;">

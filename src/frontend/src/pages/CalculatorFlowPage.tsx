@@ -1,26 +1,28 @@
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import FlowStepper from '../components/vat/FlowStepper';
-import CountrySelectionStep from '../components/vat/CountrySelectionStep';
-import TransactionDetailsStep from '../components/vat/TransactionDetailsStep';
+import EuVatIntroStep from '../components/vat/EuVatIntroStep';
+import CountryTransactionStep from '../components/vat/CountryTransactionStep';
 import VatResultsStep from '../components/vat/VatResultsStep';
 import InvoiceDetailsStep from '../components/invoice/InvoiceDetailsStep';
 import InvoicePreview from '../components/invoice/InvoicePreview';
 import ExplainVatPanel from '../components/vat/ExplainVatPanel';
 import UpgradeModal from '../components/usage/UpgradeModal';
-import { calculateGermanyVAT, type VATCalculationInput, type VATCalculationResult } from '../lib/vat/calculateVat';
+import GlobalDisclaimer from '../components/vat/GlobalDisclaimer';
+import { calculateEUVAT, type VATCalculationInput, type VATCalculationResult } from '../lib/vat/calculateVat';
+import { getCountryConfig } from '../lib/vat/euCountryConfig';
+import { computeVatRateForCategory } from '../lib/vat/vatCategoryRateRules';
 import { useEventLogger } from '../hooks/useEventLogger';
 import { CORE_EVENTS } from '../lib/analytics/coreEvents';
 import { useEffect } from 'react';
 
 const STEPS = [
-  { id: 'country', label: 'Country Selection' },
-  { id: 'details', label: 'Transaction Details' },
+  { id: 'intro', label: 'Select Country' },
+  { id: 'transaction', label: 'Transaction' },
   { id: 'results', label: 'Results' },
-  { id: 'invoice', label: 'Invoice Details' },
+  { id: 'invoice', label: 'Invoice' },
   { id: 'preview', label: 'Preview' },
-  { id: 'explain', label: 'Explain VAT' },
+  { id: 'explain', label: 'Explain' },
 ];
 
 const initialFormData: VATCalculationInput = {
@@ -31,6 +33,8 @@ const initialFormData: VATCalculationInput = {
   serviceCategory: 'digital',
   netAmount: 0,
   vatRate: 'standard',
+  reverseCharge: false,
+  vatCategory: 'others',
   previousYearTurnover: 0,
   currentYearTurnover: 0,
   invoiceNumber: '',
@@ -42,6 +46,7 @@ const initialFormData: VATCalculationInput = {
   customerAddress: '',
   itemDescription: '',
   legalVatTextOverride: '',
+  selectedCountry: '',
 };
 
 export default function CalculatorFlowPage() {
@@ -52,7 +57,7 @@ export default function CalculatorFlowPage() {
   const { log } = useEventLogger();
 
   useEffect(() => {
-    // Log invoice_previewed when entering step 4 (Invoice Details)
+    // Log invoice_previewed when entering step 3 (Invoice Details)
     if (currentStep === 3) {
       log(CORE_EVENTS.INVOICE_PREVIEWED, JSON.stringify({
         invoiceNumber: formData.invoiceNumber || 'draft',
@@ -61,20 +66,53 @@ export default function CalculatorFlowPage() {
     }
   }, [currentStep, formData.invoiceNumber, formData.customerCountry, log]);
 
-  const handleNext = (data: Partial<VATCalculationInput>) => {
-    const updatedData = { ...formData, ...data };
-    setFormData(updatedData);
+  const handleCountrySelect = (countryCode: string) => {
+    const country = getCountryConfig(countryCode);
+    if (country) {
+      setFormData({
+        ...formData,
+        selectedCountry: countryCode,
+        customerCountry: countryCode,
+        vatCategory: 'others', // Reset to default
+      });
+      setCurrentStep(1);
+    }
+  };
 
-    if (currentStep === 1) {
-      const calculationResult = calculateGermanyVAT(updatedData);
-      setResult(calculationResult);
+  const handleTransactionNext = (data: Partial<VATCalculationInput>) => {
+    const updatedFormData = { ...formData, ...data };
+    setFormData(updatedFormData);
+
+    // Compute VAT rate based on country and category
+    const country = getCountryConfig(updatedFormData.selectedCountry || updatedFormData.customerCountry);
+    if (!country) return;
+
+    const isReducedRateCountry = ['DE', 'FR', 'IT', 'SE', 'BE'].includes(country.code);
+    
+    let computedRate: number;
+    if (isReducedRateCountry && updatedFormData.vatCategory) {
+      // Use computed rate for reduced-rate countries
+      computedRate = computeVatRateForCategory(
+        country.code,
+        updatedFormData.vatCategory,
+        country.standardRate
+      );
+    } else {
+      // For other countries, use standard or first reduced rate
+      computedRate = updatedFormData.vatRate === 'reduced' && country.reducedRates.length > 0
+        ? country.reducedRates[0]
+        : country.standardRate;
     }
 
-    setCurrentStep((prev) => Math.min(prev + 1, STEPS.length - 1));
+    const calculationResult = calculateEUVAT(updatedFormData, computedRate);
+    setResult(calculationResult);
+    setCurrentStep(2);
   };
 
   const handleBack = () => {
-    setCurrentStep((prev) => Math.max(prev - 1, 0));
+    if (currentStep > 0) {
+      setCurrentStep(currentStep - 1);
+    }
   };
 
   const handleViewInvoice = () => {
@@ -85,104 +123,90 @@ export default function CalculatorFlowPage() {
     setCurrentStep(5);
   };
 
-  const handleGenerateNew = () => {
-    setFormData(initialFormData);
-    setResult(null);
-    setCurrentStep(0);
-  };
-
-  const handleOpenUpgradeModal = () => {
-    setShowUpgradeModal(true);
+  const handleInvoiceNext = (data: Partial<VATCalculationInput>) => {
+    setFormData({ ...formData, ...data });
+    setCurrentStep(4);
   };
 
   const handleRecalculate = (newResult: VATCalculationResult) => {
     setResult(newResult);
   };
 
+  const handleNewCalculation = () => {
+    setCurrentStep(0);
+    setFormData(initialFormData);
+    setResult(null);
+  };
+
   return (
-    <div className="container mx-auto px-4 py-8 max-w-4xl">
-      <div className="mb-8 text-center">
-        <div className="flex items-center justify-center gap-2 mb-4">
-          <Badge variant="outline" className="text-xs font-medium">
-            🇩🇪 Germany-specific
-          </Badge>
-        </div>
-        <h1 className="text-3xl font-bold mb-2">Germany EU VAT Calculator</h1>
-        <p className="text-muted-foreground">
-          Built specifically for German VAT rules — not a generic EU calculator
-        </p>
+    <div className="min-h-screen bg-background">
+      <div className="container mx-auto px-4 py-8 max-w-4xl">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-center">EU VAT Calculator</CardTitle>
+            <FlowStepper steps={STEPS} currentStep={currentStep} />
+          </CardHeader>
+          <CardContent>
+            {currentStep === 0 && (
+              <EuVatIntroStep onCountrySelect={handleCountrySelect} />
+            )}
+
+            {currentStep === 1 && (
+              <CountryTransactionStep
+                countryCode={formData.selectedCountry || formData.customerCountry}
+                initialData={formData}
+                onNext={handleTransactionNext}
+                onBack={handleBack}
+              />
+            )}
+
+            {currentStep === 2 && result && (
+              <VatResultsStep
+                result={result}
+                formData={formData}
+                onViewInvoice={handleViewInvoice}
+                onExplainVat={handleExplainVat}
+                onBack={handleBack}
+                onGenerateNew={handleNewCalculation}
+                onOpenUpgradeModal={() => setShowUpgradeModal(true)}
+              />
+            )}
+
+            {currentStep === 3 && result && (
+              <InvoiceDetailsStep
+                initialData={formData}
+                formData={formData}
+                result={result}
+                onNext={handleInvoiceNext}
+                onBack={handleBack}
+                onRecalculate={handleRecalculate}
+              />
+            )}
+
+            {currentStep === 4 && result && (
+              <InvoicePreview
+                formData={formData}
+                result={result}
+                onBack={handleBack}
+              />
+            )}
+
+            {currentStep === 5 && result && (
+              <ExplainVatPanel
+                formData={formData}
+                result={result}
+              />
+            )}
+          </CardContent>
+        </Card>
+
+        <GlobalDisclaimer />
       </div>
 
-      <FlowStepper steps={STEPS} currentStep={currentStep} />
-
-      <Card className="mt-8">
-        <CardHeader>
-          <CardTitle>{STEPS[currentStep].label}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {currentStep === 0 && (
-            <CountrySelectionStep
-              initialData={formData}
-              onNext={handleNext}
-            />
-          )}
-          {currentStep === 1 && (
-            <TransactionDetailsStep
-              initialData={formData}
-              onNext={handleNext}
-              onBack={handleBack}
-            />
-          )}
-          {currentStep === 2 && result && (
-            <VatResultsStep
-              result={result}
-              formData={formData}
-              onViewInvoice={handleViewInvoice}
-              onExplainVat={handleExplainVat}
-              onBack={handleBack}
-              onGenerateNew={handleGenerateNew}
-              onOpenUpgradeModal={handleOpenUpgradeModal}
-            />
-          )}
-          {currentStep === 3 && result && (
-            <InvoiceDetailsStep
-              formData={formData}
-              result={result}
-              onNext={handleNext}
-              onBack={handleBack}
-              onRecalculate={handleRecalculate}
-            />
-          )}
-          {currentStep === 4 && result && (
-            <InvoicePreview
-              formData={formData}
-              result={result}
-              onBack={handleBack}
-            />
-          )}
-          {currentStep === 5 && result && (
-            <div className="space-y-6">
-              <ExplainVatPanel formData={formData} result={result} />
-              <div className="flex gap-3">
-                <button
-                  onClick={handleBack}
-                  className="flex-1 px-4 py-2 border border-border rounded-md hover:bg-accent transition-colors"
-                >
-                  Back to Results
-                </button>
-                <button
-                  onClick={handleGenerateNew}
-                  className="flex-1 px-4 py-2 border border-border rounded-md hover:bg-accent transition-colors"
-                >
-                  New Calculation
-                </button>
-              </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      <UpgradeModal open={showUpgradeModal} onOpenChange={setShowUpgradeModal} />
+      <UpgradeModal
+        open={showUpgradeModal}
+        onOpenChange={setShowUpgradeModal}
+      />
     </div>
   );
 }

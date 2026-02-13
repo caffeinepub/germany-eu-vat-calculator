@@ -1,10 +1,10 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { CheckCircle2, XCircle, AlertCircle } from 'lucide-react';
+import { Check, X } from 'lucide-react';
 import { validateReverseChargeProof } from '../../lib/vat/validateReverseChargeProof';
 import { useEventLogger } from '../../hooks/useEventLogger';
 import { CORE_EVENTS } from '../../lib/analytics/coreEvents';
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 
 interface ReverseChargeProofCheckerProps {
   vatId: string;
@@ -17,63 +17,67 @@ export default function ReverseChargeProofChecker({
   customerCountry,
   customerType,
 }: ReverseChargeProofCheckerProps) {
-  const validation = validateReverseChargeProof(vatId, customerCountry, customerType);
   const { log } = useEventLogger();
-  const hasLoggedReverseCharge = useRef(false);
+  const validation = validateReverseChargeProof(vatId, customerCountry, customerType);
 
   useEffect(() => {
-    // Log reverse_charge_checked when validation is allowed
-    if (validation.conclusion === 'allowed' && !hasLoggedReverseCharge.current) {
-      hasLoggedReverseCharge.current = true;
-      log(CORE_EVENTS.REVERSE_CHARGE_CHECKED, JSON.stringify({
-        vatId,
-        customerCountry,
-        conclusion: validation.conclusion,
-      }));
+    if (validation.isAllowed) {
+      log(CORE_EVENTS.REVERSE_CHARGE_CHECKED);
     }
-  }, [validation.conclusion, vatId, customerCountry, log]);
+  }, [validation.isAllowed, log]);
 
   return (
-    <Card>
+    <Card className="bg-muted/30">
       <CardHeader>
-        <CardTitle className="text-base flex items-center gap-2">
-          <AlertCircle className="h-4 w-4" />
-          Reverse Charge Proof Check
-        </CardTitle>
+        <CardTitle className="text-base">B2B Cross-Border VAT Validation</CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <span className="text-sm">VAT ID Format</span>
-            {validation.checks.vatIdFormat.passed ? (
-              <CheckCircle2 className="h-4 w-4 text-green-600" />
-            ) : (
-              <XCircle className="h-4 w-4 text-red-600" />
-            )}
-          </div>
-          <p className="text-xs text-muted-foreground">{validation.checks.vatIdFormat.message}</p>
+        <div className="flex items-center justify-between">
+          <span className="text-sm">VAT ID Format</span>
+          {validation.checks.formatValid ? (
+            <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">
+              <Check className="h-3 w-3 mr-1" />
+              Valid
+            </Badge>
+          ) : (
+            <Badge variant="outline" className="bg-destructive/10 text-destructive border-destructive/20">
+              <X className="h-3 w-3 mr-1" />
+              Invalid
+            </Badge>
+          )}
         </div>
 
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <span className="text-sm">Country Match</span>
-            {validation.checks.countryMatch.passed ? (
-              <CheckCircle2 className="h-4 w-4 text-green-600" />
-            ) : (
-              <XCircle className="h-4 w-4 text-red-600" />
-            )}
-          </div>
-          <p className="text-xs text-muted-foreground">{validation.checks.countryMatch.message}</p>
+        <div className="flex items-center justify-between">
+          <span className="text-sm">Country Match</span>
+          {validation.checks.countryMatch ? (
+            <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">
+              <Check className="h-3 w-3 mr-1" />
+              Match
+            </Badge>
+          ) : (
+            <Badge variant="outline" className="bg-destructive/10 text-destructive border-destructive/20">
+              <X className="h-3 w-3 mr-1" />
+              Mismatch
+            </Badge>
+          )}
         </div>
 
         <div className="pt-3 border-t">
-          <div className="flex items-center gap-2 mb-2">
-            <span className="font-medium text-sm">Conclusion:</span>
-            <Badge variant={validation.conclusion === 'allowed' ? 'default' : 'destructive'}>
-              {validation.conclusion === 'allowed' ? '✔ Reverse charge allowed' : '❌ VAT must be charged'}
-            </Badge>
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-medium">Validation Result</span>
+            {validation.isAllowed ? (
+              <Badge className="bg-primary text-primary-foreground">
+                <Check className="h-3 w-3 mr-1" />
+                Allowed
+              </Badge>
+            ) : (
+              <Badge variant="destructive">
+                <X className="h-3 w-3 mr-1" />
+                Not Allowed
+              </Badge>
+            )}
           </div>
-          <p className="text-sm text-muted-foreground">{validation.explanation}</p>
+          <p className="text-xs text-muted-foreground mt-2">{validation.explanation}</p>
         </div>
       </CardContent>
     </Card>

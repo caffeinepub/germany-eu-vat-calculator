@@ -34,7 +34,7 @@ export function performInvoiceRiskCheck(
       input.customerType
     );
     
-    if (!reverseChargeValidation.isValid) {
+    if (!reverseChargeValidation.isAllowed) {
       risks.push('Reverse charge validation failed: ' + reverseChargeValidation.explanation);
     }
   }

@@ -1,59 +1,67 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-12T08:42:16.900Z",
-  "summary": "The BuildRequest is a publish-only task with explicit constraints to avoid new product features and to follow existing production publish + smoke-check checklists. The diff shows multiple new backend capabilities (event tracking, usage limits, admin analytics) and substantial frontend behavior/content changes (new routes/pages, event logging, usage-limit UX, pricing/Stripe UI, VAT flow changes), which appear to be unrequested feature work. There is also no evidence that the publish checklist and smoke check steps were followed/recorded.",
+  "generatedAt": "2026-02-13T07:39:35.533Z",
+  "summary": "Implemented VAT category model and rate-computation module; updated calculator flow and form types to carry vatCategory and compute a derived VAT rate for DE/FR/IT/SE/BE. However, due to truncation of the transaction-step JSX and the Belgium rules file, several UI/text requirements and part of the BE mapping cannot be verified from the provided diff summary.",
   "missing_requirements": [
     {
-      "requirement": "Follow the existing production publish checklist in `frontend/PRODUCTION_PUBLISH_V4.md`.",
-      "reason": "The diff summary does not show any changes or artifacts indicating the production publish checklist was executed (e.g., updates to the checklist file, release notes, or verification outputs). Only backend/main.mo, a frontend file summary text, and project_state.json were modified.",
+      "id": "REQ-1",
+      "requirement": "Add a “VAT Category” dropdown under the VAT selection area in the transaction step, with exactly the provided English option labels and default selection “Others”.",
+      "reason": "The diff shows vatCategory state and the category label list/module, but the transaction step JSX where the dropdown should be rendered is truncated, so the presence, exact option labels, and default UI selection cannot be confirmed from the diff summary.",
       "evidence": [
-        "MODIFIED FILES list contains no `frontend/PRODUCTION_PUBLISH_V4.md` changes"
+        "frontend/src/components/vat/CountryTransactionStep.tsx",
+        "frontend/src/lib/vat/vatCategoryRateRules.ts"
       ]
     },
     {
-      "requirement": "Complete the verification steps in `frontend/PRODUCTION_SMOKE_CHECK.md`.",
-      "reason": "No evidence in the diff summary indicates smoke-check steps were completed or documented (no modifications to the smoke check file or related verification logs).",
+      "id": "REQ-4",
+      "requirement": "Update transaction step UI so users don’t rely on manually selecting Reduced vs Standard for DE/FR/IT/SE/BE; UI must reflect computed VAT rate and prevent ineligible reduced rate selection.",
+      "reason": "Although computedVatRate is calculated in the transaction step, the UI behavior (e.g., disabling/hiding the reduced/standard selector or preventing incorrect reduced-rate selection) is not visible in the truncated JSX, so compliance cannot be verified.",
       "evidence": [
-        "MODIFIED FILES list contains no `frontend/PRODUCTION_SMOKE_CHECK.md` changes"
+        "frontend/src/components/vat/CountryTransactionStep.tsx"
+      ]
+    },
+    {
+      "id": "REQ-5",
+      "requirement": "Render the exact legal disclaimer text under the VAT selection area in the transaction step.",
+      "reason": "The required disclaimer text is not shown in the visible portion of the transaction step component; JSX is truncated before the VAT selection section, so rendering and exact text match cannot be confirmed.",
+      "evidence": [
+        "frontend/src/components/vat/CountryTransactionStep.tsx"
+      ]
+    },
+    {
+      "id": "REQ-6",
+      "requirement": "Add an info tooltip near VAT Category (or VAT selection) with the exact provided text.",
+      "reason": "Tooltip components and an Info icon are imported, but the JSX showing the tooltip trigger/content (including exact tooltip text) is not present in the truncated snippet, so implementation cannot be verified.",
+      "evidence": [
+        "frontend/src/components/vat/CountryTransactionStep.tsx"
+      ]
+    },
+    {
+      "id": "REQ-3",
+      "requirement": "Implement the full country+category reduced VAT mapping for Belgium (BE) as specified by the user, including correct 12% vs 6% category assignment and fallback rules.",
+      "reason": "The Belgium-specific rules function is truncated mid-definition (\"const rate12Categ...\"), so the complete mapping and correctness for BE cannot be verified from the diff summary.",
+      "evidence": [
+        "frontend/src/lib/vat/vatCategoryRateRules.ts"
       ]
     }
   ],
   "hallucinated_features": [
     {
-      "description": "Backend anonymous event tracking store and logging endpoint (`EventRecord`, `_events`, `logEvent`) plus admin-only analytics retrieval (`getEvents`).",
-      "reason": "BuildRequest explicitly says publish-only and 'Do not add new product features'. The diff introduces new event types, persistent stores, and methods.",
+      "description": "Analytics event logging includes vatCategory and computedVatRate when calculating VAT.",
+      "reason": "BuildRequest does not ask for new analytics/log payload fields; diff adds logging data for VAT_CALCULATED.",
       "evidence": [
-        "backend/main.mo"
-      ]
-    },
-    {
-      "description": "Backend anonymous usage tracking with 30-day reset logic and query endpoint (`UsageLimit`, `_usageLimits`, `incrementUsage`, `getUsage`).",
-      "reason": "Not requested; constitutes new product behavior (usage limiting/tracking) beyond a publish-only change.",
-      "evidence": [
-        "backend/main.mo"
-      ]
-    },
-    {
-      "description": "Frontend routing/pages and UI changes including landing/calculator/invoices/upgrade/payment-success/payment-failure routes, and multiple new/changed components (stepper flow, VAT flow orchestration, invoice preview watermark/limit modal, upgrade/pricing modals, Stripe admin setup).",
-      "reason": "The BuildRequest has no feature requirements and explicitly forbids adding new product features; these changes represent new/expanded functionality rather than a publish-only action.",
-      "evidence": [
-        "frontend-file-summaries.txt"
-      ]
-    },
-    {
-      "description": "New/expanded client-side analytics event logging (e.g., app_opened, country_detected, invoice_previewed, vat_calculated, ai_explain_clicked, free_limit_reached, invoice_downloaded, upgrade_cta_shown, stripe_checkout_clicked, payment_success).",
-      "reason": "Not requested; adds tracking behavior (a product feature) contrary to 'publish only' constraint.",
-      "evidence": [
-        "frontend-file-summaries.txt",
-        "backend/main.mo"
+        "frontend/src/components/vat/CountryTransactionStep.tsx"
       ]
     }
   ],
-  "confidence": 0.78,
+  "confidence": 0.56,
   "changed_files": [
-    "backend/main.mo",
     "frontend-file-summaries.txt",
+    "frontend/src/components/vat/CountryTransactionStep.tsx",
+    "frontend/src/lib/vat/calculateVat.ts",
+    "frontend/src/lib/vat/vatCategoryRateRules.ts",
+    "frontend/src/pages/CalculatorFlowPage.tsx",
     "project_state.json"
   ]
 }

@@ -1,3 +1,5 @@
+import { type VatCategory } from './vatCategoryRateRules';
+
 export type ServiceCategory = 'digital' | 'physical' | 'consulting' | 'saas' | 'others';
 
 export interface VATCalculationInput {
@@ -10,6 +12,9 @@ export interface VATCalculationInput {
   previousYearTurnover: number;
   currentYearTurnover: number;
   vatRate: 'standard' | 'reduced';
+  reverseCharge?: boolean;
+  selectedCountry?: string;
+  vatCategory?: VatCategory;
   // Invoice detail fields
   sellerName?: string;
   sellerAddress?: string;
@@ -33,6 +38,36 @@ export interface VATCalculationResult {
   scenario: 'kleinunternehmer' | 'reverse-charge' | 'b2c-standard' | 'b2c-reduced' | 'digital-b2c-eu' | 'intra-eu-supply';
 }
 
+export function calculateEUVAT(input: VATCalculationInput, countryRate: number): VATCalculationResult {
+  const netAmountCents = Math.round(input.netAmount * 100);
+
+  // Check reverse charge toggle
+  if (input.reverseCharge) {
+    return {
+      netAmountCents,
+      vatAmountCents: 0,
+      grossAmountCents: netAmountCents,
+      vatRatePercent: 0,
+      legalNote: 'Reverse charge applies under EU VAT Directive Article 44/196',
+      scenario: 'reverse-charge',
+    };
+  }
+
+  // Calculate VAT with selected rate
+  const vatAmountCents = Math.round(netAmountCents * (countryRate / 100));
+  const grossAmountCents = netAmountCents + vatAmountCents;
+
+  return {
+    netAmountCents,
+    vatAmountCents,
+    grossAmountCents,
+    vatRatePercent: countryRate,
+    legalNote: null,
+    scenario: input.vatRate === 'reduced' ? 'b2c-reduced' : 'b2c-standard',
+  };
+}
+
+// Legacy Germany-specific function (kept for backward compatibility)
 export function calculateGermanyVAT(input: VATCalculationInput, asOfDate?: string): VATCalculationResult {
   const netAmountCents = Math.round(input.netAmount * 100);
 
@@ -68,33 +103,20 @@ export function calculateGermanyVAT(input: VATCalculationInput, asOfDate?: strin
       vatAmountCents: 0,
       grossAmountCents: netAmountCents,
       vatRatePercent: 0,
-      legalNote: `Digital service to ${input.customerCountry}: VAT based on customer's country`,
+      legalNote: `Digital service to ${input.customerCountry} consumer - use customer's VAT rate or OSS`,
       scenario: 'digital-b2c-eu',
     };
   }
 
-  // Check for intra-EU supply (B2C physical goods to another EU country)
-  if (input.serviceCategory === 'physical' && input.customerCountry !== 'DE' && input.customerType === 'B2C' && isEUCountry(input.customerCountry)) {
-    return {
-      netAmountCents,
-      vatAmountCents: 0,
-      grossAmountCents: netAmountCents,
-      vatRatePercent: 0,
-      legalNote: `Intra-EU supply to ${input.customerCountry}: Special VAT rules apply`,
-      scenario: 'intra-eu-supply',
-    };
-  }
-
-  // Apply historical VAT rate if asOfDate is provided
-  const vatRatePercent = getVatRateForDate(input.vatRate, asOfDate);
-  const vatAmountCents = Math.round((netAmountCents * vatRatePercent) / 100);
+  const ratePercent = input.vatRate === 'reduced' ? 7 : 19;
+  const vatAmountCents = Math.round(netAmountCents * (ratePercent / 100));
   const grossAmountCents = netAmountCents + vatAmountCents;
 
   return {
     netAmountCents,
     vatAmountCents,
     grossAmountCents,
-    vatRatePercent,
+    vatRatePercent: ratePercent,
     legalNote: null,
     scenario: input.vatRate === 'reduced' ? 'b2c-reduced' : 'b2c-standard',
   };
@@ -103,36 +125,6 @@ export function calculateGermanyVAT(input: VATCalculationInput, asOfDate?: strin
 function isValidEUVatId(vatId: string): boolean {
   if (!vatId || vatId.length < 4) return false;
   const countryCode = vatId.substring(0, 2).toUpperCase();
-  const euCountries = ['AT', 'BE', 'BG', 'HR', 'CY', 'CZ', 'DK', 'EE', 'FI', 'FR', 'DE', 'GR', 'HU', 'IE', 'IT', 'LV', 'LT', 'LU', 'MT', 'NL', 'PL', 'PT', 'RO', 'SK', 'SI', 'ES', 'SE'];
+  const euCountries = ['AT', 'BE', 'BG', 'CY', 'CZ', 'DE', 'DK', 'EE', 'ES', 'FI', 'FR', 'GR', 'HR', 'HU', 'IE', 'IT', 'LT', 'LU', 'LV', 'MT', 'NL', 'PL', 'PT', 'RO', 'SE', 'SI', 'SK'];
   return euCountries.includes(countryCode);
-}
-
-function isEUCountry(countryCode: string): boolean {
-  const euCountries = ['AT', 'BE', 'BG', 'HR', 'CY', 'CZ', 'DK', 'EE', 'FI', 'FR', 'DE', 'GR', 'HU', 'IE', 'IT', 'LV', 'LT', 'LU', 'MT', 'NL', 'PL', 'PT', 'RO', 'SK', 'SI', 'ES', 'SE'];
-  return euCountries.includes(countryCode);
-}
-
-function getVatRateForDate(rateType: 'standard' | 'reduced', asOfDate?: string): number {
-  // Current rates (2026)
-  const currentRates = {
-    standard: 19,
-    reduced: 7,
-  };
-
-  if (!asOfDate) {
-    return currentRates[rateType];
-  }
-
-  // Parse the date
-  const date = new Date(asOfDate);
-  
-  // Historical rate: COVID-19 temporary reduction (July 1, 2020 - December 31, 2020)
-  const covidStart = new Date('2020-07-01');
-  const covidEnd = new Date('2020-12-31');
-  
-  if (date >= covidStart && date <= covidEnd) {
-    return rateType === 'standard' ? 16 : 5;
-  }
-
-  return currentRates[rateType];
 }

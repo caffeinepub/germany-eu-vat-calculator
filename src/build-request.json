@@ -1,20 +1,142 @@
 {
   "kind": "build_request",
-  "title": "Publish the current draft build to production",
+  "title": "Add VAT Category dropdown with country-based reduced VAT logic and legal disclaimer",
   "priority": "normal",
-  "requirements": [],
+  "requirements": [
+    {
+      "id": "REQ-1",
+      "text": "Add a new “VAT Category” dropdown under the VAT selection area in the VAT calculator transaction step (the step that currently contains the VAT Rate controls). The dropdown must include exactly these options (English labels):\n- Standard Goods / Services\n- Food & Essential Goods\n- Books & Printed Media\n- Accommodation & Hospitality\n- Restaurant Services\n- Passenger Transport\n- Construction & Renovation (Residential)\n- Medical & Social Services\n- Cultural Events\n- Utilities (Electricity / Gas / Water)\n- Others\n\nDefault selection must be “Others”.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-1"
+        ],
+        "quotes": [
+          "🧾 STEP 1 – VAT CATEGORY DROPDOWN\n\nUnder VAT Selection, add:\n\nVAT Category:\n\nStandard Goods / Services\n\nFood & Essential Goods\n\nBooks & Printed Media\n\nAccommodation & Hospitality\n\nRestaurant Services\n\nPassenger Transport\n\nConstruction & Renovation (Residential)\n\nMedical & Social Services\n\nCultural Events\n\nUtilities (Electricity / Gas / Water)\n\nOthers\n\nIf user cannot identify category → select Others (default to Standard rate)"
+        ]
+      },
+      "acceptanceCriteria": [
+        "In the VAT calculator transaction step UI, a “VAT Category” dropdown is shown under VAT selection.",
+        "The dropdown options match the provided list exactly and are user-facing in English.",
+        "The default selection is “Others” for a new calculation."
+      ]
+    },
+    {
+      "id": "REQ-2",
+      "text": "Extend the VAT calculation form state/types so the selected VAT Category is persisted through the calculator flow and available at calculation time (from transaction step through results/invoice/preview).",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-1"
+        ],
+        "quotes": [
+          "✅ Add a VAT Category dropdown",
+          "✅ Apply country-based reduced rate logic"
+        ]
+      },
+      "acceptanceCriteria": [
+        "Changing VAT Category and moving forward/backward in the calculator preserves the selected category.",
+        "The selected VAT Category is included in the data passed from the transaction step to the calculation step (where VAT is computed)."
+      ]
+    },
+    {
+      "id": "REQ-3",
+      "text": "Implement country-based VAT rate selection logic for these countries only: Germany (DE), France (FR), Italy (IT), Sweden (SE), Belgium (BE). The computed VAT rate percent must be determined from (selectedCountry, VAT Category) using the mapping provided by the user, including multiple reduced rates for FR/IT/SE/BE.\n\nRules:\n- If VAT Category is “Others”, always apply the country’s Standard rate.\n- If VAT Category is not eligible for a reduced rate in that country, auto-fallback to the country’s Standard rate.\n- When multiple reduced rates exist (e.g., France 10% vs 5.5%), choose the correct reduced rate based on category per the user’s mapping.\n- The computed rate must be used for VAT calculation in the results step.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-1"
+        ],
+        "quotes": [
+          "🧠 STEP 2 – COUNTRY LOGIC FOR REDUCED RATE",
+          "🔁 STEP 3 – If “Others” Selected\n\nIF Category = Others\n→ Apply Standard VAT rate of selected country\n\nThis keeps logic safe.",
+          "✅ Auto-fallback to Standard rate if category not eligible"
+        ]
+      },
+      "acceptanceCriteria": [
+        "For DE: selecting any of the eligible categories results in 7%; all other categories (including Others) result in 19%.",
+        "For FR: eligible categories map to 10% or 5.5% as specified; all other categories (including Others) result in 20%.",
+        "For IT: eligible categories map to 10% / 5% / 4% as specified; all other categories (including Others) result in 22%.",
+        "For SE: eligible categories map to 12% / 6% as specified; all other categories (including Others) result in 25%.",
+        "For BE: eligible categories map to 12% / 6% as specified; all other categories (including Others) result in 21%.",
+        "When a category is not eligible, the app does not keep/force a reduced rate—VAT calculation uses the Standard rate (fallback)."
+      ]
+    },
+    {
+      "id": "REQ-4",
+      "text": "Update the transaction step UI so the app does not rely on the user manually selecting “Reduced” vs “Standard” for DE/FR/IT/SE/BE. Instead, the UI must clearly reflect the computed VAT rate based on the selected VAT Category (and still remain compatible with the existing flow).\n\nIf an existing “VAT Rate” selector remains visible, it must not allow the user to incorrectly apply a reduced rate when the selected category is not eligible; the final computed rate used in calculation must always match the country+category rules.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-1"
+        ],
+        "quotes": [
+          "✅ Apply country-based reduced rate logic",
+          "✅ Auto-fallback to Standard rate if category not eligible"
+        ]
+      },
+      "acceptanceCriteria": [
+        "For DE/FR/IT/SE/BE, users cannot end up with a reduced VAT rate applied when their VAT Category is not eligible.",
+        "The VAT results shown correspond to the computed (country, category) rate, not an arbitrary user-selected reduced/standard toggle."
+      ]
+    },
+    {
+      "id": "REQ-5",
+      "text": "Add the following legal disclaimer text directly under the VAT selection area in the transaction step (user-facing text must match exactly and be in English):\n\n“Reduced VAT rates apply only to specific goods and services as defined under national VAT legislation. Users are responsible for verifying eligibility before applying reduced rates.”",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-1"
+        ],
+        "quotes": [
+          "⚖️ STEP 4 – ADD THIS DISCLAIMER (Place Under VAT Selection)\n\n“Reduced VAT rates apply only to specific goods and services as defined under national VAT legislation. Users are responsible for verifying eligibility before applying reduced rates.”"
+        ]
+      },
+      "acceptanceCriteria": [
+        "The disclaimer text is rendered under VAT selection in the transaction step.",
+        "The text matches exactly (including punctuation and quotation marks are not required in UI, but the sentence must match verbatim)."
+      ]
+    },
+    {
+      "id": "REQ-6",
+      "text": "Add an info tooltip near the VAT Category dropdown (or VAT selection section) with this exact text (English):\n\n“Not sure which category applies? Select ‘Others’ to apply the standard VAT rate.”",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-1"
+        ],
+        "quotes": [
+          "💡 OPTIONAL UX IMPROVEMENT (Highly Recommended)\n\nAdd a small info tooltip:\n\n“Not sure which category applies? Select ‘Others’ to apply the standard VAT rate.”"
+        ]
+      },
+      "acceptanceCriteria": [
+        "Hovering/focusing the info icon shows the tooltip text exactly as provided.",
+        "Tooltip appears in the transaction step near VAT Category / VAT selection."
+      ]
+    }
+  ],
   "constraints": [
-    "Do not add new product features; the user request is to publish only.",
-    "Follow the existing production publish checklist in `frontend/PRODUCTION_PUBLISH_V4.md` and complete the verification steps in `frontend/PRODUCTION_SMOKE_CHECK.md`.",
-    "Keep all user-facing text in English."
+    "Frontend immutable paths must not be edited: frontend/src/hooks/useInternetIdentity.ts, frontend/src/hooks/useInternetIdentity.tsx, frontend/src/hooks/useActor.ts, frontend/src/main.tsx, frontend/src/components/ui/*.",
+    "Backend must remain a single Motoko actor (no new backend services).",
+    "Use English for all new user-facing text."
   ],
   "nonGoals": [
-    "UI/UX redesign or new pages/components",
-    "Backend schema changes or data migrations",
-    "Adding new integrations beyond the existing Internet Identity + Stripe setup"
+    "Do not add reduced-rate logic for countries beyond Germany, France, Italy, Sweden, and Belgium.",
+    "Do not introduce third-party tax/VAT services or external databases.",
+    "Do not change authentication (Internet Identity) or payment/Stripe flows."
   ],
   "imageRequirements": {
     "required": [],
     "edits": []
+  },
+  "userProfileUpdate": {
+    "goalsToAdd": [],
+    "goalsToRemove": [],
+    "preferencesToAdd": [],
+    "preferencesToRemove": [],
+    "miscToAdd": [],
+    "miscToRemove": [],
+    "fieldsToSet": {},
+    "fieldsToDelete": []
   }
 }

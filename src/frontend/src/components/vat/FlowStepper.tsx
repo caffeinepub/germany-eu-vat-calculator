@@ -12,9 +12,9 @@ interface FlowStepperProps {
 
 export default function FlowStepper({ steps, currentStep }: FlowStepperProps) {
   return (
-    <div className="flex items-center justify-between mt-4">
+    <div className="flex items-center justify-between mt-4 overflow-x-auto pb-2">
       {steps.map((step, index) => (
-        <div key={step.id} className="flex items-center flex-1">
+        <div key={step.id} className="flex items-center flex-1 min-w-0">
           <div className="flex flex-col items-center flex-1">
             <div
               className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-colors ${
@@ -27,7 +27,7 @@ export default function FlowStepper({ steps, currentStep }: FlowStepperProps) {
             >
               {index < currentStep ? <Check className="h-4 w-4" /> : index + 1}
             </div>
-            <span className="text-xs mt-1 text-center hidden sm:block">{step.label}</span>
+            <span className="text-xs mt-1 text-center hidden sm:block truncate max-w-[80px]">{step.label}</span>
           </div>
           {index < steps.length - 1 && (
             <div

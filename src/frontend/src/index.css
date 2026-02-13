@@ -3,138 +3,115 @@
 @tailwind utilities;
 
 @layer base {
-    :root {
-        --radius: 0.5rem;
-        
-        /* Graphite + Warm Amber theme (avoiding blue/purple) */
-        --background: 0.98 0 0;
-        --foreground: 0.20 0 0;
-        
-        --card: 1 0 0;
-        --card-foreground: 0.20 0 0;
-        
-        --popover: 1 0 0;
-        --popover-foreground: 0.20 0 0;
-        
-        /* Warm amber/gold primary */
-        --primary: 0.65 0.15 65;
-        --primary-foreground: 0.98 0 0;
-        
-        --secondary: 0.95 0 0;
-        --secondary-foreground: 0.20 0 0;
-        
-        --muted: 0.96 0 0;
-        --muted-foreground: 0.50 0 0;
-        
-        --accent: 0.94 0.08 65;
-        --accent-foreground: 0.20 0 0;
-        
-        --destructive: 0.55 0.22 25;
-        --destructive-foreground: 0.98 0 0;
-        
-        --border: 0.90 0 0;
-        --input: 0.90 0 0;
-        --ring: 0.65 0.15 65;
-        
-        --chart-1: 0.65 0.15 65;
-        --chart-2: 0.60 0.12 120;
-        --chart-3: 0.55 0.10 180;
-        --chart-4: 0.70 0.18 40;
-        --chart-5: 0.50 0.08 200;
-    }
+  :root {
+    --background: 98% 0.01 120;
+    --foreground: 25% 0.01 120;
+    --card: 100% 0 0;
+    --card-foreground: 25% 0.01 120;
+    --popover: 100% 0 0;
+    --popover-foreground: 25% 0.01 120;
+    --primary: 45% 0.15 145;
+    --primary-foreground: 98% 0.01 145;
+    --secondary: 92% 0.02 120;
+    --secondary-foreground: 25% 0.01 120;
+    --muted: 94% 0.01 120;
+    --muted-foreground: 50% 0.01 120;
+    --accent: 94% 0.02 120;
+    --accent-foreground: 25% 0.01 120;
+    --destructive: 55% 0.20 25;
+    --destructive-foreground: 98% 0.01 25;
+    --border: 88% 0.01 120;
+    --input: 88% 0.01 120;
+    --ring: 45% 0.15 145;
+    --chart-1: 55% 0.18 25;
+    --chart-2: 60% 0.15 145;
+    --chart-3: 65% 0.12 200;
+    --chart-4: 70% 0.10 280;
+    --chart-5: 75% 0.08 340;
+    --radius: 0.5rem;
+    --sidebar: 100% 0 0;
+    --sidebar-foreground: 25% 0.01 120;
+    --sidebar-primary: 45% 0.15 145;
+    --sidebar-primary-foreground: 98% 0.01 145;
+    --sidebar-accent: 94% 0.02 120;
+    --sidebar-accent-foreground: 25% 0.01 120;
+    --sidebar-border: 88% 0.01 120;
+    --sidebar-ring: 45% 0.15 145;
+  }
 
-    .dark {
-        --background: 0.15 0 0;
-        --foreground: 0.95 0 0;
-        
-        --card: 0.18 0 0;
-        --card-foreground: 0.95 0 0;
-        
-        --popover: 0.18 0 0;
-        --popover-foreground: 0.95 0 0;
-        
-        /* Brighter amber for dark mode */
-        --primary: 0.75 0.18 60;
-        --primary-foreground: 0.15 0 0;
-        
-        --secondary: 0.25 0 0;
-        --secondary-foreground: 0.95 0 0;
-        
-        --muted: 0.25 0 0;
-        --muted-foreground: 0.65 0 0;
-        
-        --accent: 0.30 0.10 60;
-        --accent-foreground: 0.95 0 0;
-        
-        --destructive: 0.60 0.25 25;
-        --destructive-foreground: 0.15 0 0;
-        
-        --border: 0.30 0 0;
-        --input: 0.30 0 0;
-        --ring: 0.75 0.18 60;
-        
-        --chart-1: 0.75 0.18 60;
-        --chart-2: 0.65 0.15 120;
-        --chart-3: 0.60 0.12 180;
-        --chart-4: 0.80 0.20 40;
-        --chart-5: 0.55 0.10 200;
-    }
-
-    * {
-        @apply border-border;
-    }
-    
-    body {
-        @apply bg-background text-foreground;
-        font-feature-settings: "rlig" 1, "calt" 1;
-    }
-    
-    h1, h2, h3, h4, h5, h6 {
-        @apply font-bold;
-    }
+  .dark {
+    --background: 20% 0.01 120;
+    --foreground: 95% 0.01 120;
+    --card: 22% 0.01 120;
+    --card-foreground: 95% 0.01 120;
+    --popover: 22% 0.01 120;
+    --popover-foreground: 95% 0.01 120;
+    --primary: 55% 0.15 145;
+    --primary-foreground: 15% 0.01 145;
+    --secondary: 28% 0.02 120;
+    --secondary-foreground: 95% 0.01 120;
+    --muted: 28% 0.01 120;
+    --muted-foreground: 65% 0.01 120;
+    --accent: 28% 0.02 120;
+    --accent-foreground: 95% 0.01 120;
+    --destructive: 55% 0.20 25;
+    --destructive-foreground: 95% 0.01 25;
+    --border: 32% 0.01 120;
+    --input: 32% 0.01 120;
+    --ring: 55% 0.15 145;
+    --chart-1: 60% 0.18 25;
+    --chart-2: 65% 0.15 145;
+    --chart-3: 70% 0.12 200;
+    --chart-4: 75% 0.10 280;
+    --chart-5: 80% 0.08 340;
+    --sidebar: 22% 0.01 120;
+    --sidebar-foreground: 95% 0.01 120;
+    --sidebar-primary: 55% 0.15 145;
+    --sidebar-primary-foreground: 15% 0.01 145;
+    --sidebar-accent: 28% 0.02 120;
+    --sidebar-accent-foreground: 95% 0.01 120;
+    --sidebar-border: 32% 0.01 120;
+    --sidebar-ring: 55% 0.15 145;
+  }
 }
 
-@layer utilities {
-    /* Utility for select triggers to prevent text overlap with chevron */
-    .select-trigger-safe {
-        @apply text-left pr-8;
-    }
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
 }
 
-@layer components {
-    /* Watermark for Free plan invoices */
-    .watermark-overlay {
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%) rotate(-45deg);
-        pointer-events: none;
-        z-index: 10;
-        opacity: 0.15;
-    }
-    
-    .watermark-text {
-        font-size: 4rem;
-        font-weight: 900;
-        color: oklch(var(--foreground));
-        text-transform: uppercase;
-        letter-spacing: 0.5rem;
-        white-space: nowrap;
-    }
-    
-    .invoice-content {
-        position: relative;
-        z-index: 1;
-    }
-    
-    /* Print styles */
-    @media print {
-        .watermark-overlay {
-            opacity: 0.1;
-        }
-        
-        .watermark-text {
-            font-size: 6rem;
-        }
-    }
+/* Watermark overlay for Free plan invoices */
+.invoice-watermark-overlay {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) rotate(-45deg);
+  font-size: 4rem;
+  font-weight: bold;
+  color: rgba(0, 0, 0, 0.08);
+  pointer-events: none;
+  user-select: none;
+  z-index: 10;
+  white-space: nowrap;
+}
+
+@media print {
+  .invoice-watermark-overlay {
+    color: rgba(0, 0, 0, 0.05);
+  }
+}
+
+/* Select trigger safe width */
+.select-trigger-safe {
+  min-width: 0;
+}
+
+.select-trigger-safe > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }

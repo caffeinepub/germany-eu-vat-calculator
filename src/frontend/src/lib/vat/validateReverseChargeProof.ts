@@ -1,10 +1,9 @@
 export interface ReverseChargeValidation {
-  isValid: boolean;
+  isAllowed: boolean;
   checks: {
-    vatIdFormat: { passed: boolean; message: string };
-    countryMatch: { passed: boolean; message: string };
+    formatValid: boolean;
+    countryMatch: boolean;
   };
-  conclusion: 'allowed' | 'not-allowed';
   explanation: string;
 }
 
@@ -15,66 +14,53 @@ export function validateReverseChargeProof(
 ): ReverseChargeValidation {
   if (customerType !== 'B2B') {
     return {
-      isValid: false,
+      isAllowed: false,
       checks: {
-        vatIdFormat: { passed: false, message: 'Not applicable for B2C transactions' },
-        countryMatch: { passed: false, message: 'Not applicable for B2C transactions' },
+        formatValid: false,
+        countryMatch: false,
       },
-      conclusion: 'not-allowed',
-      explanation: 'Reverse charge only applies to B2B transactions',
+      explanation: 'Reverse charge only applies to B2B transactions.',
     };
   }
 
-  const checks = {
-    vatIdFormat: validateVatIdFormat(vatId),
-    countryMatch: validateCountryMatch(vatId, customerCountry),
-  };
+  if (!vatId || vatId.length < 4) {
+    return {
+      isAllowed: false,
+      checks: {
+        formatValid: false,
+        countryMatch: false,
+      },
+      explanation: 'VAT ID is required for B2B cross-border validation.',
+    };
+  }
 
-  const isValid = checks.vatIdFormat.passed && checks.countryMatch.passed;
+  const vatCountryCode = vatId.substring(0, 2).toUpperCase();
+  const euCountries = [
+    'AT', 'BE', 'BG', 'CY', 'CZ', 'DE', 'DK', 'EE', 'ES', 'FI',
+    'FR', 'GR', 'HR', 'HU', 'IE', 'IT', 'LT', 'LU', 'LV', 'MT',
+    'NL', 'PL', 'PT', 'RO', 'SE', 'SI', 'SK'
+  ];
+
+  const formatValid = euCountries.includes(vatCountryCode) && vatId.length >= 4;
+  const countryMatch = vatCountryCode === customerCountry.toUpperCase();
+
+  const isAllowed = formatValid && countryMatch;
+
+  let explanation = '';
+  if (!formatValid) {
+    explanation = 'VAT ID format is invalid or not from an EU country.';
+  } else if (!countryMatch) {
+    explanation = `VAT ID country (${vatCountryCode}) does not match customer country (${customerCountry}).`;
+  } else {
+    explanation = 'VAT ID format is valid and matches customer country. Cross-border B2B transaction validated.';
+  }
 
   return {
-    isValid,
-    checks,
-    conclusion: isValid ? 'allowed' : 'not-allowed',
-    explanation: isValid
-      ? 'Reverse charge applies because both parties are VAT-registered in the EU.'
-      : 'VAT must be charged. ' + (!checks.vatIdFormat.passed ? checks.vatIdFormat.message : checks.countryMatch.message),
+    isAllowed,
+    checks: {
+      formatValid,
+      countryMatch,
+    },
+    explanation,
   };
-}
-
-function validateVatIdFormat(vatId: string): { passed: boolean; message: string } {
-  if (!vatId || vatId.trim().length === 0) {
-    return { passed: false, message: 'VAT ID is required for reverse charge' };
-  }
-
-  if (vatId.length < 4) {
-    return { passed: false, message: 'VAT ID is too short' };
-  }
-
-  const countryCode = vatId.substring(0, 2).toUpperCase();
-  const euCountries = ['AT', 'BE', 'BG', 'HR', 'CY', 'CZ', 'DK', 'EE', 'FI', 'FR', 'DE', 'GR', 'HU', 'IE', 'IT', 'LV', 'LT', 'LU', 'MT', 'NL', 'PL', 'PT', 'RO', 'SK', 'SI', 'ES', 'SE'];
-
-  if (!euCountries.includes(countryCode)) {
-    return { passed: false, message: 'VAT ID must start with a valid EU country code' };
-  }
-
-  return { passed: true, message: 'VAT ID format is valid' };
-}
-
-function validateCountryMatch(vatId: string, customerCountry: string): { passed: boolean; message: string } {
-  if (!vatId || vatId.length < 2) {
-    return { passed: false, message: 'Cannot validate country match without VAT ID' };
-  }
-
-  const vatIdCountry = vatId.substring(0, 2).toUpperCase();
-  const normalizedCustomerCountry = customerCountry.toUpperCase();
-
-  if (vatIdCountry !== normalizedCustomerCountry) {
-    return {
-      passed: false,
-      message: `VAT ID country (${vatIdCountry}) does not match customer country (${normalizedCustomerCountry})`,
-    };
-  }
-
-  return { passed: true, message: 'VAT ID country matches customer country' };
 }

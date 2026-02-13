@@ -1,14 +1,11 @@
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { FileText, Info, ArrowLeft, RefreshCw, Download, TrendingUp } from 'lucide-react';
+import { FileText, Info, ArrowLeft, RefreshCw } from 'lucide-react';
 import { type VATCalculationResult } from '../../lib/vat/calculateVat';
 import { type VATCalculationInput } from '../../lib/vat/calculateVat';
-import { checkOSSRelevance } from '../../lib/vat/ossIndicator';
-import { usePlanAccess } from '../../hooks/usePlanAccess';
 import { useEventLogger } from '../../hooks/useEventLogger';
 import { CORE_EVENTS } from '../../lib/analytics/coreEvents';
-import { toast } from 'sonner';
 
 interface VatResultsStepProps {
   result: VATCalculationResult;
@@ -27,11 +24,8 @@ export default function VatResultsStep({
   onExplainVat,
   onBack,
   onGenerateNew,
-  onOpenUpgradeModal,
 }: VatResultsStepProps) {
-  const { isPro } = usePlanAccess();
   const { log } = useEventLogger();
-  const ossRelevance = checkOSSRelevance(formData);
 
   const formatCurrency = (cents: number) => {
     return new Intl.NumberFormat('de-DE', {
@@ -40,39 +34,15 @@ export default function VatResultsStep({
     }).format(cents / 100);
   };
 
-  const handleExportOSS = () => {
-    if (!isPro) {
-      toast.error('OSS report export is only available for Pro users');
-      return;
-    }
-    toast.info('OSS report export feature coming soon!');
-  };
-
   const handleExplainVat = () => {
     log(CORE_EVENTS.AI_EXPLAIN_CLICKED);
     onExplainVat();
   };
 
-  const handleInlineUpgrade = () => {
-    log(CORE_EVENTS.UPGRADE_CTA_SHOWN, 'inline_upsell');
-    if (onOpenUpgradeModal) {
-      onOpenUpgradeModal();
-    }
-  };
-
-  const isReverseCharge = result.scenario === 'reverse-charge' && result.vatRatePercent === 0;
+  const isReverseCharge = formData.reverseCharge && result.vatRatePercent === 0;
 
   return (
     <div className="space-y-6">
-      {result.scenario === 'kleinunternehmer' && (
-        <Alert className="bg-amber-50 border-amber-200 dark:bg-amber-950 dark:border-amber-800">
-          <Info className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-          <AlertDescription className="ml-2 text-amber-900 dark:text-amber-100">
-            <strong>You qualify as a Kleinunternehmer. VAT should NOT be charged.</strong>
-          </AlertDescription>
-        </Alert>
-      )}
-
       <Card>
         <CardContent className="pt-6">
           <div className="space-y-4">
@@ -94,67 +64,20 @@ export default function VatResultsStep({
         </CardContent>
       </Card>
 
-      {result.legalNote && (
+      {isReverseCharge && (
+        <Alert className="bg-muted/50 border-muted-foreground/20">
+          <Info className="h-4 w-4 text-muted-foreground" />
+          <AlertDescription className="ml-2 text-sm">
+            <strong>Reverse charge applies under EU VAT Directive Article 44/196</strong>
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {result.legalNote && !isReverseCharge && (
         <Alert>
           <Info className="h-4 w-4" />
           <AlertDescription className="ml-2">
             <strong>Legal Note:</strong> {result.legalNote}
-          </AlertDescription>
-        </Alert>
-      )}
-
-      {isReverseCharge && (
-        <Alert className="bg-blue-50 border-blue-200 dark:bg-blue-950 dark:border-blue-800">
-          <Info className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-          <AlertDescription className="ml-2 text-blue-900 dark:text-blue-100">
-            <div className="space-y-1">
-              <p className="font-medium">Steuerschuldnerschaft des Leistungsempfängers (§13b UStG)</p>
-              <p className="text-sm">Tax liability of the recipient of services (§13b UStG)</p>
-            </div>
-          </AlertDescription>
-        </Alert>
-      )}
-
-      {/* Inline Upsell */}
-      <Alert className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200 dark:from-blue-950 dark:to-indigo-950 dark:border-blue-800">
-        <TrendingUp className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-        <AlertDescription className="ml-2">
-          <div className="space-y-3">
-            <div>
-              <p className="font-medium text-blue-900 dark:text-blue-100">⚠️ Note:</p>
-              <p className="text-sm text-blue-800 dark:text-blue-200 mt-1">
-                Cross-border EU business may require reverse-charge rules. Pro users get automatic checks and explanations.
-              </p>
-            </div>
-            <Button
-              size="sm"
-              variant="default"
-              onClick={handleInlineUpgrade}
-              className="bg-blue-600 hover:bg-blue-700 text-white"
-            >
-              Upgrade for audit-safe invoices
-            </Button>
-          </div>
-        </AlertDescription>
-      </Alert>
-
-      {ossRelevance.isRelevant && (
-        <Alert className="bg-blue-50 border-blue-200 dark:bg-blue-950 dark:border-blue-800">
-          <Info className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-          <AlertDescription className="ml-2 text-blue-900 dark:text-blue-100">
-            <div className="space-y-2">
-              <p><strong>OSS registration recommended</strong></p>
-              <p className="text-sm">{ossRelevance.reason}</p>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={handleExportOSS}
-                className="mt-2"
-              >
-                <Download className="h-3 w-3 mr-2" />
-                Export OSS report (Pro)
-              </Button>
-            </div>
           </AlertDescription>
         </Alert>
       )}
