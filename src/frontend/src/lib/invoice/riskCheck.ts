@@ -26,6 +26,21 @@ export function performInvoiceRiskCheck(
     });
   }
 
+  // Critical: Check legal VAT text for scenarios that require it
+  const requiresLegalText = 
+    result.scenario === 'reverse-charge' ||
+    result.scenario === 'vat-exempt' ||
+    result.scenario === 'kleinunternehmer' ||
+    result.scenario === 'intra-eu-supply' ||
+    result.scenario === 'digital-b2c-eu';
+
+  if (requiresLegalText) {
+    const legalVatText = input.legalVatTextOverride || autoLegalText;
+    if (!legalVatText || legalVatText.trim().length === 0) {
+      risks.push(`Critical: Legal VAT text is required for ${result.scenario} scenario`);
+    }
+  }
+
   // Check reverse charge proof if applicable
   if (input.customerType === 'B2B' && result.scenario === 'reverse-charge') {
     const reverseChargeValidation = validateReverseChargeProof(
@@ -39,9 +54,19 @@ export function performInvoiceRiskCheck(
     }
   }
 
+  // Check for VAT exempt scenario
+  if (result.scenario === 'vat-exempt') {
+    const legalVatText = input.legalVatTextOverride || autoLegalText;
+    if (!legalVatText || legalVatText.includes('[insert Article/Paragraph]')) {
+      risks.push('VAT exempt invoices must specify the legal basis for exemption (Article/Paragraph reference)');
+    }
+    warnings.push('Ensure the transaction qualifies for VAT exemption under applicable law');
+  }
+
   // Check for Kleinunternehmer scenario
   if (result.scenario === 'kleinunternehmer') {
-    if (!autoLegalText || (input.legalVatTextOverride && !input.legalVatTextOverride.includes('§19'))) {
+    const legalVatText = input.legalVatTextOverride || autoLegalText;
+    if (!legalVatText || !legalVatText.includes('§19')) {
       warnings.push('Kleinunternehmer invoices must include §19 UStG reference');
     }
   }

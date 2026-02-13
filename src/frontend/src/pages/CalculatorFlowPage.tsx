@@ -11,7 +11,6 @@ import UpgradeModal from '../components/usage/UpgradeModal';
 import GlobalDisclaimer from '../components/vat/GlobalDisclaimer';
 import { calculateEUVAT, type VATCalculationInput, type VATCalculationResult } from '../lib/vat/calculateVat';
 import { getCountryConfig } from '../lib/vat/euCountryConfig';
-import { computeVatRateForCategory } from '../lib/vat/vatCategoryRateRules';
 import { useEventLogger } from '../hooks/useEventLogger';
 import { CORE_EVENTS } from '../lib/analytics/coreEvents';
 import { useEffect } from 'react';
@@ -35,6 +34,8 @@ const initialFormData: VATCalculationInput = {
   vatRate: 'standard',
   reverseCharge: false,
   vatCategory: 'others',
+  vatTreatment: 'standard',
+  selectedReducedRate: null,
   previousYearTurnover: 0,
   currentYearTurnover: 0,
   invoiceNumber: '',
@@ -73,7 +74,9 @@ export default function CalculatorFlowPage() {
         ...formData,
         selectedCountry: countryCode,
         customerCountry: countryCode,
-        vatCategory: 'others', // Reset to default
+        vatCategory: 'others',
+        vatTreatment: 'standard',
+        selectedReducedRate: null,
       });
       setCurrentStep(1);
     }
@@ -83,28 +86,10 @@ export default function CalculatorFlowPage() {
     const updatedFormData = { ...formData, ...data };
     setFormData(updatedFormData);
 
-    // Compute VAT rate based on country and category
-    const country = getCountryConfig(updatedFormData.selectedCountry || updatedFormData.customerCountry);
-    if (!country) return;
+    // Use the effective VAT rate passed from the transaction step
+    const effectiveRate = updatedFormData.effectiveVatRate || 0;
 
-    const isReducedRateCountry = ['DE', 'FR', 'IT', 'SE', 'BE'].includes(country.code);
-    
-    let computedRate: number;
-    if (isReducedRateCountry && updatedFormData.vatCategory) {
-      // Use computed rate for reduced-rate countries
-      computedRate = computeVatRateForCategory(
-        country.code,
-        updatedFormData.vatCategory,
-        country.standardRate
-      );
-    } else {
-      // For other countries, use standard or first reduced rate
-      computedRate = updatedFormData.vatRate === 'reduced' && country.reducedRates.length > 0
-        ? country.reducedRates[0]
-        : country.standardRate;
-    }
-
-    const calculationResult = calculateEUVAT(updatedFormData, computedRate);
+    const calculationResult = calculateEUVAT(updatedFormData, effectiveRate);
     setResult(calculationResult);
     setCurrentStep(2);
   };

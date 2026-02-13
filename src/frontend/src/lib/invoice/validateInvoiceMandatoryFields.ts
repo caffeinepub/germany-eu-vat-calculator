@@ -20,6 +20,14 @@ export function validateInvoiceMandatoryFields(
 ): MandatoryFieldsValidation {
   const legalVatText = input.legalVatTextOverride || autoLegalText;
   
+  // Scenarios that require legal VAT text
+  const requiresLegalText = 
+    result.scenario === 'reverse-charge' ||
+    result.scenario === 'vat-exempt' ||
+    result.scenario === 'kleinunternehmer' ||
+    result.scenario === 'intra-eu-supply' ||
+    result.scenario === 'digital-b2c-eu';
+  
   const checks: MandatoryFieldCheck[] = [
     {
       field: 'invoiceNumber',
@@ -59,7 +67,7 @@ export function validateInvoiceMandatoryFields(
     },
     {
       field: 'legalVatText',
-      required: result.scenario !== 'b2c-standard' && result.scenario !== 'b2c-reduced',
+      required: requiresLegalText,
       present: legalVatText.trim().length > 0,
       label: 'Legal VAT text',
     },

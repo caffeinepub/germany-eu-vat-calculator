@@ -1,59 +1,40 @@
 {
   "schemaVersion": "1.0.0",
   "projectStateVersion": 3,
-  "summary": "App to generate invoices with VAT selection enhanced by VAT category dropdown and country-specific reduced-rate logic (Germany, France, Italy, Sweden, Belgium), including safe fallback to standard rate and legal disclaimer/tooltip.",
-  "architectural_notes": [
-    "VAT rate determination depends on (country, VAT category); if category is ineligible or 'Others' is selected, apply the country's standard VAT rate.",
-    "Supported reduced-rate rules currently limited to DE/FR/IT/SE/BE with explicit category-to-rate mappings; other countries default to existing standard VAT behavior."
-  ],
+  "summary": "App UI changes for VAT/invoicing: reorganize Service Product category placement, adjust column sizing/layout, and improve VAT Category selection UX (limited visible items with scrolling).",
+  "architectural_notes": [],
   "known_issues": [],
   "isFixRequest": false,
   "existing_features": [
     {
-      "id": "feature-add-a-new-vat-category-dropdown-under-the-vat-selection-area-in-the-vat-calculator-transaction-step-the-step-that-currently-contains-the-vat-rate-controls-the-dropdown-must-include-exactly-these-options-english-labels-standard-goods-services-food-essential-goods-books-printed-media-accommodation-hospitality-restaurant-services-passenger-transport-construction-renovation-residential-medical-social-services-cultural-events-utilities-electricity-gas-water-others-default-selection-must-be-others",
-      "title": "Add a new “VAT Category” dropdown under the VAT selection area in the VAT calculator transaction step (the step that currently contains the VAT Rate controls). The dropdown must include exactly these options (English labels):\n- Standard Goods / Services\n- Food & Essential Goods\n- Books & Printed Media\n- Accommodation & Hospitality\n- Restaurant Services\n- Passenger Transport\n- Construction & Renovation (Residential)\n- Medical & Social Services\n- Cultural Events\n- Utilities (Electricity / Gas / Water)\n- Others\n\nDefault selection must be “Others”.",
+      "id": "feature-move-the-service-product-category-field-out-of-the-results-flow-and-into-the-invoice-step-remove-the-service-product-category-selector-from-the-vat-calculator-transaction-results-ui-and-add-it-under-the-invoice-tab-step-positioned-before-the-item-description-field-column",
+      "title": "Move the “Service/Product Category” field out of the Results flow and into the Invoice step: remove the Service/Product Category selector from the VAT calculator Transaction/Results UI and add it under the Invoice tab/step, positioned before the item description field/column.",
       "reqIds": [
         "REQ-1"
       ],
       "version": 1
     },
     {
-      "id": "feature-extend-the-vat-calculation-form-state-types-so-the-selected-vat-category-is-persisted-through-the-calculator-flow-and-available-at-calculation-time-from-transaction-step-through-results-invoice-preview",
-      "title": "Extend the VAT calculation form state/types so the selected VAT Category is persisted through the calculator flow and available at calculation time (from transaction step through results/invoice/preview).",
+      "id": "feature-reduce-the-visual-size-compact-the-layout-of-the-enable-reverse-charge-and-vat-treatment-ui-controls-so-they-take-less-space-especially-on-desktop-tablet-widths",
+      "title": "Reduce the visual size (compact the layout) of the “Enable Reverse Charge” and “VAT Treatment” UI controls so they take less space, especially on desktop/tablet widths.",
       "reqIds": [
         "REQ-2"
       ],
       "version": 1
     },
     {
-      "id": "feature-implement-country-based-vat-rate-selection-logic-for-these-countries-only-germany-de-france-fr-italy-it-sweden-se-belgium-be-the-computed-vat-rate-percent-must-be-determined-from-selectedcountry-vat-category-using-the-mapping-provided-by-the-user-including-multiple-reduced-rates-for-fr-it-se-be-rules-if-vat-category-is-others-always-apply-the-country-s-standard-rate-if-vat-category-is-not-eligible-for-a-reduced-rate-in-that-country-auto-fallback-to-the-country-s-standard-rate-when-multiple-reduced-rates-exist-e-g-france-10-vs-5-5-choose-the-correct-reduced-rate-based-on-category-per-the-user-s-mapping-the-computed-rate-must-be-used-for-vat-calculation-in-the-results-step",
-      "title": "Implement country-based VAT rate selection logic for these countries only: Germany (DE), France (FR), Italy (IT), Sweden (SE), Belgium (BE). The computed VAT rate percent must be determined from (selectedCountry, VAT Category) using the mapping provided by the user, including multiple reduced rates for FR/IT/SE/BE.\n\nRules:\n- If VAT Category is “Others”, always apply the country’s Standard rate.\n- If VAT Category is not eligible for a reduced rate in that country, auto-fallback to the country’s Standard rate.\n- When multiple reduced rates exist (e.g., France 10% vs 5.5%), choose the correct reduced rate based on category per the user’s mapping.\n- The computed rate must be used for VAT calculation in the results step.",
+      "id": "feature-reposition-the-vat-category-control-to-the-right-side-of-the-transaction-details-section-layout-i-e-right-column-on-md-breakpoints-while-keeping-a-sensible-stacked-layout-on-mobile",
+      "title": "Reposition the “VAT Category” control to the right side of the “Transaction Details” section layout (i.e., right column on md+ breakpoints), while keeping a sensible stacked layout on mobile.",
       "reqIds": [
         "REQ-3"
       ],
       "version": 1
     },
     {
-      "id": "feature-update-the-transaction-step-ui-so-the-app-does-not-rely-on-the-user-manually-selecting-reduced-vs-standard-for-de-fr-it-se-be-instead-the-ui-must-clearly-reflect-the-computed-vat-rate-based-on-the-selected-vat-category-and-still-remain-compatible-with-the-existing-flow-if-an-existing-vat-rate-selector-remains-visible-it-must-not-allow-the-user-to-incorrectly-apply-a-reduced-rate-when-the-selected-category-is-not-eligible-the-final-computed-rate-used-in-calculation-must-always-match-the-country-category-rules",
-      "title": "Update the transaction step UI so the app does not rely on the user manually selecting “Reduced” vs “Standard” for DE/FR/IT/SE/BE. Instead, the UI must clearly reflect the computed VAT rate based on the selected VAT Category (and still remain compatible with the existing flow).\n\nIf an existing “VAT Rate” selector remains visible, it must not allow the user to incorrectly apply a reduced rate when the selected category is not eligible; the final computed rate used in calculation must always match the country+category rules.",
+      "id": "feature-update-the-vat-category-dropdown-so-that-only-5-vat-category-options-are-visible-at-once-with-vertical-scrolling-enabled-to-reach-the-remaining-categories",
+      "title": "Update the VAT Category dropdown so that only 5 VAT Category options are visible at once, with vertical scrolling enabled to reach the remaining categories.",
       "reqIds": [
         "REQ-4"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-add-the-following-legal-disclaimer-text-directly-under-the-vat-selection-area-in-the-transaction-step-user-facing-text-must-match-exactly-and-be-in-english-reduced-vat-rates-apply-only-to-specific-goods-and-services-as-defined-under-national-vat-legislation-users-are-responsible-for-verifying-eligibility-before-applying-reduced-rates",
-      "title": "Add the following legal disclaimer text directly under the VAT selection area in the transaction step (user-facing text must match exactly and be in English):\n\n“Reduced VAT rates apply only to specific goods and services as defined under national VAT legislation. Users are responsible for verifying eligibility before applying reduced rates.”",
-      "reqIds": [
-        "REQ-5"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-add-an-info-tooltip-near-the-vat-category-dropdown-or-vat-selection-section-with-this-exact-text-english-not-sure-which-category-applies-select-others-to-apply-the-standard-vat-rate",
-      "title": "Add an info tooltip near the VAT Category dropdown (or VAT selection section) with this exact text (English):\n\n“Not sure which category applies? Select ‘Others’ to apply the standard VAT rate.”",
-      "reqIds": [
-        "REQ-6"
       ],
       "version": 1
     }
@@ -61,24 +42,30 @@
   "new_feature_requests": [
     {
       "id": "AR-1",
-      "summary": "Add VAT Category dropdown under VAT Selection with specified categories including an “Others” option (default to standard rate).",
+      "summary": "Move 'Service Product category' from Results tab to Invoice tab, positioned before the Description column.",
       "reqIds": [],
       "status": "pending"
     },
     {
       "id": "AR-2",
-      "summary": "Implement country-based VAT reduced-rate logic for Germany, France, Italy, Sweden, and Belgium based on selected VAT Category, with auto-fallback to standard rate when category is not eligible.",
+      "summary": "Reduce box size (column width) for 'Enable Reverse charge' and 'VAT Treatment' columns.",
       "reqIds": [],
       "status": "pending"
     },
     {
       "id": "AR-3",
-      "summary": "Add legal disclaimer under VAT Selection regarding reduced VAT eligibility responsibility, plus optional info tooltip suggesting selecting “Others” when unsure.",
+      "summary": "Reposition 'VAT Category' to the right side of Transaction Details.",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-4",
+      "summary": "Limit VAT Category selector to show 5 visible items with scrolling to select the correct VAT Category.",
       "reqIds": [],
       "status": "pending"
     }
   ],
-  "projectName": "Add VAT Category dropdown with country-based reduced VAT logic and legal disclaimer",
+  "projectName": "Reorganize VAT calculator UI: move Service/Product Category to Invoice step, compact controls, and improve VAT Category selector",
   "clarification_mode": "instant",
   "clarification_rounds": 0
 }

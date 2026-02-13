@@ -1,11 +1,8 @@
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { FileText, Info, ArrowLeft, RefreshCw } from 'lucide-react';
-import { type VATCalculationResult } from '../../lib/vat/calculateVat';
-import { type VATCalculationInput } from '../../lib/vat/calculateVat';
-import { useEventLogger } from '../../hooks/useEventLogger';
-import { CORE_EVENTS } from '../../lib/analytics/coreEvents';
+import { ArrowLeft, FileText, BookOpen, Plus, Info } from 'lucide-react';
+import { type VATCalculationInput, type VATCalculationResult } from '../../lib/vat/calculateVat';
 
 interface VatResultsStepProps {
   result: VATCalculationResult;
@@ -14,7 +11,7 @@ interface VatResultsStepProps {
   onExplainVat: () => void;
   onBack: () => void;
   onGenerateNew: () => void;
-  onOpenUpgradeModal?: () => void;
+  onOpenUpgradeModal: () => void;
 }
 
 export default function VatResultsStep({
@@ -25,81 +22,97 @@ export default function VatResultsStep({
   onBack,
   onGenerateNew,
 }: VatResultsStepProps) {
-  const { log } = useEventLogger();
+  const netEuros = result.netAmountCents / 100;
+  const vatEuros = result.vatAmountCents / 100;
+  const grossEuros = result.grossAmountCents / 100;
 
-  const formatCurrency = (cents: number) => {
-    return new Intl.NumberFormat('de-DE', {
-      style: 'currency',
-      currency: 'EUR',
-    }).format(cents / 100);
-  };
-
-  const handleExplainVat = () => {
-    log(CORE_EVENTS.AI_EXPLAIN_CLICKED);
-    onExplainVat();
-  };
-
-  const isReverseCharge = formData.reverseCharge && result.vatRatePercent === 0;
+  const isReverseCharge = result.scenario === 'reverse-charge';
+  const isVatExempt = result.scenario === 'vat-exempt';
+  const isKleinunternehmer = result.scenario === 'kleinunternehmer';
 
   return (
     <div className="space-y-6">
       <Card>
-        <CardContent className="pt-6">
-          <div className="space-y-4">
-            <div className="flex justify-between items-center pb-2 border-b">
-              <span className="text-muted-foreground">Net Amount</span>
-              <span className="font-medium">{formatCurrency(result.netAmountCents)}</span>
+        <CardHeader>
+          <CardTitle className="text-center">VAT Calculation Results</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-3">
+            <div className="flex justify-between items-center py-2 border-b">
+              <span className="text-muted-foreground">Net Amount:</span>
+              <span className="font-semibold text-lg">€{netEuros.toFixed(2)}</span>
             </div>
-            <div className="flex justify-between items-center pb-2 border-b">
+
+            <div className="flex justify-between items-center py-2 border-b">
               <span className="text-muted-foreground">
-                VAT ({result.vatRatePercent}%)
+                VAT ({result.vatRatePercent}%):
               </span>
-              <span className="font-medium">{formatCurrency(result.vatAmountCents)}</span>
+              <span className="font-semibold text-lg">€{vatEuros.toFixed(2)}</span>
             </div>
-            <div className="flex justify-between items-center text-lg font-bold">
-              <span>Total Amount</span>
-              <span>{formatCurrency(result.grossAmountCents)}</span>
+
+            <div className="flex justify-between items-center py-3 bg-muted/30 rounded-lg px-4">
+              <span className="font-medium text-lg">Total Amount:</span>
+              <span className="font-bold text-2xl text-primary">€{grossEuros.toFixed(2)}</span>
             </div>
           </div>
+
+          {/* Scenario-specific messages */}
+          {isReverseCharge && (
+            <Alert className="bg-blue-50 border-blue-200 dark:bg-blue-950 dark:border-blue-800">
+              <Info className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+              <AlertDescription className="ml-2 text-blue-900 dark:text-blue-100">
+                <p className="font-medium mb-1">Reverse Charge Applies</p>
+                <p className="text-sm">
+                  VAT liability shifts to the customer. Your invoice must include the reverse charge legal note.
+                </p>
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {isVatExempt && (
+            <Alert className="bg-amber-50 border-amber-200 dark:bg-amber-950 dark:border-amber-800">
+              <Info className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+              <AlertDescription className="ml-2 text-amber-900 dark:text-amber-100">
+                <p className="font-medium mb-1">VAT Exempt Transaction</p>
+                <p className="text-sm">
+                  This transaction is VAT exempt. Your invoice must include a legal note explaining the exemption basis (e.g., Article reference or exemption category).
+                </p>
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {isKleinunternehmer && (
+            <Alert className="bg-green-50 border-green-200 dark:bg-green-950 dark:border-green-800">
+              <Info className="h-4 w-4 text-green-600 dark:text-green-400" />
+              <AlertDescription className="ml-2 text-green-900 dark:text-green-100">
+                <p className="font-medium mb-1">Kleinunternehmer Exemption</p>
+                <p className="text-sm">
+                  Small business exemption under §19 UStG applies. Your invoice must include the §19 UStG reference.
+                </p>
+              </AlertDescription>
+            </Alert>
+          )}
         </CardContent>
       </Card>
 
-      {isReverseCharge && (
-        <Alert className="bg-muted/50 border-muted-foreground/20">
-          <Info className="h-4 w-4 text-muted-foreground" />
-          <AlertDescription className="ml-2 text-sm">
-            <strong>Reverse charge applies under EU VAT Directive Article 44/196</strong>
-          </AlertDescription>
-        </Alert>
-      )}
-
-      {result.legalNote && !isReverseCharge && (
-        <Alert>
-          <Info className="h-4 w-4" />
-          <AlertDescription className="ml-2">
-            <strong>Legal Note:</strong> {result.legalNote}
-          </AlertDescription>
-        </Alert>
-      )}
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <Button onClick={onViewInvoice} variant="default" className="w-full">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <Button onClick={onViewInvoice} className="w-full">
           <FileText className="h-4 w-4 mr-2" />
-          Enter Invoice Details
+          Create Invoice
         </Button>
-        <Button onClick={handleExplainVat} variant="outline" className="w-full">
-          <Info className="h-4 w-4 mr-2" />
+        <Button onClick={onExplainVat} variant="outline" className="w-full">
+          <BookOpen className="h-4 w-4 mr-2" />
           Explain VAT
         </Button>
       </div>
 
-      <div className="flex gap-3 pt-4 border-t">
+      <div className="flex gap-3">
         <Button variant="outline" onClick={onBack} className="flex-1">
           <ArrowLeft className="h-4 w-4 mr-2" />
           Back
         </Button>
         <Button variant="outline" onClick={onGenerateNew} className="flex-1">
-          <RefreshCw className="h-4 w-4 mr-2" />
+          <Plus className="h-4 w-4 mr-2" />
           New Calculation
         </Button>
       </div>

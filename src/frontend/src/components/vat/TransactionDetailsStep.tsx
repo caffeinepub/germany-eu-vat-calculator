@@ -3,12 +3,10 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Badge } from '@/components/ui/badge';
 import { Info } from 'lucide-react';
-import { type VATCalculationInput, type ServiceCategory } from '../../lib/vat/calculateVat';
+import { type VATCalculationInput } from '../../lib/vat/calculateVat';
 import { getCountryConfig } from '../../lib/vat/euCountryConfig';
 import ReverseChargeProofChecker from './ReverseChargeProofChecker';
 import { useEventLogger } from '../../hooks/useEventLogger';
@@ -23,7 +21,6 @@ interface TransactionDetailsStepProps {
 export default function TransactionDetailsStep({ initialData, onNext, onBack }: TransactionDetailsStepProps) {
   const [customerType, setCustomerType] = useState<'B2C' | 'B2B'>(initialData.customerType);
   const [vatId, setVatId] = useState(initialData.vatId);
-  const [serviceCategory, setServiceCategory] = useState<ServiceCategory>(initialData.serviceCategory || 'digital');
   const [netAmount, setNetAmount] = useState(initialData.netAmount.toString());
   const [vatRate, setVatRate] = useState<'standard' | 'reduced'>(initialData.vatRate);
   const [reverseCharge, setReverseCharge] = useState(initialData.reverseCharge || false);
@@ -36,7 +33,6 @@ export default function TransactionDetailsStep({ initialData, onNext, onBack }: 
   const handleNext = () => {
     log(CORE_EVENTS.VAT_CALCULATED, JSON.stringify({
       customerType,
-      serviceCategory,
       netAmount: parseFloat(netAmount) || 0,
       vatRate,
       reverseCharge,
@@ -45,7 +41,6 @@ export default function TransactionDetailsStep({ initialData, onNext, onBack }: 
     onNext({
       customerType,
       vatId: customerType === 'B2B' ? vatId : '',
-      serviceCategory,
       netAmount: parseFloat(netAmount) || 0,
       vatRate,
       reverseCharge,
@@ -120,45 +115,17 @@ export default function TransactionDetailsStep({ initialData, onNext, onBack }: 
         </div>
 
         <div>
-          <div className="flex items-center gap-2 mb-2">
-            <Label htmlFor="service-category">Service/Product Category</Label>
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Info className="h-4 w-4 text-muted-foreground cursor-help" />
-                </TooltipTrigger>
-                <TooltipContent className="max-w-xs">
-                  <p>Select the category that best describes your service or product.</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          </div>
-          <Select value={serviceCategory} onValueChange={(v) => setServiceCategory(v as ServiceCategory)}>
-            <SelectTrigger id="service-category" className="select-trigger-safe w-full min-w-0">
-              <SelectValue className="truncate" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="digital">Digital service</SelectItem>
-              <SelectItem value="saas">SaaS</SelectItem>
-              <SelectItem value="consulting">Consulting / freelance</SelectItem>
-              <SelectItem value="physical">Physical goods</SelectItem>
-              <SelectItem value="others">Others</SelectItem>
-            </SelectContent>
-          </Select>
+          <Label htmlFor="net-amount">Net Amount (€)</Label>
+          <Input
+            id="net-amount"
+            type="number"
+            step="0.01"
+            value={netAmount}
+            onChange={(e) => setNetAmount(e.target.value)}
+            placeholder="0.00"
+            className="mt-2"
+          />
         </div>
-      </div>
-
-      <div>
-        <Label htmlFor="net-amount">Net Amount (€)</Label>
-        <Input
-          id="net-amount"
-          type="number"
-          step="0.01"
-          value={netAmount}
-          onChange={(e) => setNetAmount(e.target.value)}
-          placeholder="0.00"
-          className="mt-2"
-        />
       </div>
 
       <div className="border rounded-lg p-4 bg-muted/30">

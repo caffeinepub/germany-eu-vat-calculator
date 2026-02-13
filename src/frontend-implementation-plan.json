@@ -1,130 +1,84 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "VAT Category dropdown + country-based reduced VAT mapping + disclaimer/tooltip",
+  "title": "VAT calculator UI reorg: move Service/Product Category to Invoice, compact controls, improve VAT Category selector",
   "requirements": [
     {
       "id": "REQ-1",
-      "summary": "Add a VAT Category dropdown under VAT selection in the transaction step with the exact option labels and default to “Others”.",
+      "summary": "Move Service/Product Category input from the VAT calculator Transaction/Results UI into the Invoice step and render it as an invoice line-item column before Description.",
       "acceptanceCriteria": [
-        "In the VAT calculator transaction step UI, a “VAT Category” dropdown is shown under VAT selection.",
-        "The dropdown options match the provided list exactly and are user-facing in English.",
-        "The default selection is “Others” for a new calculation."
+        "In the VAT calculation flow, the user can no longer select or view “Service/Product Category” in the Results UI.",
+        "In the Invoice step (Invoice details), “Service/Product Category” is available as an input and appears before the item description input/column.",
+        "Existing invoice generation/preview still works and includes the selected category in the invoice line-item layout (as a column before Description, when a columnar line-item table is used)."
       ],
       "file_operations": [
         {
           "path": "frontend/src/components/vat/CountryTransactionStep.tsx",
           "operation": "modify",
-          "description": "Add a new “VAT Category” Select control under the existing VAT selection area and render the options with the exact English labels provided in REQ-1; default the selection to “Others” when no prior value exists. Use the shadcn-ui Select and Label components already used in this file. Verify the component's usage instructions before implementing."
+          "description": "Remove the Service/Product Category selector from the transaction/results flow UI (currently in Transaction Details), while keeping the existing formData field intact for later use in the Invoice step."
         },
         {
-          "path": "frontend/src/pages/CalculatorFlowPage.tsx",
+          "path": "frontend/src/components/vat/TransactionDetailsStep.tsx",
           "operation": "modify",
-          "description": "Extend initial calculator form data to include the VAT Category field and set its default to “Others”, ensuring a new calculation starts with that selection."
+          "description": "Remove the Service/Product Category selector from this legacy/alternate transaction step UI so the category is not selectable/viewable in the transaction/results portion of the flow."
+        },
+        {
+          "path": "frontend/src/components/invoice/InvoiceDetailsStep.tsx",
+          "operation": "modify",
+          "description": "Add a Service/Product Category selector to the Invoice step UI, positioned before the Item Description field; bind it to the shared VATCalculationInput/formData field so the selection is preserved into preview."
+        },
+        {
+          "path": "frontend/src/lib/invoice/buildInvoiceHtml.ts",
+          "operation": "modify",
+          "description": "Update invoice HTML line-item table to include a Category column before Description, and render the selected Service/Product Category value for the line item; ensure existing invoice rendering remains valid."
         }
       ]
     },
     {
       "id": "REQ-2",
-      "summary": "Persist VAT Category through the calculator flow so it is available for calculation and downstream steps (results/invoice/preview).",
+      "summary": "Compact the Enable Reverse Charge and VAT Treatment controls to reduce card/box visual size without hurting readability.",
       "acceptanceCriteria": [
-        "Changing VAT Category and moving forward/backward in the calculator preserves the selected category.",
-        "The selected VAT Category is included in the data passed from the transaction step to the calculation step (where VAT is computed)."
+        "The “Enable Reverse Charge” control is rendered with reduced padding/height compared to the current card layout while remaining readable and clickable.",
+        "The “VAT Treatment” control group is rendered more compactly (reduced padding/spacing), without truncating labels or rate badges.",
+        "No overlap/clipping occurs in common viewports (mobile + md/lg breakpoints)."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/lib/vat/calculateVat.ts",
-          "operation": "modify",
-          "description": "Extend VATCalculationInput types to include a VAT Category field (and export a suitable VatCategory type + label mapping) so the selection is part of the shared form state across transaction/results/invoice/preview."
-        },
-        {
           "path": "frontend/src/components/vat/CountryTransactionStep.tsx",
           "operation": "modify",
-          "description": "Update the step’s local state and onNext payload to read/write the VAT Category value into the shared VATCalculationInput form state, so it persists when navigating between steps."
-        },
-        {
-          "path": "frontend/src/pages/CalculatorFlowPage.tsx",
-          "operation": "modify",
-          "description": "Ensure the form state merging logic (handleNext/back/new calculation) includes the VAT Category field so it remains available at calculation time and through results/invoice/preview."
+          "description": "Adjust the Reverse Charge card and VAT Treatment card layout classes to be more compact (reduced vertical padding/margins, tighter gaps, smaller but readable typography) while maintaining accessible tap/click targets across breakpoints."
         }
       ]
     },
     {
       "id": "REQ-3",
-      "summary": "Implement country+VAT Category based computed VAT rate logic for DE/FR/IT/SE/BE only, including multiple reduced rates and standard fallback rules.",
+      "summary": "Move VAT Category selector into the right column of the Transaction Details layout on md+ while keeping a sensible stacked order on mobile.",
       "acceptanceCriteria": [
-        "For DE: selecting any of the eligible categories results in 7%; all other categories (including Others) result in 19%.",
-        "For FR: eligible categories map to 10% or 5.5% as specified; all other categories (including Others) result in 20%.",
-        "For IT: eligible categories map to 10% / 5% / 4% as specified; all other categories (including Others) result in 22%.",
-        "For SE: eligible categories map to 12% / 6% as specified; all other categories (including Others) result in 25%.",
-        "For BE: eligible categories map to 12% / 6% as specified; all other categories (including Others) result in 21%.",
-        "When a category is not eligible, the app does not keep/force a reduced rate—VAT calculation uses the Standard rate (fallback)."
+        "On md+ breakpoints, the “VAT Category” selector appears in the right column of the Transaction Details inputs area.",
+        "On mobile, the Transaction Details inputs remain in a single-column stacked layout with a logical field order.",
+        "No validation or calculation behavior changes as a result of the layout move."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/lib/vat/vatCategoryRateRules.ts",
-          "operation": "create",
-          "description": "Create a dedicated helper module that computes the VAT rate percent from (selectedCountry, vatCategory) for DE/FR/IT/SE/BE only, including: (1) “Others” always returns standard, (2) categories not eligible return standard, and (3) multiple reduced rates for FR/IT/SE/BE are selected by category per the user-provided mapping."
-        },
-        {
-          "path": "frontend/src/pages/CalculatorFlowPage.tsx",
+          "path": "frontend/src/components/vat/CountryTransactionStep.tsx",
           "operation": "modify",
-          "description": "Replace the current rate selection logic (standard vs reduced first reducedRates[0]) with the computed VAT rate percent from the new country+category helper for DE/FR/IT/SE/BE, while keeping existing behavior for other countries. Ensure the computed percent is passed into calculateEUVAT so the results step uses it."
-        },
-        {
-          "path": "frontend/src/lib/vat/calculateVat.ts",
-          "operation": "modify",
-          "description": "Keep calculateEUVAT as the single VAT math function, but ensure it is called with the computed country+category rate percent so VATCalculationResult.vatRatePercent reflects the computed mapping."
+          "description": "Refactor the Transaction Details section to a responsive grid (single-column on mobile; two columns on md+), placing VAT Category in the right column on md+ and ensuring field order remains logical when stacked on mobile."
         }
       ]
     },
     {
       "id": "REQ-4",
-      "summary": "Update transaction step VAT UI to reflect the computed VAT rate for DE/FR/IT/SE/BE and prevent users from forcing an incorrect reduced/standard choice.",
+      "summary": "Limit the VAT Category dropdown to ~5 visible options at once with vertical scrolling for additional options, preserving keyboard navigation.",
       "acceptanceCriteria": [
-        "For DE/FR/IT/SE/BE, users cannot end up with a reduced VAT rate applied when their VAT Category is not eligible.",
-        "The VAT results shown correspond to the computed (country, category) rate, not an arbitrary user-selected reduced/standard toggle."
+        "When opening the VAT Category dropdown, the options list shows a maximum of ~5 items without scrolling.",
+        "If more than 5 categories exist, the dropdown list is scrollable and all categories remain selectable.",
+        "Keyboard navigation still works within the scrollable dropdown (up/down + enter)."
       ],
       "file_operations": [
         {
           "path": "frontend/src/components/vat/CountryTransactionStep.tsx",
           "operation": "modify",
-          "description": "Compute and display the final VAT rate percent derived from (countryCode, VAT Category) for DE/FR/IT/SE/BE within the VAT selection area (e.g., show a clear “Computed VAT Rate: X%” line). Ensure any existing VAT Rate selector (RadioGroup) is either hidden/disabled for those countries or constrained so it cannot produce an ineligible reduced rate. Use existing shadcn-ui RadioGroup/Badge/Alert patterns already present in the file. Verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/pages/CalculatorFlowPage.tsx",
-          "operation": "modify",
-          "description": "Ensure the calculation step always uses the computed country+category VAT rate for DE/FR/IT/SE/BE regardless of any lingering vatRate toggle state, so results cannot diverge from the rules."
-        }
-      ]
-    },
-    {
-      "id": "REQ-5",
-      "summary": "Render the provided legal disclaimer text under the VAT selection area in the transaction step.",
-      "acceptanceCriteria": [
-        "The disclaimer text is rendered under VAT selection in the transaction step.",
-        "The text matches exactly (including punctuation and quotation marks are not required in UI, but the sentence must match verbatim)."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/components/vat/CountryTransactionStep.tsx",
-          "operation": "modify",
-          "description": "Add the exact disclaimer sentence under the VAT selection area (near VAT Category / VAT Rate controls): “Reduced VAT rates apply only to specific goods and services as defined under national VAT legislation. Users are responsible for verifying eligibility before applying reduced rates.” Ensure it is user-facing and in English."
-        }
-      ]
-    },
-    {
-      "id": "REQ-6",
-      "summary": "Add an info tooltip near VAT Category (or VAT selection section) with the exact helper text.",
-      "acceptanceCriteria": [
-        "Hovering/focusing the info icon shows the tooltip text exactly as provided.",
-        "Tooltip appears in the transaction step near VAT Category / VAT selection."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/components/vat/CountryTransactionStep.tsx",
-          "operation": "modify",
-          "description": "Place an info icon next to the “VAT Category” label (or in the VAT selection section header) and show a tooltip with the exact text: “Not sure which category applies? Select ‘Others’ to apply the standard VAT rate.” Use the existing shadcn-ui Tooltip components already imported/used in this file. Verify the component's usage instructions before implementing."
+          "description": "Update the VAT Category SelectContent styling to enforce a fixed max height corresponding to ~5 items and enable overflow-y scrolling; keep the existing shadcn Select component composition (do not edit files under frontend/src/components/ui)."
         }
       ]
     }

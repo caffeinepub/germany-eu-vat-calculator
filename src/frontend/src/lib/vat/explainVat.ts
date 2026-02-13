@@ -29,6 +29,24 @@ This means:
 
 The reverse charge prevents double taxation in cross-border B2B transactions within the EU.`;
 
+    case 'vat-exempt':
+      return `This transaction is VAT exempt under applicable law.
+
+VAT exemption applies to specific goods and services defined by EU and national law, such as:
+• Medical and healthcare services
+• Educational services
+• Financial and insurance services
+• Certain cultural and sporting activities
+• Social welfare services
+
+This means:
+• You charge 0% VAT on your invoice
+• You cannot deduct input VAT on related purchases
+• You must include a legal note on your invoice specifying the exemption basis (Article or Paragraph reference)
+• The exemption must be legally applicable to your specific transaction
+
+Important: Ensure your transaction genuinely qualifies for exemption. Incorrect use of VAT exemption can result in penalties.`;
+
     case 'digital-b2c-eu':
       return `For digital services sold to consumers in other EU countries, special rules apply.
 
@@ -55,9 +73,9 @@ This means:
 The OSS scheme allows you to report and pay VAT for all EU countries through a single German portal.`;
 
     case 'b2c-reduced':
-      return `The reduced VAT rate of 7% applies to this transaction.
+      return `The reduced VAT rate of ${vatRatePercent}% applies to this transaction.
 
-Germany's reduced VAT rate applies to specific goods and services including:
+Reduced VAT rates apply to specific goods and services including:
 • Books and printed materials
 • Food and beverages (with exceptions)
 • Cultural services (theater, concerts, museums)
@@ -70,13 +88,13 @@ This means:
 • You can deduct input VAT on related business expenses
 • You report this in your regular VAT return
 
-Make sure your product/service actually qualifies for the reduced rate. When in doubt, use the standard rate of 19%.`;
+Make sure your product/service actually qualifies for the reduced rate. When in doubt, use the standard rate.`;
 
     case 'b2c-standard':
     default:
-      return `The standard German VAT rate of 19% applies to this transaction.
+      return `The standard VAT rate of ${vatRatePercent}% applies to this transaction.
 
-This is a standard domestic B2C (business-to-consumer) sale within Germany.
+This is a standard domestic B2C (business-to-consumer) sale.
 
 This means:
 • You charge ${vatRatePercent}% VAT on the net amount
@@ -84,6 +102,6 @@ This means:
 • You can deduct input VAT on related business expenses
 • You report this in your regular VAT return (monthly, quarterly, or annually depending on your turnover)
 
-The standard rate applies to most goods and services in Germany unless they specifically qualify for the reduced rate (7%) or are exempt.`;
+The standard rate applies to most goods and services unless they specifically qualify for the reduced rate or are exempt.`;
   }
 }

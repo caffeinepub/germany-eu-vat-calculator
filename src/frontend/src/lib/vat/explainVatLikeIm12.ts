@@ -26,6 +26,17 @@ It's like saying "you take care of your taxes, I'll take care of mine."
 
 Just make sure to write on the invoice that reverse charge applies.`;
 
+    case 'vat-exempt':
+      return `Some things don't have VAT at all!
+
+Certain services like doctors, schools, and banks don't charge VAT because the government decided these are special.
+
+If you sell something that's VAT exempt, you charge 0% VAT.
+
+But you need to explain on your invoice WHY it's exempt (like which law says so).
+
+Make sure your service really is exempt - you can't just decide this yourself!`;
+
     case 'digital-b2c-eu':
       return `Selling digital stuff across borders is tricky!
 
@@ -38,19 +49,19 @@ There's a special system called OSS that makes this easier. It lets you report a
     case 'b2c-reduced':
       return `Some things get a discount on VAT!
 
-Books, food, and cultural stuff only have 7% VAT instead of the normal 19%.
+Books, food, and cultural stuff only have a lower VAT rate instead of the normal one.
 
-Germany does this to make these important things more affordable.
+The government does this to make these important things more affordable.
 
 You still charge VAT, just less of it. And you can still get VAT back on your business expenses.`;
 
     case 'b2c-standard':
     default:
-      return `This is the normal way VAT works in Germany!
+      return `This is the normal way VAT works!
 
-You add 19% VAT to your price. So if something costs €100, the customer pays €119.
+You add VAT to your price. So if something costs €100, the customer pays more.
 
-You collect that €19 and give it to the tax office later.
+You collect that extra money and give it to the tax office later.
 
 But here's the good part: you can get back the VAT you paid on things you bought for your business.
 

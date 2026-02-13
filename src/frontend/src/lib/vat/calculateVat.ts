@@ -15,6 +15,10 @@ export interface VATCalculationInput {
   reverseCharge?: boolean;
   selectedCountry?: string;
   vatCategory?: VatCategory;
+  // New fields for VAT treatment selection
+  vatTreatment?: 'standard' | 'reduced' | 'exempt';
+  selectedReducedRate?: number | null;
+  effectiveVatRate?: number;
   // Invoice detail fields
   sellerName?: string;
   sellerAddress?: string;
@@ -35,13 +39,13 @@ export interface VATCalculationResult {
   grossAmountCents: number;
   vatRatePercent: number;
   legalNote: string | null;
-  scenario: 'kleinunternehmer' | 'reverse-charge' | 'b2c-standard' | 'b2c-reduced' | 'digital-b2c-eu' | 'intra-eu-supply';
+  scenario: 'kleinunternehmer' | 'reverse-charge' | 'vat-exempt' | 'b2c-standard' | 'b2c-reduced' | 'digital-b2c-eu' | 'intra-eu-supply';
 }
 
 export function calculateEUVAT(input: VATCalculationInput, countryRate: number): VATCalculationResult {
   const netAmountCents = Math.round(input.netAmount * 100);
 
-  // Check reverse charge toggle
+  // Check reverse charge toggle first
   if (input.reverseCharge) {
     return {
       netAmountCents,
@@ -53,15 +57,30 @@ export function calculateEUVAT(input: VATCalculationInput, countryRate: number):
     };
   }
 
+  // Check for explicit VAT exempt treatment (not reverse charge)
+  if (input.vatTreatment === 'exempt') {
+    return {
+      netAmountCents,
+      vatAmountCents: 0,
+      grossAmountCents: netAmountCents,
+      vatRatePercent: 0,
+      legalNote: 'VAT exempt - legal exemption must apply',
+      scenario: 'vat-exempt',
+    };
+  }
+
+  // Use effective VAT rate if provided (from treatment selection)
+  const effectiveRate = input.effectiveVatRate !== undefined ? input.effectiveVatRate : countryRate;
+
   // Calculate VAT with selected rate
-  const vatAmountCents = Math.round(netAmountCents * (countryRate / 100));
+  const vatAmountCents = Math.round(netAmountCents * (effectiveRate / 100));
   const grossAmountCents = netAmountCents + vatAmountCents;
 
   return {
     netAmountCents,
     vatAmountCents,
     grossAmountCents,
-    vatRatePercent: countryRate,
+    vatRatePercent: effectiveRate,
     legalNote: null,
     scenario: input.vatRate === 'reduced' ? 'b2c-reduced' : 'b2c-standard',
   };

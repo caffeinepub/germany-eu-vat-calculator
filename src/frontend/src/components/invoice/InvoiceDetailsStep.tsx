@@ -4,10 +4,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { ArrowLeft, FileText, Languages, AlertTriangle, Lock } from 'lucide-react';
-import { type VATCalculationInput, type VATCalculationResult } from '../../lib/vat/calculateVat';
+import { ArrowLeft, FileText, Languages, AlertTriangle, Lock, Info } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { type VATCalculationInput, type VATCalculationResult, type ServiceCategory } from '../../lib/vat/calculateVat';
 import { getAutoLegalVatText } from '../../lib/invoice/getAutoLegalVatText';
 import { validateInvoiceMandatoryFields } from '../../lib/invoice/validateInvoiceMandatoryFields';
 import { checkHistoricalRateDifference } from '../../lib/vat/germanyVatRateHistory';
@@ -23,6 +25,7 @@ export interface InvoiceDetails {
   sellerVatId: string;
   customerName: string;
   customerAddress: string;
+  serviceCategory: ServiceCategory;
   itemDescription: string;
   translateToEnglish: boolean;
   invoiceNumber: string;
@@ -58,6 +61,7 @@ export default function InvoiceDetailsStep({
     sellerVatId: initialData?.sellerVatId || formData.sellerVatId || '',
     customerName: initialData?.customerName || formData.customerName || '',
     customerAddress: initialData?.customerAddress || formData.customerAddress || '',
+    serviceCategory: initialData?.serviceCategory || formData.serviceCategory || 'digital',
     itemDescription: initialData?.itemDescription || formData.itemDescription || '',
     translateToEnglish: initialData?.translateToEnglish ?? formData.translateToEnglish ?? isEnglish,
     invoiceNumber: initialData?.invoiceNumber || formData.invoiceNumber || '',
@@ -264,6 +268,37 @@ export default function InvoiceDetailsStep({
           rows={3}
           required
         />
+      </div>
+
+      <div className="space-y-2">
+        <div className="flex items-center gap-2 mb-1.5">
+          <Label htmlFor="service-category">Service/Product Category *</Label>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Info className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
+              </TooltipTrigger>
+              <TooltipContent className="max-w-xs">
+                <p>Select the type of service or product you're selling</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        </div>
+        <Select 
+          value={invoiceData.serviceCategory} 
+          onValueChange={(v) => updateField('serviceCategory', v as ServiceCategory)}
+        >
+          <SelectTrigger id="service-category" className="select-trigger-safe w-full">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent className="dropdown-safe">
+            <SelectItem value="digital">Digital service</SelectItem>
+            <SelectItem value="saas">SaaS</SelectItem>
+            <SelectItem value="consulting">Consulting / freelance</SelectItem>
+            <SelectItem value="physical">Physical goods</SelectItem>
+            <SelectItem value="others">Others</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       <div className="space-y-2">

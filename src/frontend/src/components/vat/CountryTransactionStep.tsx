@@ -9,14 +9,13 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Info, Check, AlertTriangle } from 'lucide-react';
+import { Info, Check, AlertTriangle, AlertCircle } from 'lucide-react';
 import { type VATCalculationInput, type ServiceCategory } from '../../lib/vat/calculateVat';
 import { getCountryConfig } from '../../lib/vat/euCountryConfig';
 import { 
   type VatCategory, 
   VAT_CATEGORIES, 
   VAT_CATEGORY_LABELS,
-  computeVatRateForCategory 
 } from '../../lib/vat/vatCategoryRateRules';
 import ReverseChargeProofChecker from './ReverseChargeProofChecker';
 import { useEventLogger } from '../../hooks/useEventLogger';
@@ -28,6 +27,8 @@ interface CountryTransactionStepProps {
   onNext: (data: Partial<VATCalculationInput>) => void;
   onBack: () => void;
 }
+
+type VatTreatment = 'standard' | 'reduced' | 'exempt';
 
 export default function CountryTransactionStep({
   countryCode,
@@ -41,9 +42,23 @@ export default function CountryTransactionStep({
   const [netAmount, setNetAmount] = useState(initialData.netAmount.toString());
   const [vatCategory, setVatCategory] = useState<VatCategory>(initialData.vatCategory || 'others');
   const [reverseCharge, setReverseCharge] = useState(initialData.reverseCharge || false);
+  const [vatTreatment, setVatTreatment] = useState<VatTreatment>(
+    initialData.vatTreatment || 'standard'
+  );
+  const [selectedReducedRate, setSelectedReducedRate] = useState<number | null>(
+    initialData.selectedReducedRate || null
+  );
   const { log } = useEventLogger();
 
   const country = getCountryConfig(countryCode);
+  const reducedRates = country?.reducedRates || [];
+
+  // Auto-select first reduced rate when switching to reduced treatment
+  useEffect(() => {
+    if (vatTreatment === 'reduced' && selectedReducedRate === null && reducedRates.length > 0) {
+      setSelectedReducedRate(reducedRates[0]);
+    }
+  }, [vatTreatment, selectedReducedRate, reducedRates]);
 
   if (!country) {
     return (
@@ -56,14 +71,20 @@ export default function CountryTransactionStep({
     );
   }
 
-  // Compute VAT rate based on country and category
-  const computedVatRate = computeVatRateForCategory(countryCode, vatCategory, country.standardRate);
-
-  // Determine if this is a reduced rate country (DE, FR, IT, SE, BE)
-  const isReducedRateCountry = ['DE', 'FR', 'IT', 'SE', 'BE'].includes(countryCode);
-
   const standardRate = country.standardRate;
-  const reducedRates = country.reducedRates;
+
+  // Compute effective VAT rate based on treatment and reverse charge
+  const getEffectiveVatRate = (): number => {
+    // Reverse charge always overrides to 0%
+    if (reverseCharge) return 0;
+    if (vatTreatment === 'exempt') return 0;
+    if (vatTreatment === 'standard') return standardRate;
+    if (vatTreatment === 'reduced' && selectedReducedRate !== null) {
+      return selectedReducedRate;
+    }
+    // Fallback to first reduced rate if available
+    return reducedRates.length > 0 ? reducedRates[0] : standardRate;
+  };
 
   const features = [
     `${country.invoiceLabel} calculation`,
@@ -72,13 +93,26 @@ export default function CountryTransactionStep({
     'EU compliant formatting',
   ];
 
+  // Validation: require reduced rate selection when reduced treatment is chosen
+  const canCalculate = (): boolean => {
+    if (vatTreatment === 'reduced' && reducedRates.length > 0 && selectedReducedRate === null) {
+      return false;
+    }
+    return true;
+  };
+
   const handleCalculate = () => {
+    if (!canCalculate()) return;
+
+    const effectiveRate = getEffectiveVatRate();
+    
     log(CORE_EVENTS.VAT_CALCULATED, JSON.stringify({
       customerType,
       serviceCategory,
       netAmount: parseFloat(netAmount) || 0,
       vatCategory,
-      computedVatRate,
+      vatTreatment,
+      effectiveRate,
       reverseCharge,
     }));
 
@@ -89,15 +123,18 @@ export default function CountryTransactionStep({
       netAmount: parseFloat(netAmount) || 0,
       vatCategory,
       reverseCharge,
+      vatTreatment,
+      selectedReducedRate,
+      effectiveVatRate: effectiveRate,
     });
   };
 
   return (
-    <div className="space-y-6">
-      {/* Country VAT Info Section */}
-      <div className="text-center pb-4 border-b">
-        <div className="text-5xl mb-3">{country.flag}</div>
-        <h2 className="text-xl font-bold mb-1">{country.name} VAT Calculator</h2>
+    <div className="space-y-4">
+      {/* Country VAT Info Section - Compact */}
+      <div className="text-center pb-3 border-b">
+        <div className="text-4xl mb-2">{country.flag}</div>
+        <h2 className="text-lg font-bold mb-0.5">{country.name} VAT Calculator</h2>
       </div>
 
       {!country.configured ? (
@@ -112,61 +149,189 @@ export default function CountryTransactionStep({
         </Alert>
       ) : (
         <>
-          {/* VAT Rates Card */}
+          {/* Reverse Charge Toggle - Compact */}
           <Card>
-            <CardContent className="pt-6">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <div className="text-sm text-muted-foreground mb-1">Standard VAT</div>
-                  <div className="text-2xl font-bold text-primary">
-                    {country.standardRate}%
-                  </div>
+            <CardContent className="py-3 px-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Label htmlFor="reverse-charge" className="text-sm font-medium cursor-pointer">
+                    Enable Reverse Charge (B2B cross-border)
+                  </Label>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Info className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-xs">
+                        <p>Reverse charge shifts VAT liability to the customer. Applies to B2B cross-border transactions within the EU.</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 </div>
-                {country.reducedRates.length > 0 && (
-                  <div>
-                    <div className="text-sm text-muted-foreground mb-1">Reduced VAT</div>
-                    <div className="flex gap-2 flex-wrap">
-                      {country.reducedRates.map((rate) => (
-                        <Badge key={rate} variant="outline" className="text-base">
-                          {rate}%
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-                )}
+                <Switch
+                  id="reverse-charge"
+                  checked={reverseCharge}
+                  onCheckedChange={setReverseCharge}
+                />
               </div>
             </CardContent>
           </Card>
 
-          {/* Features List */}
-          <div className="space-y-2">
-            <h3 className="font-medium text-sm">Features:</h3>
-            <div className="grid grid-cols-2 gap-2">
+          {/* Reverse Charge Warning */}
+          {reverseCharge && (
+            <Alert className="bg-blue-50 border-blue-200 dark:bg-blue-950 dark:border-blue-800">
+              <AlertCircle className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+              <AlertDescription className="ml-2 text-blue-900 dark:text-blue-100">
+                <p className="font-medium mb-1">Reverse Charge Enabled</p>
+                <p className="text-sm">
+                  VAT will be 0% as the customer must self-assess VAT in their country. The VAT treatment selection below is overridden by reverse charge rules.
+                </p>
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {/* VAT Rates Card - Compact with Treatment Selection */}
+          <Card>
+            <CardContent className="py-3 px-4">
+              <div className="space-y-2.5">
+                {/* VAT Treatment Selection */}
+                <div>
+                  <Label className="text-sm font-medium mb-1.5 block">VAT Treatment</Label>
+                  <RadioGroup 
+                    value={vatTreatment} 
+                    onValueChange={(v) => setVatTreatment(v as VatTreatment)}
+                    className="flex flex-col gap-1.5"
+                    disabled={reverseCharge}
+                  >
+                    <div className={`flex items-center justify-between border rounded-md p-1.5 hover:bg-muted/50 ${reverseCharge ? 'opacity-50' : ''}`}>
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="standard" id="vat-standard" disabled={reverseCharge} />
+                        <Label htmlFor="vat-standard" className="font-normal cursor-pointer text-sm">
+                          Standard VAT
+                        </Label>
+                      </div>
+                      <Badge variant="outline" className="text-xs font-semibold">
+                        {standardRate}%
+                      </Badge>
+                    </div>
+
+                    {reducedRates.length > 0 && (
+                      <div className={`flex items-center justify-between border rounded-md p-1.5 hover:bg-muted/50 ${reverseCharge ? 'opacity-50' : ''}`}>
+                        <div className="flex items-center space-x-2 flex-1">
+                          <RadioGroupItem value="reduced" id="vat-reduced" disabled={reverseCharge} />
+                          <Label htmlFor="vat-reduced" className="font-normal cursor-pointer text-sm">
+                            Reduced VAT
+                          </Label>
+                        </div>
+                        {vatTreatment === 'reduced' && !reverseCharge && (
+                          <Select 
+                            value={selectedReducedRate?.toString() || reducedRates[0].toString()} 
+                            onValueChange={(v) => setSelectedReducedRate(parseFloat(v))}
+                          >
+                            <SelectTrigger className="w-20 h-6 text-xs select-trigger-safe">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent className="dropdown-safe">
+                              {reducedRates.map((rate) => (
+                                <SelectItem key={rate} value={rate.toString()}>
+                                  {rate}%
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        )}
+                        {(vatTreatment !== 'reduced' || reverseCharge) && (
+                          <div className="flex gap-1">
+                            {reducedRates.map((rate) => (
+                              <Badge key={rate} variant="outline" className="text-xs">
+                                {rate}%
+                              </Badge>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    <div className={`flex items-center justify-between border rounded-md p-1.5 hover:bg-muted/50 ${reverseCharge ? 'opacity-50' : ''}`}>
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="exempt" id="vat-exempt" disabled={reverseCharge} />
+                        <Label htmlFor="vat-exempt" className="font-normal cursor-pointer text-sm">
+                          Exempt VAT
+                        </Label>
+                      </div>
+                      <Badge variant="outline" className="text-xs font-semibold">
+                        0%
+                      </Badge>
+                    </div>
+                  </RadioGroup>
+                </div>
+
+                {/* Effective Rate Display */}
+                <div className="flex items-center justify-between pt-1.5 border-t">
+                  <span className="text-sm font-medium text-muted-foreground">Effective VAT Rate:</span>
+                  <span className="text-lg font-bold text-primary">{getEffectiveVatRate()}%</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* VAT Exempt Warning */}
+          {vatTreatment === 'exempt' && !reverseCharge && (
+            <Alert className="bg-amber-50 border-amber-200 dark:bg-amber-950 dark:border-amber-800">
+              <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+              <AlertDescription className="ml-2 text-amber-900 dark:text-amber-100">
+                <p className="font-medium mb-1">VAT Exemption Must Be Legally Applicable</p>
+                <p className="text-sm mb-2">
+                  VAT exemption applies only to specific goods and services defined by law (e.g., medical services, education, financial services). Ensure your transaction qualifies for exemption.
+                </p>
+                <p className="text-sm font-medium">
+                  ⚠️ Your invoice must include a legal note explaining the exemption basis (e.g., Article reference).
+                </p>
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {/* Reduced Rate Selection Warning */}
+          {vatTreatment === 'reduced' && !reverseCharge && reducedRates.length > 0 && selectedReducedRate === null && (
+            <Alert className="bg-amber-50 border-amber-200 dark:bg-amber-950 dark:border-amber-800">
+              <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+              <AlertDescription className="ml-2 text-amber-900 dark:text-amber-100">
+                <p className="text-sm font-medium">
+                  Please select a specific reduced VAT rate before calculating.
+                </p>
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {/* Features List - Compact */}
+          <div className="space-y-1.5">
+            <h3 className="font-medium text-xs text-muted-foreground">Features:</h3>
+            <div className="grid grid-cols-2 gap-1.5">
               {features.map((feature, index) => (
-                <div key={index} className="flex items-center gap-2">
-                  <Check className="h-3 w-3 text-primary flex-shrink-0" />
+                <div key={index} className="flex items-center gap-1.5">
+                  <Check className="h-3 w-3 text-primary shrink-0" />
                   <span className="text-xs">{feature}</span>
                 </div>
               ))}
             </div>
           </div>
 
-          {/* Transaction Details Form */}
-          <div className="pt-4 border-t space-y-6">
-            <h3 className="font-semibold text-lg">Transaction Details</h3>
+          {/* Transaction Details Form - Responsive Grid */}
+          <div className="pt-3 border-t space-y-4">
+            <h3 className="font-semibold text-base">Transaction Details</h3>
 
             <div>
-              <Label>Customer Type</Label>
-              <RadioGroup value={customerType} onValueChange={(v) => setCustomerType(v as 'B2C' | 'B2B')} className="mt-2">
+              <Label className="text-sm">Customer Type</Label>
+              <RadioGroup value={customerType} onValueChange={(v) => setCustomerType(v as 'B2C' | 'B2B')} className="mt-1.5">
                 <div className="flex items-center space-x-2">
                   <RadioGroupItem value="B2C" id="b2c" />
-                  <Label htmlFor="b2c" className="font-normal cursor-pointer">
+                  <Label htmlFor="b2c" className="font-normal cursor-pointer text-sm">
                     B2C (Private individual)
                   </Label>
                 </div>
                 <div className="flex items-center space-x-2">
                   <RadioGroupItem value="B2B" id="b2b" />
-                  <Label htmlFor="b2b" className="font-normal cursor-pointer">
+                  <Label htmlFor="b2b" className="font-normal cursor-pointer text-sm">
                     B2B (VAT-registered business)
                   </Label>
                 </div>
@@ -175,13 +340,13 @@ export default function CountryTransactionStep({
 
             {customerType === 'B2B' && (
               <div>
-                <Label htmlFor="vat-id">VAT ID (optional)</Label>
+                <Label htmlFor="vat-id" className="text-sm">VAT ID (optional)</Label>
                 <Input
                   id="vat-id"
                   value={vatId}
                   onChange={(e) => setVatId(e.target.value)}
                   placeholder="e.g., DE123456789"
-                  className="mt-2"
+                  className="mt-1.5"
                 />
                 <p className="text-xs text-muted-foreground mt-1">
                   Valid EU VAT ID enables reverse charge validation
@@ -197,85 +362,10 @@ export default function CountryTransactionStep({
               />
             )}
 
-            {/* VAT Category Dropdown */}
-            <div>
-              <div className="flex items-center gap-2 mb-2">
-                <Label htmlFor="vat-category">VAT Category</Label>
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Info className="h-4 w-4 text-muted-foreground cursor-help" />
-                    </TooltipTrigger>
-                    <TooltipContent className="max-w-xs">
-                      <p>Not sure which category applies? Select 'Others' to apply the standard VAT rate.</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              </div>
-              <Select value={vatCategory} onValueChange={(v) => setVatCategory(v as VatCategory)}>
-                <SelectTrigger id="vat-category" className="select-trigger-safe w-full min-w-0">
-                  <SelectValue className="truncate" />
-                </SelectTrigger>
-                <SelectContent>
-                  {VAT_CATEGORIES.map((cat) => (
-                    <SelectItem key={cat} value={cat}>
-                      {VAT_CATEGORY_LABELS[cat]}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Computed VAT Rate Display for Reduced Rate Countries */}
-            {isReducedRateCountry && (
-              <Card className="bg-primary/5 border-primary/20">
-                <CardContent className="pt-4 pb-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <div className="text-sm font-medium">Computed VAT Rate</div>
-                      <div className="text-xs text-muted-foreground mt-0.5">
-                        Based on selected category
-                      </div>
-                    </div>
-                    <div className="text-2xl font-bold text-primary">
-                      {computedVatRate}%
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Responsive Grid: single column on mobile, two columns on md+ */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <div className="flex items-center gap-2 mb-2">
-                  <Label htmlFor="service-category">Service/Product Category</Label>
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Info className="h-4 w-4 text-muted-foreground cursor-help" />
-                      </TooltipTrigger>
-                      <TooltipContent className="max-w-xs">
-                        <p>Select the category that best describes your service or product.</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                </div>
-                <Select value={serviceCategory} onValueChange={(v) => setServiceCategory(v as ServiceCategory)}>
-                  <SelectTrigger id="service-category" className="select-trigger-safe w-full min-w-0">
-                    <SelectValue className="truncate" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="digital">Digital service</SelectItem>
-                    <SelectItem value="saas">SaaS</SelectItem>
-                    <SelectItem value="consulting">Consulting / freelance</SelectItem>
-                    <SelectItem value="physical">Physical goods</SelectItem>
-                    <SelectItem value="others">Others</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <Label htmlFor="net-amount">Net Amount (€)</Label>
+                <Label htmlFor="net-amount" className="text-sm">Net Amount (€)</Label>
                 <Input
                   id="net-amount"
                   type="number"
@@ -283,52 +373,55 @@ export default function CountryTransactionStep({
                   value={netAmount}
                   onChange={(e) => setNetAmount(e.target.value)}
                   placeholder="0.00"
-                  className="mt-2"
+                  className="mt-1.5"
                 />
               </div>
-            </div>
 
-            <div className="border rounded-lg p-4 bg-muted/30">
-              <div className="flex items-center justify-between">
-                <div>
-                  <Label htmlFor="reverse-charge" className="text-base font-medium">
-                    Reverse Charge
-                  </Label>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Enable if reverse charge applies (VAT = 0%)
-                  </p>
+              {/* VAT Category Dropdown - Right column on md+ */}
+              <div>
+                <div className="flex items-center gap-2 mb-1.5">
+                  <Label htmlFor="vat-category" className="text-sm">VAT Category</Label>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Info className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-xs">
+                        <p>Not sure which category applies? Select 'Others' to apply the standard VAT rate.</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 </div>
-                <Switch
-                  id="reverse-charge"
-                  checked={reverseCharge}
-                  onCheckedChange={setReverseCharge}
-                />
+                <Select value={vatCategory} onValueChange={(v) => setVatCategory(v as VatCategory)}>
+                  <SelectTrigger id="vat-category" className="select-trigger-safe w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="dropdown-safe max-h-[200px] overflow-y-auto">
+                    {VAT_CATEGORIES.map((cat) => (
+                      <SelectItem key={cat} value={cat}>
+                        {VAT_CATEGORY_LABELS[cat]}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
+          </div>
 
-            {/* Legal Disclaimer */}
-            <Alert className="bg-muted/50 border-muted-foreground/20">
-              <Info className="h-4 w-4" />
-              <AlertDescription className="ml-2 text-sm">
-                Reduced VAT rates apply only to specific goods and services as defined under national VAT legislation. Users are responsible for verifying eligibility before applying reduced rates.
-              </AlertDescription>
-            </Alert>
+          <div className="flex gap-3 pt-2">
+            <Button variant="outline" onClick={onBack} className="flex-1">
+              Back
+            </Button>
+            <Button 
+              onClick={handleCalculate} 
+              disabled={!canCalculate()}
+              className="flex-1"
+            >
+              Calculate VAT
+            </Button>
           </div>
         </>
       )}
-
-      <div className="flex gap-3 pt-4">
-        <Button variant="outline" onClick={onBack} className="flex-1">
-          Back
-        </Button>
-        <Button
-          onClick={handleCalculate}
-          disabled={!country.configured || !netAmount || parseFloat(netAmount) <= 0}
-          className="flex-1"
-        >
-          Calculate VAT
-        </Button>
-      </div>
     </div>
   );
 }

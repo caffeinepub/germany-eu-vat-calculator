@@ -1,67 +1,62 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-13T07:39:35.533Z",
-  "summary": "Implemented VAT category model and rate-computation module; updated calculator flow and form types to carry vatCategory and compute a derived VAT rate for DE/FR/IT/SE/BE. However, due to truncation of the transaction-step JSX and the Belgium rules file, several UI/text requirements and part of the BE mapping cannot be verified from the provided diff summary.",
+  "generatedAt": "2026-02-13T08:47:20.634Z",
+  "summary": "REQ-1 appears partially implemented (serviceCategory added to InvoiceDetailsStep state and invoice HTML now derives a category label), but the diff summary does not provide enough evidence that the Service/Product Category selector was removed from the Results UI, that it was added to the Invoice step UI positioned before Description, or that the invoice preview line-item layout renders it as a column before Description. REQ-2/REQ-3/REQ-4 are not verifiably implemented from the provided truncated diffs.",
   "missing_requirements": [
     {
       "id": "REQ-1",
-      "requirement": "Add a “VAT Category” dropdown under the VAT selection area in the transaction step, with exactly the provided English option labels and default selection “Others”.",
-      "reason": "The diff shows vatCategory state and the category label list/module, but the transaction step JSX where the dropdown should be rendered is truncated, so the presence, exact option labels, and default UI selection cannot be confirmed from the diff summary.",
+      "requirement": "Remove the Service/Product Category selector from the VAT calculator Results UI, and add it under the Invoice step positioned before the item description field/column; invoice preview/layout should include it as a column before Description when using a columnar table.",
+      "reason": "InvoiceDetailsStep shows serviceCategory in the data model/state, and buildInvoiceHtml computes a categoryLabel, but the truncated diff does not show the Invoice step UI rendering the selector (nor its position relative to Description), does not show removal from the Results UI, and does not show a columnar line-item layout including Category before Description.",
       "evidence": [
-        "frontend/src/components/vat/CountryTransactionStep.tsx",
-        "frontend/src/lib/vat/vatCategoryRateRules.ts"
+        "frontend/src/components/invoice/InvoiceDetailsStep.tsx (truncated: shows serviceCategory in InvoiceDetails/state but not the rendered form layout)",
+        "frontend/src/lib/invoice/buildInvoiceHtml.ts (truncated: computes categoryLabel but truncated before the items table markup)",
+        "frontend-file-summaries.txt (VatResultsStep summary does not mention service category removal; cannot confirm change)"
       ]
     },
     {
-      "id": "REQ-4",
-      "requirement": "Update transaction step UI so users don’t rely on manually selecting Reduced vs Standard for DE/FR/IT/SE/BE; UI must reflect computed VAT rate and prevent ineligible reduced rate selection.",
-      "reason": "Although computedVatRate is calculated in the transaction step, the UI behavior (e.g., disabling/hiding the reduced/standard selector or preventing incorrect reduced-rate selection) is not visible in the truncated JSX, so compliance cannot be verified.",
+      "id": "REQ-2",
+      "requirement": "Reduce the visual size (compact the layout) of the “Enable Reverse Charge” and “VAT Treatment” UI controls.",
+      "reason": "The modified VAT step files are truncated before the relevant JSX/layout for these controls, and no explicit evidence (e.g., className changes, removal of Card wrappers, spacing adjustments) is shown to confirm compaction.",
       "evidence": [
-        "frontend/src/components/vat/CountryTransactionStep.tsx"
-      ]
-    },
-    {
-      "id": "REQ-5",
-      "requirement": "Render the exact legal disclaimer text under the VAT selection area in the transaction step.",
-      "reason": "The required disclaimer text is not shown in the visible portion of the transaction step component; JSX is truncated before the VAT selection section, so rendering and exact text match cannot be confirmed.",
-      "evidence": [
-        "frontend/src/components/vat/CountryTransactionStep.tsx"
-      ]
-    },
-    {
-      "id": "REQ-6",
-      "requirement": "Add an info tooltip near VAT Category (or VAT selection) with the exact provided text.",
-      "reason": "Tooltip components and an Info icon are imported, but the JSX showing the tooltip trigger/content (including exact tooltip text) is not present in the truncated snippet, so implementation cannot be verified.",
-      "evidence": [
-        "frontend/src/components/vat/CountryTransactionStep.tsx"
+        "frontend/src/components/vat/CountryTransactionStep.tsx (truncated)",
+        "frontend/src/components/vat/TransactionDetailsStep.tsx (truncated)"
       ]
     },
     {
       "id": "REQ-3",
-      "requirement": "Implement the full country+category reduced VAT mapping for Belgium (BE) as specified by the user, including correct 12% vs 6% category assignment and fallback rules.",
-      "reason": "The Belgium-specific rules function is truncated mid-definition (\"const rate12Categ...\"), so the complete mapping and correctness for BE cannot be verified from the diff summary.",
+      "requirement": "Reposition the “VAT Category” control to the right side of the Transaction Details section on md+ breakpoints, with sensible stacked mobile layout.",
+      "reason": "CountryTransactionStep contains vatCategory state and imports VAT_CATEGORIES, but the truncated diff does not show the layout/grid placement of the VAT Category selector to verify it is on the right column at md+ and stacked on mobile.",
       "evidence": [
-        "frontend/src/lib/vat/vatCategoryRateRules.ts"
+        "frontend/src/components/vat/CountryTransactionStep.tsx (truncated)",
+        "frontend/src/components/vat/TransactionDetailsStep.tsx (truncated: no VAT Category shown in visible portion)"
+      ]
+    },
+    {
+      "id": "REQ-4",
+      "requirement": "Update the VAT Category dropdown so only ~5 options are visible at once with vertical scrolling; keyboard navigation must still work.",
+      "reason": "No visible evidence of SelectContent max-height/overflow-y styling or other dropdown list constraints is present in the truncated diffs, so the 5-item visible limit and scroll behavior cannot be confirmed.",
+      "evidence": [
+        "frontend/src/components/vat/CountryTransactionStep.tsx (truncated: imports Select components but does not show SelectContent styling/props)"
       ]
     }
   ],
   "hallucinated_features": [
     {
-      "description": "Analytics event logging includes vatCategory and computedVatRate when calculating VAT.",
-      "reason": "BuildRequest does not ask for new analytics/log payload fields; diff adds logging data for VAT_CALCULATED.",
+      "description": "Calculator flow orchestrator updated to use an `effectiveVatRate` from transaction step data and to preserve VAT treatment selections through the flow.",
+      "reason": "Not requested by any requirement (and the BuildRequest explicitly states no changes to VAT calculation logic or scenario determination). Even if intended as a refactor, it is outside the stated UI reorganization/compactness/dropdown requirements.",
       "evidence": [
-        "frontend/src/components/vat/CountryTransactionStep.tsx"
+        "frontend-file-summaries.txt (\"frontend/src/pages/CalculatorFlowPage.tsx\": \"updated to use effectiveVatRate... preserving VAT treatment selections through the flow\")"
       ]
     }
   ],
-  "confidence": 0.56,
+  "confidence": 0.46,
   "changed_files": [
     "frontend-file-summaries.txt",
+    "frontend/src/components/invoice/InvoiceDetailsStep.tsx",
     "frontend/src/components/vat/CountryTransactionStep.tsx",
-    "frontend/src/lib/vat/calculateVat.ts",
-    "frontend/src/lib/vat/vatCategoryRateRules.ts",
-    "frontend/src/pages/CalculatorFlowPage.tsx",
+    "frontend/src/components/vat/TransactionDetailsStep.tsx",
+    "frontend/src/lib/invoice/buildInvoiceHtml.ts",
     "project_state.json"
   ]
 }

@@ -4,74 +4,59 @@
 
 @layer base {
   :root {
-    --background: 98% 0.01 120;
-    --foreground: 25% 0.01 120;
-    --card: 100% 0 0;
-    --card-foreground: 25% 0.01 120;
-    --popover: 100% 0 0;
-    --popover-foreground: 25% 0.01 120;
-    --primary: 45% 0.15 145;
-    --primary-foreground: 98% 0.01 145;
-    --secondary: 92% 0.02 120;
-    --secondary-foreground: 25% 0.01 120;
-    --muted: 94% 0.01 120;
-    --muted-foreground: 50% 0.01 120;
-    --accent: 94% 0.02 120;
-    --accent-foreground: 25% 0.01 120;
-    --destructive: 55% 0.20 25;
-    --destructive-foreground: 98% 0.01 25;
-    --border: 88% 0.01 120;
-    --input: 88% 0.01 120;
-    --ring: 45% 0.15 145;
-    --chart-1: 55% 0.18 25;
-    --chart-2: 60% 0.15 145;
-    --chart-3: 65% 0.12 200;
-    --chart-4: 70% 0.10 280;
-    --chart-5: 75% 0.08 340;
+    /* Neutral minimalist palette with green accent */
+    --background: oklch(98% 0.01 120);
+    --foreground: oklch(20% 0.01 120);
+    --card: oklch(100% 0 0);
+    --card-foreground: oklch(20% 0.01 120);
+    --popover: oklch(100% 0 0);
+    --popover-foreground: oklch(20% 0.01 120);
+    --primary: oklch(45% 0.15 145);
+    --primary-foreground: oklch(98% 0.01 145);
+    --secondary: oklch(92% 0.01 120);
+    --secondary-foreground: oklch(20% 0.01 120);
+    --muted: oklch(94% 0.01 120);
+    --muted-foreground: oklch(50% 0.01 120);
+    --accent: oklch(92% 0.01 120);
+    --accent-foreground: oklch(20% 0.01 120);
+    --destructive: oklch(55% 0.20 25);
+    --destructive-foreground: oklch(98% 0.01 25);
+    --border: oklch(88% 0.01 120);
+    --input: oklch(88% 0.01 120);
+    --ring: oklch(45% 0.15 145);
     --radius: 0.5rem;
-    --sidebar: 100% 0 0;
-    --sidebar-foreground: 25% 0.01 120;
-    --sidebar-primary: 45% 0.15 145;
-    --sidebar-primary-foreground: 98% 0.01 145;
-    --sidebar-accent: 94% 0.02 120;
-    --sidebar-accent-foreground: 25% 0.01 120;
-    --sidebar-border: 88% 0.01 120;
-    --sidebar-ring: 45% 0.15 145;
+    --chart-1: oklch(60% 0.15 145);
+    --chart-2: oklch(70% 0.12 180);
+    --chart-3: oklch(65% 0.10 220);
+    --chart-4: oklch(75% 0.08 280);
+    --chart-5: oklch(68% 0.14 340);
   }
 
   .dark {
-    --background: 20% 0.01 120;
-    --foreground: 95% 0.01 120;
-    --card: 22% 0.01 120;
-    --card-foreground: 95% 0.01 120;
-    --popover: 22% 0.01 120;
-    --popover-foreground: 95% 0.01 120;
-    --primary: 55% 0.15 145;
-    --primary-foreground: 15% 0.01 145;
-    --secondary: 28% 0.02 120;
-    --secondary-foreground: 95% 0.01 120;
-    --muted: 28% 0.01 120;
-    --muted-foreground: 65% 0.01 120;
-    --accent: 28% 0.02 120;
-    --accent-foreground: 95% 0.01 120;
-    --destructive: 55% 0.20 25;
-    --destructive-foreground: 95% 0.01 25;
-    --border: 32% 0.01 120;
-    --input: 32% 0.01 120;
-    --ring: 55% 0.15 145;
-    --chart-1: 60% 0.18 25;
-    --chart-2: 65% 0.15 145;
-    --chart-3: 70% 0.12 200;
-    --chart-4: 75% 0.10 280;
-    --chart-5: 80% 0.08 340;
-    --sidebar: 22% 0.01 120;
-    --sidebar-foreground: 95% 0.01 120;
-    --sidebar-primary: 55% 0.15 145;
-    --sidebar-primary-foreground: 15% 0.01 145;
-    --sidebar-accent: 28% 0.02 120;
-    --sidebar-accent-foreground: 95% 0.01 120;
-    --sidebar-border: 32% 0.01 120;
-    --sidebar-ring: 55% 0.15 145;
+    --background: oklch(15% 0.01 120);
+    --foreground: oklch(95% 0.01 120);
+    --card: oklch(18% 0.01 120);
+    --card-foreground: oklch(95% 0.01 120);
+    --popover: oklch(18% 0.01 120);
+    --popover-foreground: oklch(95% 0.01 120);
+    --primary: oklch(55% 0.15 145);
+    --primary-foreground: oklch(15% 0.01 145);
+    --secondary: oklch(25% 0.01 120);
+    --secondary-foreground: oklch(95% 0.01 120);
+    --muted: oklch(25% 0.01 120);
+    --muted-foreground: oklch(65% 0.01 120);
+    --accent: oklch(25% 0.01 120);
+    --accent-foreground: oklch(95% 0.01 120);
+    --destructive: oklch(55% 0.20 25);
+    --destructive-foreground: oklch(95% 0.01 25);
+    --border: oklch(30% 0.01 120);
+    --input: oklch(30% 0.01 120);
+    --ring: oklch(55% 0.15 145);
+    --chart-1: oklch(60% 0.15 145);
+    --chart-2: oklch(70% 0.12 180);
+    --chart-3: oklch(65% 0.10 220);
+    --chart-4: oklch(75% 0.08 280);
+    --chart-5: oklch(68% 0.14 340);
   }
 }
 
@@ -84,34 +69,13 @@
   }
 }
 
-/* Watermark overlay for Free plan invoices */
-.invoice-watermark-overlay {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%) rotate(-45deg);
-  font-size: 4rem;
-  font-weight: bold;
-  color: rgba(0, 0, 0, 0.08);
-  pointer-events: none;
-  user-select: none;
-  z-index: 10;
-  white-space: nowrap;
-}
-
-@media print {
-  .invoice-watermark-overlay {
-    color: rgba(0, 0, 0, 0.05);
+/* Safe dropdown styling to prevent overlap and ensure scrollability */
+@layer components {
+  .dropdown-safe {
+    @apply z-[100] max-h-[300px] overflow-y-auto;
   }
-}
 
-/* Select trigger safe width */
-.select-trigger-safe {
-  min-width: 0;
-}
-
-.select-trigger-safe > span {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  .select-trigger-safe {
+    @apply relative z-10;
+  }
 }
