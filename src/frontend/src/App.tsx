@@ -23,6 +23,11 @@ const calculatorRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/calculator',
   component: CalculatorFlowPage,
+  validateSearch: (search: Record<string, unknown>): { country?: string } => {
+    return {
+      country: search.country as string | undefined,
+    };
+  },
 });
 
 const invoicesRoute = createRoute({

@@ -8,6 +8,7 @@ import { Download, FileText, Package, FileSpreadsheet, FileCode } from 'lucide-r
 import { useListInvoices, useDownloadInvoicePdf, useDownloadInvoicesZip, useDownloadMonthZip, useExportCsv, useExportExcel } from '../hooks/useInvoiceOperations';
 import { usePlanAccess } from '../hooks/usePlanAccess';
 import { downloadFile } from '../utils/downloadFile';
+import { formatCurrency } from '../lib/invoice/currency';
 import UpgradeModal from '../components/usage/UpgradeModal';
 import { toast } from 'sonner';
 
@@ -148,6 +149,17 @@ export default function InvoicesPage() {
     }
   };
 
+  const formatVatAmount = (invoice: any): string => {
+    if (invoice.vatAmount === undefined || invoice.vatAmount === null) return '—';
+    const currency = invoice.currency || 'EUR';
+    return formatCurrency(invoice.vatAmount, currency);
+  };
+
+  const formatVatRate = (rate: number | undefined): string => {
+    if (rate === undefined || rate === null) return '—';
+    return `${rate.toFixed(0)}%`;
+  };
+
   if (isLoading) {
     return (
       <div className="container mx-auto px-4 py-16">
@@ -224,8 +236,8 @@ export default function InvoicesPage() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {years.map(year => (
-                        <SelectItem key={year} value={year.toString()}>{year}</SelectItem>
+                      {years.map(y => (
+                        <SelectItem key={y} value={y.toString()}>{y}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -234,8 +246,8 @@ export default function InvoicesPage() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {months.map(month => (
-                        <SelectItem key={month.value} value={month.value.toString()}>{month.label}</SelectItem>
+                      {months.map(m => (
+                        <SelectItem key={m.value} value={m.value.toString()}>{m.label}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -251,22 +263,22 @@ export default function InvoicesPage() {
               </div>
             </div>
 
-            {/* Pro-only data exports */}
+            {/* Pro-only CSV/Excel exports */}
             <div className="grid md:grid-cols-2 gap-4 pt-4 border-t">
               <div className="space-y-2">
                 <h3 className="font-semibold text-sm flex items-center gap-2">
                   <FileSpreadsheet className="h-4 w-4" />
-                  CSV Export (DATEV-friendly) {!isPro && <Badge variant="secondary">Pro</Badge>}
+                  CSV Export {!isPro && <Badge variant="secondary">Pro</Badge>}
                 </h3>
                 <p className="text-xs text-muted-foreground">
-                  Import into accounting software
+                  Export all invoices as CSV
                 </p>
                 <Button
                   onClick={handleExportCsv}
                   disabled={!isPro || exportCsv.isPending}
-                  variant="outline"
                   className="w-full"
                   size="sm"
+                  variant="outline"
                 >
                   {exportCsv.isPending ? 'Exporting...' : 'Export CSV'}
                 </Button>
@@ -275,47 +287,31 @@ export default function InvoicesPage() {
               <div className="space-y-2">
                 <h3 className="font-semibold text-sm flex items-center gap-2">
                   <FileSpreadsheet className="h-4 w-4" />
-                  Excel Export (DATEV-friendly) {!isPro && <Badge variant="secondary">Pro</Badge>}
+                  Excel Export {!isPro && <Badge variant="secondary">Pro</Badge>}
                 </h3>
                 <p className="text-xs text-muted-foreground">
-                  Tax consultant–friendly format
+                  Export all invoices as Excel (DATEV-ready)
                 </p>
                 <Button
                   onClick={handleExportExcel}
                   disabled={!isPro || exportExcel.isPending}
-                  variant="outline"
                   className="w-full"
                   size="sm"
+                  variant="outline"
                 >
                   {exportExcel.isPending ? 'Exporting...' : 'Export Excel'}
-                </Button>
-              </div>
-            </div>
-
-            {/* XML/ZUGFeRD - Coming Soon */}
-            <div className="pt-4 border-t">
-              <div className="space-y-2">
-                <h3 className="font-semibold text-sm flex items-center gap-2">
-                  <FileCode className="h-4 w-4" />
-                  XML / ZUGFeRD Export <Badge variant="secondary">Coming Soon</Badge>
-                </h3>
-                <p className="text-xs text-muted-foreground">
-                  Official German e-invoice standard for enterprises & public sector
-                </p>
-                <Button disabled variant="outline" className="w-full" size="sm">
-                  Coming Soon
                 </Button>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        {/* Invoice List */}
+        {/* Invoices List */}
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
-              <CardTitle>Saved Invoices ({invoices?.length || 0})</CardTitle>
-              {isPro && invoices && invoices.length > 0 && (
+              <CardTitle>Saved Invoices</CardTitle>
+              {invoices && invoices.length > 0 && (
                 <div className="flex items-center gap-2">
                   <Checkbox
                     checked={selectedIds.size === invoices.length}
@@ -331,40 +327,68 @@ export default function InvoicesPage() {
               <div className="text-center py-12 text-muted-foreground">
                 <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
                 <p>No invoices saved yet</p>
-                <p className="text-sm mt-2">Create and save invoices from the calculator</p>
+                <p className="text-sm mt-2">Create your first invoice to see it here</p>
               </div>
             ) : (
-              <div className="space-y-2">
-                {invoices.map((invoice) => (
-                  <div
-                    key={invoice.id}
-                    className="flex items-center gap-4 p-4 border rounded-lg hover:bg-accent/50 transition-colors"
-                  >
-                    {isPro && (
-                      <Checkbox
-                        checked={selectedIds.has(invoice.id)}
-                        onCheckedChange={(checked) => handleSelectInvoice(invoice.id, checked as boolean)}
-                      />
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <div className="font-semibold truncate">{invoice.invoiceNumber}</div>
-                      <div className="text-sm text-muted-foreground">
-                        {new Date(Number(invoice.createdAt) / 1000000).toLocaleDateString()} • Invoice Date: {invoice.invoiceDate}
-                      </div>
-                    </div>
-                    <Button
-                      onClick={() => handleDownloadSinglePdf(invoice.id)}
-                      disabled={!isPaid || downloadPdf.isPending}
-                      size="sm"
-                      variant="outline"
-                    >
-                      <Download className="h-4 w-4 mr-2" />
-                      {isPaid ? 'PDF' : 'Upgrade for PDF'}
-                    </Button>
-                  </div>
-                ))}
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b">
+                      <th className="text-left p-3 font-semibold">Select</th>
+                      <th className="text-left p-3 font-semibold">Invoice #</th>
+                      <th className="text-left p-3 font-semibold">Date</th>
+                      <th className="text-left p-3 font-semibold">VAT Rate</th>
+                      <th className="text-left p-3 font-semibold">VAT Amount</th>
+                      <th className="text-left p-3 font-semibold">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {invoices.map((invoice) => (
+                      <tr key={invoice.id} className="border-b hover:bg-muted/50">
+                        <td className="p-3">
+                          <Checkbox
+                            checked={selectedIds.has(invoice.id)}
+                            onCheckedChange={(checked) => handleSelectInvoice(invoice.id, checked as boolean)}
+                          />
+                        </td>
+                        <td className="p-3 font-medium">{invoice.invoiceNumber}</td>
+                        <td className="p-3">{invoice.invoiceDate}</td>
+                        <td className="p-3">{formatVatRate(invoice.vatRate)}</td>
+                        <td className="p-3">{formatVatAmount(invoice)}</td>
+                        <td className="p-3">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleDownloadSinglePdf(invoice.id)}
+                            disabled={!isPaid}
+                          >
+                            <Download className="h-3 w-3 mr-1" />
+                            PDF
+                          </Button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             )}
+          </CardContent>
+        </Card>
+
+        {/* Coming Soon Section */}
+        <Card className="border-dashed">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <FileCode className="h-5 w-5" />
+              Coming Soon
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2 text-sm text-muted-foreground">
+              <p>• XML Export (XRechnung format)</p>
+              <p>• ZUGFeRD hybrid PDF/XML invoices</p>
+              <p>• Direct DATEV integration</p>
+            </div>
           </CardContent>
         </Card>
       </div>

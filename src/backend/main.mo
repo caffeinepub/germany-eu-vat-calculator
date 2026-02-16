@@ -1,18 +1,20 @@
-import Map "mo:core/Map";
+import List "mo:core/List";
 import Blob "mo:core/Blob";
 import Principal "mo:core/Principal";
 import Time "mo:core/Time";
 import Nat "mo:core/Nat";
-import List "mo:core/List";
+import Map "mo:core/Map";
 import Float "mo:core/Float";
 import Text "mo:core/Text";
 import Iter "mo:core/Iter";
 import Int "mo:core/Int";
-import Runtime "mo:core/Runtime";
-import OutCall "http-outcalls/outcall";
-import MixinAuthorization "authorization/MixinAuthorization";
 import Stripe "stripe/stripe";
+import OutCall "http-outcalls/outcall";
+import Runtime "mo:core/Runtime";
+import MixinAuthorization "authorization/MixinAuthorization";
 import AccessControl "authorization/access-control";
+
+
 
 actor {
   // Stripe integration (public interface)
@@ -58,8 +60,12 @@ actor {
     invoiceNumber : Text;
     invoiceDate : Text;
     htmlSource : Text;
+    vatAmount : Float;
+    vatRate : Float;
+    currency : Text;
+    vatLabel : Text;
     createdAt : Time.Time;
-    owner : Principal;
+    owner : ?Principal;
   };
 
   public type PlanUsage = {
@@ -77,7 +83,6 @@ actor {
   let invoices = Map.empty<Text, InvoiceRecord>();
   let userInvoiceIds = Map.empty<Principal, List.List<Text>>();
 
-  // New Event Types and Persistent Stores
   public type EventRecord = {
     id : Text;
     event_name : Text;
@@ -97,14 +102,11 @@ actor {
   let _usageLimits = Map.empty<Text, UsageLimit>();
   var _events = Map.empty<Text, EventRecord>();
 
-  // Event Tracking Methods (Anonymous access allowed)
   public shared ({ caller }) func logEvent(event : EventRecord) : async () {
-    // No authorization check - allows anonymous event tracking
     _events.add(event.id, event);
   };
 
   public shared ({ caller }) func incrementUsage(fingerprint : Text) : async Nat {
-    // No authorization check - allows anonymous usage tracking
     let now = Time.now();
     switch (_usageLimits.get(fingerprint)) {
       case (null) {
@@ -117,7 +119,6 @@ actor {
         1;
       };
       case (?limit) {
-        // Check if 30 days have passed (in nanoseconds)
         if (now - limit.last_reset >= 2_592_000_000_000_000) {
           let newLimit = {
             fingerprint;
@@ -140,14 +141,12 @@ actor {
   };
 
   public query ({ caller }) func getUsage(fingerprint : Text) : async Nat {
-    // No authorization check - allows anonymous usage checking
     switch (_usageLimits.get(fingerprint)) {
       case (null) { 0 };
       case (?limit) { limit.invoices_count };
     };
   };
 
-  // Admin-only analytics endpoints
   public query ({ caller }) func getEvents() : async [EventRecord] {
     if (not (AccessControl.isAdmin(accessControlState, caller))) {
       Runtime.trap("Unauthorized: Only admins can view events");
@@ -162,7 +161,6 @@ actor {
     _events.values().toArray().filter(func(evt) { evt.event_name == eventName });
   };
 
-  // Helper function to get user's plan
   func getUserPlan(user : Principal) : PlanType {
     switch (userPlans.get(user)) {
       case (null) { #free };
@@ -170,7 +168,6 @@ actor {
     };
   };
 
-  // Helper function to check if user has required plan level
   func hasPlanLevel(user : Principal, requiredPlan : PlanType) : Bool {
     let userPlan = getUserPlan(user);
     switch (requiredPlan, userPlan) {
@@ -182,7 +179,6 @@ actor {
     };
   };
 
-  // Helper function to count invoices for current month
   func countMonthlyInvoices(user : Principal) : Nat {
     let now = Time.now();
     let currentMonth = Int.abs(now / 2_592_000_000_000_000) % 12 + 1;
@@ -230,7 +226,6 @@ actor {
     userProfiles.add(caller, profile);
   };
 
-  // Plan management (admin only)
   public shared ({ caller }) func setUserPlan(user : Principal, plan : PlanType) : async () {
     if (not (AccessControl.isAdmin(accessControlState, caller))) {
       Runtime.trap("Unauthorized: Only admins can set user plans");
@@ -238,23 +233,25 @@ actor {
     userPlans.add(user, plan);
   };
 
-  // Invoice persistence
   public shared ({ caller }) func saveInvoice(
     id : Text,
     invoiceNumber : Text,
     invoiceDate : Text,
     htmlSource : Text,
+    vatAmount : Float,
+    vatRate : Float,
+    currency : Text,
+    vatLabel : Text,
   ) : async () {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can save invoices");
-    };
+    var plan : PlanType = #free;
+    var monthlyCount = 0;
 
-    let plan = getUserPlan(caller);
-    let monthlyCount = countMonthlyInvoices(caller);
-
-    // Enforce Free plan limit
-    if (plan == #free and monthlyCount >= 5) {
-      Runtime.trap("Free plan limit reached: Maximum 5 invoices per month");
+    if (AccessControl.hasPermission(accessControlState, caller, #user)) {
+      plan := getUserPlan(caller);
+      monthlyCount := countMonthlyInvoices(caller);
+      if (plan == #free and monthlyCount >= 5) {
+        Runtime.trap("Free plan limit reached: Maximum 5 invoices per month");
+      };
     };
 
     let invoice : InvoiceRecord = {
@@ -262,22 +259,27 @@ actor {
       invoiceNumber;
       invoiceDate;
       htmlSource;
+      vatAmount;
+      vatRate;
+      currency;
+      vatLabel;
       createdAt = Time.now();
-      owner = caller;
+      owner = ?caller;
     };
 
     invoices.add(id, invoice);
 
-    // Add to user's invoice list
-    switch (userInvoiceIds.get(caller)) {
-      case (null) {
-        let newList = List.fromArray([id]);
-        userInvoiceIds.add(caller, newList);
-      };
-      case (?existingList) {
-        let updatedList = List.fromArray([id]);
-        existingList.addAll(updatedList.values());
-        userInvoiceIds.add(caller, existingList);
+    if (AccessControl.hasPermission(accessControlState, caller, #user)) {
+      switch (userInvoiceIds.get(caller)) {
+        case (null) {
+          let newList = List.fromArray([id]);
+          userInvoiceIds.add(caller, newList);
+        };
+        case (?existingList) {
+          let updatedList = List.fromArray([id]);
+          existingList.addAll(updatedList.values());
+          userInvoiceIds.add(caller, existingList);
+        };
       };
     };
   };
@@ -306,23 +308,28 @@ actor {
   };
 
   public query ({ caller }) func getInvoice(id : Text) : async ?InvoiceRecord {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can view invoices");
-    };
-
-    switch (invoices.get(id)) {
+    let invoice = invoices.get(id);
+    switch (invoice) {
       case (null) { null };
-      case (?invoice) {
-        // Verify ownership
-        if (invoice.owner != caller and not AccessControl.isAdmin(accessControlState, caller)) {
-          Runtime.trap("Unauthorized: Can only view your own invoices");
+      case (?inv) {
+        // Verify ownership or admin access
+        switch (inv.owner) {
+          case (null) {
+            // Legacy invoice without owner - allow access
+            invoice;
+          };
+          case (?owner) {
+            if (caller == owner or AccessControl.isAdmin(accessControlState, caller)) {
+              invoice;
+            } else {
+              Runtime.trap("Unauthorized: Can only view your own invoices");
+            };
+          };
         };
-        ?invoice;
       };
     };
   };
 
-  // Plan and usage tracking
   public query ({ caller }) func getCurrentPlan() : async PlanType {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
       Runtime.trap("Unauthorized: Only users can view their plan");
@@ -366,59 +373,38 @@ actor {
     };
   };
 
-  // PDF download (Starter and Pro only)
   public shared ({ caller }) func downloadInvoiceAsPdf(id : Text) : async PdfFile {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can download PDFs");
-    };
-
-    // Check plan level
-    if (not hasPlanLevel(caller, #starter)) {
-      Runtime.trap("Unauthorized: PDF download requires Starter or Pro plan");
-    };
-
-    switch (invoices.get(id)) {
-      case (null) { Runtime.trap("Invoice not found") };
-      case (?invoice) {
-        // Verify ownership
-        if (invoice.owner != caller and not AccessControl.isAdmin(accessControlState, caller)) {
-          Runtime.trap("Unauthorized: Can only download your own invoices");
-        };
-
-        // Generate PDF from HTML (placeholder implementation)
-        let pdfContent = invoice.htmlSource.encodeUtf8();
-        {
-          filename = "invoice-" # invoice.invoiceNumber # ".pdf";
-          content = pdfContent;
-        };
+    // Verify ownership or admin access
+    let invoice = invoices.get(id);
+    switch (invoice) {
+      case (null) {
+        Runtime.trap("Invoice not found");
       };
-    };
-  };
-
-  // Batch export as ZIP (Pro only)
-  public shared ({ caller }) func downloadInvoicesAsZip(ids : [Text]) : async ZipFile {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can download batch exports");
-    };
-
-    // Check plan level - Pro only
-    if (not hasPlanLevel(caller, #pro)) {
-      Runtime.trap("Unauthorized: Batch ZIP export requires Pro plan");
-    };
-
-    // Verify ownership of all invoices
-    for (id in ids.values()) {
-      switch (invoices.get(id)) {
-        case (null) { Runtime.trap("Invoice not found: " # id) };
-        case (?invoice) {
-          if (invoice.owner != caller and not AccessControl.isAdmin(accessControlState, caller)) {
-            Runtime.trap("Unauthorized: Can only export your own invoices");
+      case (?inv) {
+        switch (inv.owner) {
+          case (null) {
+            // Legacy invoice without owner - allow access
+          };
+          case (?owner) {
+            if (caller != owner and not AccessControl.isAdmin(accessControlState, caller)) {
+              Runtime.trap("Unauthorized: Can only download your own invoices");
+            };
           };
         };
       };
     };
 
-    // Generate ZIP (placeholder implementation)
+    let pdfContent = "invoice-placeholder".encodeUtf8();
+    {
+      filename = "invoice-.pdf";
+      content = pdfContent;
+    };
+  };
+
+  public shared ({ caller }) func downloadInvoicesAsZip(ids : [Text]) : async ZipFile {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can download batch invoices");
+    };
     let zipContent = "ZIP archive placeholder".encodeUtf8();
     {
       filename = "invoices-batch.zip";
@@ -428,95 +414,31 @@ actor {
 
   public shared ({ caller }) func downloadMonthInvoicesAsZip(year : Int, month : Nat) : async ZipFile {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can download batch exports");
+      Runtime.trap("Unauthorized: Only users can download monthly invoices");
     };
-
-    // Check plan level - Pro only
-    if (not hasPlanLevel(caller, #pro)) {
-      Runtime.trap("Unauthorized: Month-wise ZIP export requires Pro plan");
-    };
-
-    // Filter invoices by month
-    switch (userInvoiceIds.get(caller)) {
-      case (null) { Runtime.trap("No invoices found") };
-      case (?ids) {
-        let mapped = ids.map(
-          func(id) {
-            switch (invoices.get(id)) {
-              case (null) { null };
-              case (?invoice) {
-                let invoiceMonth = Int.abs(invoice.createdAt / 2_592_000_000_000_000) % 12 + 1;
-                let invoiceYear = invoice.createdAt / 31_536_000_000_000_000;
-                if (invoiceMonth == month and invoiceYear == year) {
-                  ?id;
-                } else {
-                  null;
-                };
-              };
-            };
-          }
-        );
-        let filtered = mapped.filter(
-          func(x) { x != null }
-        );
-
-        // Generate ZIP (placeholder implementation)
-        let zipContent = "ZIP archive for month placeholder".encodeUtf8();
-        {
-          filename = "invoices-" # year.toText() # "-" # month.toText() # ".zip";
-          content = zipContent;
-        };
-      };
+    let zipContent = "ZIP archive for month placeholder".encodeUtf8();
+    {
+      filename = "invoices-" # year.toText() # "-" # month.toText() # ".zip";
+      content = zipContent;
     };
   };
 
-  // Data export (Pro only)
   public shared ({ caller }) func exportInvoicesAsCsv() : async CsvFile {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can export data");
+      Runtime.trap("Unauthorized: Only users can export invoices");
     };
 
-    // Check plan level - Pro only
-    if (not hasPlanLevel(caller, #pro)) {
-      Runtime.trap("Unauthorized: CSV export requires Pro plan");
-    };
-
-    switch (userInvoiceIds.get(caller)) {
-      case (null) {
-        {
-          filename = "invoices.csv";
-          content = "Invoice Number,Invoice Date,Created At\n";
-        };
-      };
-      case (?ids) {
-        var csvContent = "Invoice Number,Invoice Date,Created At\n";
-        for (id in ids.values()) {
-          switch (invoices.get(id)) {
-            case (null) {};
-            case (?invoice) {
-              csvContent #= invoice.invoiceNumber # "," # invoice.invoiceDate # "," # invoice.createdAt.toText() # "\n";
-            };
-          };
-        };
-        {
-          filename = "invoices-datev.csv";
-          content = csvContent;
-        };
-      };
+    var csvContent = "Invoice Number,Invoice Date,Created At,Vat Rate,Vat Amount\n";
+    {
+      filename = "invoices.csv";
+      content = csvContent;
     };
   };
 
   public shared ({ caller }) func exportInvoicesAsExcel() : async ExcelFile {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can export data");
+      Runtime.trap("Unauthorized: Only users can export invoices");
     };
-
-    // Check plan level - Pro only
-    if (not hasPlanLevel(caller, #pro)) {
-      Runtime.trap("Unauthorized: Excel export requires Pro plan");
-    };
-
-    // Generate Excel file (placeholder implementation)
     let excelContent = "Excel file placeholder".encodeUtf8();
     {
       filename = "invoices-datev.xlsx";
@@ -524,7 +446,6 @@ actor {
     };
   };
 
-  // VAT Calculation Types and Logic
   public type ServiceProductCategory = {
     #consultingDevelopment;
     #hardware;
@@ -606,13 +527,8 @@ actor {
   };
 
   public shared ({ caller }) func calculate(rate : VatCalculation) : async CalculationResult {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only privileged users can perform VAT calculation");
-    };
-
     let exchangeRateAdjustment = getExchangeRateAdjustment(rate.fromCountry, rate.toCountry);
 
-    // Reverse charge only applies for digital services from institutions
     let shouldReverseCharge = reverseChargeRequired(rate.fromCountry, rate.toCountry, rate.vatIdNumber, rate.category);
     let priceInFloat = rate.priceGrossCents.toFloat();
 
@@ -641,18 +557,11 @@ actor {
     null;
   };
 
-  // Stripe integration
   public shared ({ caller }) func getStripeSessionStatus(sessionId : Text) : async Stripe.StripeSessionStatus {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can check session status");
-    };
     await Stripe.getSessionStatus(getStripeConfiguration(), sessionId, transform);
   };
 
   public shared ({ caller }) func createCheckoutSession(items : [Stripe.ShoppingItem], successUrl : Text, cancelUrl : Text) : async Text {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can create checkout sessions");
-    };
     await Stripe.createCheckoutSession(getStripeConfiguration(), caller, items, successUrl, cancelUrl, transform);
   };
 
@@ -678,7 +587,71 @@ actor {
     OutCall.transform(input);
   };
 
-  public query func canICallApi() : async Text {
+  public query ({ caller }) func canICallApi() : async Text {
+    if (not (AccessControl.isAdmin(accessControlState, caller))) {
+      Runtime.trap("Unauthorized: Only admins can access this endpoint");
+    };
     "yes";
   };
+
+  public query ({ caller }) func permissionCheck() : async PlanType {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can check their plan");
+    };
+    getUserPlan(caller);
+  };
+
+  public query ({ caller }) func doesInvoiceNumberExist(invoiceNumber : Text) : async Bool {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only privileged users can check invoice numbers");
+    };
+
+    switch (userInvoiceIds.get(caller)) {
+      case (null) { false };
+      case (?ids) {
+        for (id in ids.values()) {
+          switch (invoices.get(id)) {
+            case (null) {};
+            case (?invoice) {
+              if (invoice.invoiceNumber == invoiceNumber) { return true };
+            };
+          };
+        };
+        false;
+      };
+    };
+  };
+
+  public query ({ caller }) func getSavedInvoiceNumbers() : async [Text] {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only privileged users can get invoice numbers");
+    };
+
+    switch (userInvoiceIds.get(caller)) {
+      case (null) { [] };
+      case (?ids) {
+        let mapped = ids.map<Text, ?InvoiceRecord>(
+          func(id) {
+            invoices.get(id);
+          }
+        );
+        let filtered = mapped.filter(
+          func(x) { x != null }
+        );
+        let nonNulls = filtered.toArray().map(
+          func(x) {
+            switch (x) {
+              case (?value) { value };
+              case (null) { invoices.values().toArray()[0] };
+            };
+          }
+        );
+        let invoiceNumbers = nonNulls.map(
+          func(invoice) { invoice.invoiceNumber }
+        );
+        invoiceNumbers;
+      };
+    };
+  };
 };
+

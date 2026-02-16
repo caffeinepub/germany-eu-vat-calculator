@@ -1,27 +1,40 @@
 import { type VATCalculationResult } from '../vat/calculateVat';
+import { getCountryWording } from './invoiceWording';
 
-export function getAutoLegalVatText(scenario: VATCalculationResult['scenario']): string {
+export function getAutoLegalVatText(
+  scenario: VATCalculationResult['scenario'],
+  sellerCountry?: string
+): string {
+  const country = sellerCountry || 'DE';
+  
   switch (scenario) {
     case 'kleinunternehmer':
       return 'Steuerfreie Leistung gemäß §19 Abs. 1 UStG (Kleinunternehmerregelung). Es wird keine Umsatzsteuer berechnet.\n\nTax-exempt service under §19 (1) UStG (small business regulation). No VAT is charged.';
     
     case 'reverse-charge':
-      return 'Steuerschuldnerschaft des Leistungsempfängers gemäß §13b UStG. Der Leistungsempfänger schuldet die Umsatzsteuer.\n\nReverse charge applies under §13b UStG (Article 196 EU VAT Directive). The recipient is liable for VAT.';
+      return getCountryWording(country, 'reverse');
     
     case 'vat-exempt':
-      return 'Steuerfreie Leistung gemäß [Artikel/Paragraph einfügen]. Diese Leistung ist von der Umsatzsteuer befreit.\n\nVAT-exempt service under [insert Article/Paragraph]. This service is exempt from VAT.';
+      return getCountryWording(country, 'exempt');
     
     case 'intra-eu-supply':
-      return 'Innergemeinschaftliche Lieferung gemäß §4 Nr. 1b UStG i.V.m. §6a UStG. Steuerfreie Lieferung innerhalb der EU.\n\nIntra-Community supply under §4 No. 1b UStG in conjunction with §6a UStG. Tax-free delivery within the EU.';
+      return 'Intra-Community supply – zero-rated under Article 138 of Council Directive 2006/112/EC.\n\nInnergemeinschaftliche Lieferung – steuerfrei gemäß Artikel 138 der Richtlinie 2006/112/EG.';
     
     case 'digital-b2c-eu':
-      return 'Elektronisch erbrachte Dienstleistung an Privatperson in der EU. Es gilt die Umsatzsteuer des Bestimmungslandes gemäß Art. 58 MwStSystRL.\n\nElectronically supplied service to EU consumer. The VAT rate of the destination country applies under Article 58 VAT Directive.';
+      return 'VAT charged under the One-Stop-Shop (OSS) scheme for digital services to EU consumers.\n\nUmsatzsteuer wird im Rahmen der One-Stop-Shop (OSS) Regelung für digitale Dienstleistungen an EU-Verbraucher erhoben.';
     
-    case 'b2c-standard':
-      return 'Umsatzsteuer gemäß §12 Abs. 1 UStG zum Regelsteuersatz.\n\nVAT charged at the standard rate under §12 (1) UStG.';
+    // UK-specific scenarios
+    case 'uk-export-zero':
+      return 'Zero-rated export under UK VAT legislation.';
     
-    case 'b2c-reduced':
-      return 'Umsatzsteuer gemäß §12 Abs. 2 UStG zum ermäßigten Steuersatz.\n\nVAT charged at the reduced rate under §12 (2) UStG.';
+    case 'uk-reverse-charge':
+      return getCountryWording('United Kingdom', 'reverse');
+    
+    case 'uk-exempt':
+      return getCountryWording('United Kingdom', 'exempt');
+    
+    case 'uk-domestic':
+      return ''; // No special legal text needed for standard UK domestic transactions
     
     default:
       return '';

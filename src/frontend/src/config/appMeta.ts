@@ -3,9 +3,9 @@
  * Used for consistent branding across UI, document metadata, and deployment
  */
 export const APP_META = {
-  displayName: 'Germany EU Vat Calculator',
-  suggestedSlug: 'germany-eu-vat-calculator',
-  description: 'Calculate VAT correctly for Germany. Generate compliant invoices.',
+  displayName: 'Glotaxa',
+  suggestedSlug: 'glotaxa',
+  description: 'Calculate Tax correctly for multiple countries. Generate compliant invoices.',
 } as const;
 
 /**

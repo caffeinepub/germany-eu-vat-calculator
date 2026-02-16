@@ -1,4 +1,4 @@
-# Production Publish Checklist - Version 5
+# Production Publish Checklist - Version 4
 
 ## Pre-Deployment Verification
 
@@ -29,7 +29,7 @@
 
 ### 5. Live App Checks
 - [ ] **App loads without errors:** Open the live URL and verify no console errors
-- [ ] **Console production marker:** Open browser DevTools Console and verify the marker appears immediately on page load: `🚀 Germany EU VAT Calculator v5 - Production Build`
+- [ ] **Console production marker:** Open browser DevTools Console and verify the marker appears immediately on page load: `🚀 Germany EU VAT Calculator v4 - Production Build`
 - [ ] **Browser tab title:** Verify tab shows "Germany EU Vat Calculator" (check immediately after load and after navigating between routes)
 - [ ] **Routes accessible:** Test all main routes (see PRODUCTION_SMOKE_CHECK.md)
 - [ ] **Authentication works:** Test Internet Identity login/logout flow
@@ -58,7 +58,7 @@ If critical issues are discovered:
 ## Success Criteria
 ✅ Production deployment completes without errors  
 ✅ Live app is reachable at recorded frontend canister URL  
-✅ Console shows Version 5 marker immediately on page load  
+✅ Console shows Version 4 marker immediately on page load  
 ✅ Browser tab title shows "Germany EU Vat Calculator" consistently across routes  
 ✅ All routes render correctly without runtime errors  
 ✅ Internet Identity login/logout works  
@@ -74,5 +74,5 @@ If critical issues are discovered:
 
 ---
 
-**Version:** 5  
-**Last Updated:** February 11, 2026
+**Version:** 4  
+**Last Updated:** February 16, 2026

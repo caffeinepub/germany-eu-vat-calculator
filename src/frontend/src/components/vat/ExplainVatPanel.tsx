@@ -6,6 +6,8 @@ import { Download } from 'lucide-react';
 import { type VATCalculationInput, type VATCalculationResult } from '../../lib/vat/calculateVat';
 import { explainGermanyVAT } from '../../lib/vat/explainVat';
 import { explainVatLikeIm12 } from '../../lib/vat/explainVatLikeIm12';
+import { explainUkVat } from '../../lib/vat/explainUkVat';
+import { type UkVatResult } from '../../lib/vat/ukTypes';
 import { usePlanAccess } from '../../hooks/usePlanAccess';
 import ExplainVatPaywallDialog from './ExplainVatPaywallDialog';
 
@@ -18,8 +20,32 @@ export default function ExplainVatPanel({ formData, result }: ExplainVatPanelPro
   const { isPro } = usePlanAccess();
   const [showPaywall, setShowPaywall] = useState(false);
   
-  const standardExplanation = explainGermanyVAT(formData, result);
-  const simpleExplanation = explainVatLikeIm12(formData, result);
+  // Choose explanation based on region
+  const isUkFlow = formData.region === 'UK';
+  
+  const standardExplanation = isUkFlow 
+    ? explainUkVat({ 
+        netAmountCents: result.netAmountCents,
+        vatAmountCents: result.vatAmountCents,
+        grossAmountCents: result.grossAmountCents,
+        vatRatePercent: result.vatRatePercent,
+        scenario: result.scenario as any,
+        vatType: (result as any).vatType || 'Standard',
+        message: result.message || '',
+      } as UkVatResult)
+    : explainGermanyVAT(formData, result);
+  
+  const simpleExplanation = isUkFlow
+    ? explainUkVat({ 
+        netAmountCents: result.netAmountCents,
+        vatAmountCents: result.vatAmountCents,
+        grossAmountCents: result.grossAmountCents,
+        vatRatePercent: result.vatRatePercent,
+        scenario: result.scenario as any,
+        vatType: (result as any).vatType || 'Standard',
+        message: result.message || '',
+      } as UkVatResult)
+    : explainVatLikeIm12(formData, result);
 
   const handleExportPdf = () => {
     if (!isPro) {

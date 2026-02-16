@@ -1,4 +1,5 @@
 import { type VatCategory } from './vatCategoryRateRules';
+import { lookupVatConfig } from './vatTable';
 
 export type ServiceCategory = 'digital' | 'physical' | 'consulting' | 'saas' | 'others';
 
@@ -30,7 +31,12 @@ export interface VATCalculationInput {
   invoiceNumber?: string;
   invoiceDate?: string;
   taxPointDate?: string;
+  currency?: string;
   legalVatTextOverride?: string;
+  // UK-specific fields
+  region?: 'EU' | 'UK' | 'USA' | 'APAC';
+  ukScenario?: 'uk-domestic' | 'uk-export-zero' | 'uk-reverse-charge' | 'uk-exempt';
+  ukMessage?: string;
 }
 
 export interface VATCalculationResult {
@@ -39,7 +45,8 @@ export interface VATCalculationResult {
   grossAmountCents: number;
   vatRatePercent: number;
   legalNote: string | null;
-  scenario: 'kleinunternehmer' | 'reverse-charge' | 'vat-exempt' | 'b2c-standard' | 'b2c-reduced' | 'digital-b2c-eu' | 'intra-eu-supply';
+  scenario: 'kleinunternehmer' | 'reverse-charge' | 'vat-exempt' | 'b2c-standard' | 'b2c-reduced' | 'digital-b2c-eu' | 'intra-eu-supply' | 'uk-domestic' | 'uk-export-zero' | 'uk-reverse-charge' | 'uk-exempt';
+  message?: string;
 }
 
 export function calculateEUVAT(input: VATCalculationInput, countryRate: number): VATCalculationResult {
@@ -127,7 +134,12 @@ export function calculateGermanyVAT(input: VATCalculationInput, asOfDate?: strin
     };
   }
 
-  const ratePercent = input.vatRate === 'reduced' ? 7 : 19;
+  // Use VAT_TABLE for Germany rates
+  const vatConfig = lookupVatConfig('DE');
+  const standardRate = vatConfig?.standard || 19;
+  const reducedRate = vatConfig?.reduced || 7;
+  
+  const ratePercent = input.vatRate === 'reduced' ? reducedRate : standardRate;
   const vatAmountCents = Math.round(netAmountCents * (ratePercent / 100));
   const grossAmountCents = netAmountCents + vatAmountCents;
 

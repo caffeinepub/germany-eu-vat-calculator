@@ -3,28 +3,22 @@
   "projectStateVersion": 3,
   "summary": "New project",
   "architectural_notes": [],
-  "known_issues": [],
-  "isFixRequest": false,
+  "known_issues": [
+    "Revert/build process previously failed; last build did not go through."
+  ],
+  "isFixRequest": true,
   "existing_features": [
     {
-      "id": "feature-fully-configure-spain-country-code-es-in-the-eu-country-configuration-so-it-is-treated-as-a-supported-ready-country-in-the-vat-calculator-correct-standard-vat-rate-reduced-vat-rates-list-reverse-charge-text-and-configured-true",
-      "title": "Fully configure Spain (country code \"ES\") in the EU country configuration so it is treated as a supported/ready country in the VAT calculator (correct standard VAT rate, reduced VAT rates list, reverse charge text, and configured=true).",
+      "id": "feature-revert-the-application-behavior-to-the-version-immediately-prior-to-the-latest-deployment-draft-the-draft-that-introduced-the-new-updated-vat-priority-logic-this-rollback-must-restore-the-previous-vat-invoice-flow-behavior-and-ui-outputs-as-they-were-before-the-latest-vat-priority-changes-were-applied",
+      "title": "Revert the application behavior to the version immediately prior to the latest deployment draft (the draft that introduced the new/updated “VAT priority logic”). This rollback must restore the previous VAT/invoice flow behavior and UI outputs as they were before the latest VAT-priority changes were applied.",
       "reqIds": [
         "REQ-1"
       ],
       "version": 1
     },
     {
-      "id": "feature-implement-spain-specific-vat-category-to-rate-mapping-so-that-selecting-a-vat-category-in-the-transaction-step-can-compute-an-appropriate-reduced-super-reduced-rate-for-spain-where-applicable-otherwise-falling-back-to-spain-s-standard-rate",
-      "title": "Implement Spain-specific VAT category-to-rate mapping so that selecting a VAT Category in the transaction step can compute an appropriate reduced/super-reduced rate for Spain where applicable, otherwise falling back to Spain's standard rate.",
-      "reqIds": [
-        "REQ-2"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-ensure-the-spain-configuration-integrates-cleanly-with-the-existing-transaction-flow-reduced-rate-selection-vattreatment-reduced-and-selectedreducedrate-so-spain-s-reduced-rates-are-selectable-and-used-consistently-in-the-calculation-result",
-      "title": "Ensure the Spain configuration integrates cleanly with the existing transaction flow reduced-rate selection (vatTreatment=\"reduced\" and selectedReducedRate), so Spain’s reduced rates are selectable and used consistently in the calculation result.",
+      "id": "feature-update-deployment-verification-to-clearly-indicate-the-rolled-back-build-version-via-the-existing-production-marker-mechanism-so-that-operators-can-confirm-rollback-in-the-browser-console-after-deployment",
+      "title": "Update deployment verification to clearly indicate the rolled-back build version via the existing production marker mechanism, so that operators can confirm rollback in the browser console after deployment.",
       "reqIds": [
         "REQ-3"
       ],
@@ -34,12 +28,20 @@
   "new_feature_requests": [
     {
       "id": "AR-1",
-      "summary": "Complete the Spain configuration fully (including VAT/category placement as needed)",
+      "summary": "Revert the app back to the previous version (undo latest VAT priority logic changes)",
       "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-3",
+      "summary": "Ensure the rollback does not break access to already-saved invoices. Existing invoice records must remain listable and viewable after the rollback (including any fields currently stored on backend invoice records such as currency and VAT label).",
+      "reqIds": [
+        "REQ-2"
+      ],
       "status": "pending"
     }
   ],
-  "projectName": "Complete Spain (ES) VAT country configuration",
+  "projectName": "Retry rollback: revert app to the previous version (undo latest VAT priority logic changes)",
   "clarification_mode": "instant",
   "clarification_rounds": 0
 }

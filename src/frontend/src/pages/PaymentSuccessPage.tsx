@@ -36,7 +36,7 @@ export default function PaymentSuccessPage() {
             Thank you for upgrading! Your plan has been activated and you now have access to all premium features.
           </p>
           <div className="flex gap-3">
-            <Button onClick={() => navigate({ to: '/calculator' })} className="flex-1">
+            <Button onClick={() => navigate({ to: '/calculator', search: {} })} className="flex-1">
               Start Calculating
             </Button>
             <Button variant="outline" onClick={() => navigate({ to: '/invoices' })} className="flex-1">

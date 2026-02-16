@@ -29,10 +29,14 @@ export interface EventRecord {
 export interface ExcelFile { 'content' : Uint8Array, 'filename' : string }
 export interface InvoiceRecord {
   'id' : string,
-  'owner' : Principal,
+  'owner' : [] | [Principal],
   'createdAt' : Time,
   'invoiceDate' : string,
+  'vatLabel' : string,
   'invoiceNumber' : string,
+  'currency' : string,
+  'vatAmount' : number,
+  'vatRate' : number,
   'htmlSource' : string,
 }
 export interface MappedPlanUsage {
@@ -103,6 +107,7 @@ export interface _SERVICE {
     [Array<ShoppingItem>, string, string],
     string
   >,
+  'doesInvoiceNumberExist' : ActorMethod<[string], boolean>,
   'downloadInvoiceAsPdf' : ActorMethod<[string], PdfFile>,
   'downloadInvoicesAsZip' : ActorMethod<[Array<string>], ZipFile>,
   'downloadMonthInvoicesAsZip' : ActorMethod<[bigint, bigint], ZipFile>,
@@ -117,6 +122,7 @@ export interface _SERVICE {
   'getInvoice' : ActorMethod<[string], [] | [InvoiceRecord]>,
   'getLastCalculation' : ActorMethod<[], [] | [VatCalculation]>,
   'getMappedPlanUsage' : ActorMethod<[], MappedPlanUsage>,
+  'getSavedInvoiceNumbers' : ActorMethod<[], Array<string>>,
   'getStripeSessionStatus' : ActorMethod<[string], StripeSessionStatus>,
   'getUsage' : ActorMethod<[string], bigint>,
   'getUserProfile' : ActorMethod<[Principal], [] | [UserProfile]>,
@@ -125,8 +131,12 @@ export interface _SERVICE {
   'isStripeConfigured' : ActorMethod<[], boolean>,
   'listInvoices' : ActorMethod<[], Array<InvoiceRecord>>,
   'logEvent' : ActorMethod<[EventRecord], undefined>,
+  'permissionCheck' : ActorMethod<[], PlanType>,
   'saveCallerUserProfile' : ActorMethod<[UserProfile], undefined>,
-  'saveInvoice' : ActorMethod<[string, string, string, string], undefined>,
+  'saveInvoice' : ActorMethod<
+    [string, string, string, string, number, number, string, string],
+    undefined
+  >,
   'setStripeConfiguration' : ActorMethod<[StripeConfiguration], undefined>,
   'setUserPlan' : ActorMethod<[Principal, PlanType], undefined>,
   'transform' : ActorMethod<[TransformationInput], TransformationOutput>,

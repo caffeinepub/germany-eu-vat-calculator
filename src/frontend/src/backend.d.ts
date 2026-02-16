@@ -68,10 +68,14 @@ export interface TransformationInput {
 }
 export interface InvoiceRecord {
     id: string;
-    owner: Principal;
+    owner?: Principal;
     createdAt: Time;
     invoiceDate: string;
+    vatLabel: string;
     invoiceNumber: string;
+    currency: string;
+    vatAmount: number;
+    vatRate: number;
     htmlSource: string;
 }
 export interface EventRecord {
@@ -130,6 +134,7 @@ export interface backendInterface {
     canICallApi(): Promise<string>;
     canSaveInvoice(): Promise<boolean>;
     createCheckoutSession(items: Array<ShoppingItem>, successUrl: string, cancelUrl: string): Promise<string>;
+    doesInvoiceNumberExist(invoiceNumber: string): Promise<boolean>;
     downloadInvoiceAsPdf(id: string): Promise<PdfFile>;
     downloadInvoicesAsZip(ids: Array<string>): Promise<ZipFile>;
     downloadMonthInvoicesAsZip(year: bigint, month: bigint): Promise<ZipFile>;
@@ -144,6 +149,7 @@ export interface backendInterface {
     getInvoice(id: string): Promise<InvoiceRecord | null>;
     getLastCalculation(): Promise<VatCalculation | null>;
     getMappedPlanUsage(): Promise<MappedPlanUsage>;
+    getSavedInvoiceNumbers(): Promise<Array<string>>;
     getStripeSessionStatus(sessionId: string): Promise<StripeSessionStatus>;
     getUsage(fingerprint: string): Promise<bigint>;
     getUserProfile(user: Principal): Promise<UserProfile | null>;
@@ -152,8 +158,9 @@ export interface backendInterface {
     isStripeConfigured(): Promise<boolean>;
     listInvoices(): Promise<Array<InvoiceRecord>>;
     logEvent(event: EventRecord): Promise<void>;
+    permissionCheck(): Promise<PlanType>;
     saveCallerUserProfile(profile: UserProfile): Promise<void>;
-    saveInvoice(id: string, invoiceNumber: string, invoiceDate: string, htmlSource: string): Promise<void>;
+    saveInvoice(id: string, invoiceNumber: string, invoiceDate: string, htmlSource: string, vatAmount: number, vatRate: number, currency: string, vatLabel: string): Promise<void>;
     setStripeConfiguration(config: StripeConfiguration): Promise<void>;
     setUserPlan(user: Principal, plan: PlanType): Promise<void>;
     transform(input: TransformationInput): Promise<TransformationOutput>;

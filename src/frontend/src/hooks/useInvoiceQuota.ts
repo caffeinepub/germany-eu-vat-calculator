@@ -1,30 +1,36 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useActor } from './useActor';
 import { useAccountPlan } from './useAccountPlan';
-import { useInternetIdentity } from './useInternetIdentity';
 
 interface SaveInvoiceParams {
   id: string;
   invoiceNumber: string;
   invoiceDate: string;
   htmlSource: string;
+  vatRate: number;
+  vatAmount: number;
+  currency: string;
+  vatLabel: string;
 }
 
 export function useInvoiceQuota() {
   const { actor } = useActor();
-  const { identity } = useInternetIdentity();
   const { data: planData } = useAccountPlan();
   const queryClient = useQueryClient();
 
   const saveInvoiceMutation = useMutation({
     mutationFn: async (params: SaveInvoiceParams) => {
-      if (!actor || !identity) throw new Error('Must be logged in to save invoices');
+      if (!actor) throw new Error('Actor not available');
       
       await actor.saveInvoice(
         params.id,
         params.invoiceNumber,
         params.invoiceDate,
-        params.htmlSource
+        params.htmlSource,
+        params.vatAmount,
+        params.vatRate,
+        params.currency,
+        params.vatLabel
       );
       
       return { success: true };

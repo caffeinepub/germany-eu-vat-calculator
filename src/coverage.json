@@ -1,60 +1,61 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-13T10:37:15.558Z",
+  "generatedAt": "2026-02-16T10:50:48.651Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
     "total": 3,
-    "implemented": 3,
+    "implemented": 2,
     "items": [
       {
         "id": "REQ-1",
-        "summary": "Fully configure Spain (country code \"ES\") in the EU country configuration so it is treated as a supported/ready country in the VAT calculator (correct standard VAT rate, reduced VAT rates list, reverse charge text, and configured=true).",
+        "summary": "Revert the application behavior to the version immediately prior to the latest deployment draft (the draft that introduced the new/updated “VAT priority logic”). This rollback must restore the previous VAT/invoice flow behavior and UI outputs as they were before the latest VAT-priority changes were applied.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/lib/vat/euCountryConfig.ts"
+          "frontend/src/lib/invoice/deriveInvoiceVatOutcome.ts",
+          "frontend/src/components/invoice/InvoicePreview.tsx",
+          "frontend/src/components/vat/VatResultsStep.tsx",
+          "frontend/src/pages/CalculatorFlowPage.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/lib/vat/euCountryConfig.ts"
+          "frontend/src/lib/invoice/deriveInvoiceVatOutcome.ts"
         ]
       },
       {
         "id": "REQ-2",
-        "summary": "Implement Spain-specific VAT category-to-rate mapping so that selecting a VAT Category in the transaction step can compute an appropriate reduced/super-reduced rate for Spain where applicable, otherwise falling back to Spain's standard rate.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/lib/vat/vatCategoryRateRules.ts",
-          "frontend/src/components/vat/CountryTransactionStep.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/lib/vat/vatCategoryRateRules.ts",
-          "frontend/src/components/vat/CountryTransactionStep.tsx"
-        ]
+        "summary": "Ensure the rollback does not break access to already-saved invoices. Existing invoice records must remain listable and viewable after the rollback (including any fields currently stored on backend invoice records such as currency and VAT label).",
+        "status": "unknown",
+        "plannedFiles": [],
+        "matchedFiles": []
       },
       {
         "id": "REQ-3",
-        "summary": "Ensure the Spain configuration integrates cleanly with the existing transaction flow reduced-rate selection (vatTreatment=\"reduced\" and selectedReducedRate), so Spain’s reduced rates are selectable and used consistently in the calculation result.",
+        "summary": "Update deployment verification to clearly indicate the rolled-back build version via the existing production marker mechanism, so that operators can confirm rollback in the browser console after deployment.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/components/vat/CountryTransactionStep.tsx"
+          "frontend/src/lib/production/productionMarker.ts",
+          "frontend/src/components/layout/AppLayout.tsx",
+          "frontend/PRODUCTION_PUBLISH_V4.md"
         ],
         "matchedFiles": [
-          "frontend/src/components/vat/CountryTransactionStep.tsx"
+          "frontend/src/lib/production/productionMarker.ts",
+          "frontend/PRODUCTION_PUBLISH_V4.md"
         ]
       }
     ]
   },
   "changedFiles": [
+    "backend/main.mo",
     "build-request.json",
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
-    "frontend/src/components/vat/CountryTransactionStep.tsx",
-    "frontend/src/lib/vat/euCountryConfig.ts",
-    "frontend/src/lib/vat/vatCategoryRateRules.ts",
+    "frontend/PRODUCTION_PUBLISH_V4.md",
+    "frontend/src/lib/invoice/deriveInvoiceVatOutcome.ts",
+    "frontend/src/lib/production/productionMarker.ts",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

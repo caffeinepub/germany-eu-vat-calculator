@@ -1,4 +1,4 @@
-import { Outlet, Link, useNavigate } from '@tanstack/react-router';
+import { Outlet, Link, useNavigate, useLocation } from '@tanstack/react-router';
 import { Calculator, CreditCard, FileText } from 'lucide-react';
 import LoginButton from '../auth/LoginButton';
 import { Button } from '@/components/ui/button';
@@ -10,6 +10,7 @@ import { useEffect, useRef } from 'react';
 
 export default function AppLayout() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { identity } = useInternetIdentity();
   const isAuthenticated = !!identity;
   const { log, country } = useEventLogger();
@@ -31,45 +32,72 @@ export default function AppLayout() {
     }
   }, [log, country]);
 
+  // Helper to check if a route is active
+  const isActiveRoute = (path: string) => {
+    return location.pathname === path;
+  };
+
+  // Professional tab styling with light grey background for inactive tabs
+  const getTabClassName = (path: string) => {
+    const isActive = isActiveRoute(path);
+    
+    if (isActive) {
+      // Active state: muted background with border accent and darker text
+      return "border-2 border-border bg-muted/60 text-foreground font-medium shadow-xs";
+    }
+    
+    // Inactive state: light grey background with lighter text and border
+    return "border border-border/40 bg-[var(--header-tab-bg)] text-muted-foreground hover:bg-muted/40 hover:text-foreground hover:border-border/60 transition-all";
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-background">
-      <header className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-50">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
+      <header className="border-b border-border backdrop-blur-sm sticky top-0 z-50">
+        {/* Brand area with light blue background */}
+        <div className="bg-[var(--header-brand-bg)] border-b border-border/50">
+          <div className="container mx-auto px-4 py-4">
             <Link to="/" className="flex items-center gap-2 text-xl font-bold text-foreground hover:text-primary transition-colors">
               <Calculator className="h-6 w-6" />
               <span>{APP_META.displayName}</span>
             </Link>
-            <nav className="flex items-center gap-4">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => navigate({ to: '/calculator' })}
-                className="hidden sm:flex"
-              >
-                <Calculator className="h-4 w-4 mr-2" />
-                Calculate
-              </Button>
-              {isAuthenticated && (
+          </div>
+        </div>
+        
+        {/* Navigation tabs area */}
+        <div className="bg-card/50">
+          <div className="container mx-auto px-4 py-3">
+            <nav className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => navigate({ to: '/invoices' })}
-                  className="hidden sm:flex"
+                  onClick={() => navigate({ to: '/calculator', search: {} })}
+                  className={`hidden sm:flex ${getTabClassName('/calculator')}`}
                 >
-                  <FileText className="h-4 w-4 mr-2" />
-                  Invoices
+                  <Calculator className="h-4 w-4 mr-2" />
+                  Calculate
                 </Button>
-              )}
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => navigate({ to: '/upgrade' })}
-                className="hidden sm:flex"
-              >
-                <CreditCard className="h-4 w-4 mr-2" />
-                Pricing
-              </Button>
+                {isAuthenticated && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => navigate({ to: '/invoices' })}
+                    className={`hidden sm:flex ${getTabClassName('/invoices')}`}
+                  >
+                    <FileText className="h-4 w-4 mr-2" />
+                    Invoices
+                  </Button>
+                )}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => navigate({ to: '/upgrade' })}
+                  className={`hidden sm:flex ${getTabClassName('/upgrade')}`}
+                >
+                  <CreditCard className="h-4 w-4 mr-2" />
+                  Pricing
+                </Button>
+              </div>
               <LoginButton />
             </nav>
           </div>

@@ -79,10 +79,14 @@ export const EventRecord = IDL.Record({
 });
 export const InvoiceRecord = IDL.Record({
   'id' : IDL.Text,
-  'owner' : IDL.Principal,
+  'owner' : IDL.Opt(IDL.Principal),
   'createdAt' : Time,
   'invoiceDate' : IDL.Text,
+  'vatLabel' : IDL.Text,
   'invoiceNumber' : IDL.Text,
+  'currency' : IDL.Text,
+  'vatAmount' : IDL.Float64,
+  'vatRate' : IDL.Float64,
   'htmlSource' : IDL.Text,
 });
 export const MappedPlanUsage = IDL.Record({
@@ -130,6 +134,7 @@ export const idlService = IDL.Service({
       [IDL.Text],
       [],
     ),
+  'doesInvoiceNumberExist' : IDL.Func([IDL.Text], [IDL.Bool], ['query']),
   'downloadInvoiceAsPdf' : IDL.Func([IDL.Text], [PdfFile], []),
   'downloadInvoicesAsZip' : IDL.Func([IDL.Vec(IDL.Text)], [ZipFile], []),
   'downloadMonthInvoicesAsZip' : IDL.Func([IDL.Int, IDL.Nat], [ZipFile], []),
@@ -144,6 +149,7 @@ export const idlService = IDL.Service({
   'getInvoice' : IDL.Func([IDL.Text], [IDL.Opt(InvoiceRecord)], ['query']),
   'getLastCalculation' : IDL.Func([], [IDL.Opt(VatCalculation)], ['query']),
   'getMappedPlanUsage' : IDL.Func([], [MappedPlanUsage], ['query']),
+  'getSavedInvoiceNumbers' : IDL.Func([], [IDL.Vec(IDL.Text)], ['query']),
   'getStripeSessionStatus' : IDL.Func([IDL.Text], [StripeSessionStatus], []),
   'getUsage' : IDL.Func([IDL.Text], [IDL.Nat], ['query']),
   'getUserProfile' : IDL.Func(
@@ -156,8 +162,22 @@ export const idlService = IDL.Service({
   'isStripeConfigured' : IDL.Func([], [IDL.Bool], ['query']),
   'listInvoices' : IDL.Func([], [IDL.Vec(InvoiceRecord)], ['query']),
   'logEvent' : IDL.Func([EventRecord], [], []),
+  'permissionCheck' : IDL.Func([], [PlanType], ['query']),
   'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
-  'saveInvoice' : IDL.Func([IDL.Text, IDL.Text, IDL.Text, IDL.Text], [], []),
+  'saveInvoice' : IDL.Func(
+      [
+        IDL.Text,
+        IDL.Text,
+        IDL.Text,
+        IDL.Text,
+        IDL.Float64,
+        IDL.Float64,
+        IDL.Text,
+        IDL.Text,
+      ],
+      [],
+      [],
+    ),
   'setStripeConfiguration' : IDL.Func([StripeConfiguration], [], []),
   'setUserPlan' : IDL.Func([IDL.Principal, PlanType], [], []),
   'transform' : IDL.Func(
@@ -238,10 +258,14 @@ export const idlFactory = ({ IDL }) => {
   });
   const InvoiceRecord = IDL.Record({
     'id' : IDL.Text,
-    'owner' : IDL.Principal,
+    'owner' : IDL.Opt(IDL.Principal),
     'createdAt' : Time,
     'invoiceDate' : IDL.Text,
+    'vatLabel' : IDL.Text,
     'invoiceNumber' : IDL.Text,
+    'currency' : IDL.Text,
+    'vatAmount' : IDL.Float64,
+    'vatRate' : IDL.Float64,
     'htmlSource' : IDL.Text,
   });
   const MappedPlanUsage = IDL.Record({
@@ -286,6 +310,7 @@ export const idlFactory = ({ IDL }) => {
         [IDL.Text],
         [],
       ),
+    'doesInvoiceNumberExist' : IDL.Func([IDL.Text], [IDL.Bool], ['query']),
     'downloadInvoiceAsPdf' : IDL.Func([IDL.Text], [PdfFile], []),
     'downloadInvoicesAsZip' : IDL.Func([IDL.Vec(IDL.Text)], [ZipFile], []),
     'downloadMonthInvoicesAsZip' : IDL.Func([IDL.Int, IDL.Nat], [ZipFile], []),
@@ -300,6 +325,7 @@ export const idlFactory = ({ IDL }) => {
     'getInvoice' : IDL.Func([IDL.Text], [IDL.Opt(InvoiceRecord)], ['query']),
     'getLastCalculation' : IDL.Func([], [IDL.Opt(VatCalculation)], ['query']),
     'getMappedPlanUsage' : IDL.Func([], [MappedPlanUsage], ['query']),
+    'getSavedInvoiceNumbers' : IDL.Func([], [IDL.Vec(IDL.Text)], ['query']),
     'getStripeSessionStatus' : IDL.Func([IDL.Text], [StripeSessionStatus], []),
     'getUsage' : IDL.Func([IDL.Text], [IDL.Nat], ['query']),
     'getUserProfile' : IDL.Func(
@@ -312,8 +338,22 @@ export const idlFactory = ({ IDL }) => {
     'isStripeConfigured' : IDL.Func([], [IDL.Bool], ['query']),
     'listInvoices' : IDL.Func([], [IDL.Vec(InvoiceRecord)], ['query']),
     'logEvent' : IDL.Func([EventRecord], [], []),
+    'permissionCheck' : IDL.Func([], [PlanType], ['query']),
     'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
-    'saveInvoice' : IDL.Func([IDL.Text, IDL.Text, IDL.Text, IDL.Text], [], []),
+    'saveInvoice' : IDL.Func(
+        [
+          IDL.Text,
+          IDL.Text,
+          IDL.Text,
+          IDL.Text,
+          IDL.Float64,
+          IDL.Float64,
+          IDL.Text,
+          IDL.Text,
+        ],
+        [],
+        [],
+      ),
     'setStripeConfiguration' : IDL.Func([StripeConfiguration], [], []),
     'setUserPlan' : IDL.Func([IDL.Principal, PlanType], [], []),
     'transform' : IDL.Func(

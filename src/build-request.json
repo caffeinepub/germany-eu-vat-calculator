@@ -1,70 +1,90 @@
 {
   "kind": "build_request",
-  "title": "Complete Spain (ES) VAT country configuration",
+  "title": "Retry rollback: revert app to the previous version (undo latest VAT priority logic changes)",
   "priority": "normal",
   "requirements": [
     {
       "id": "REQ-1",
-      "text": "Fully configure Spain (country code \"ES\") in the EU country configuration so it is treated as a supported/ready country in the VAT calculator (correct standard VAT rate, reduced VAT rates list, reverse charge text, and configured=true).",
-      "target": "frontend",
+      "text": "Revert the application behavior to the version immediately prior to the latest deployment draft (the draft that introduced the new/updated “VAT priority logic”). This rollback must restore the previous VAT/invoice flow behavior and UI outputs as they were before the latest VAT-priority changes were applied.",
+      "target": "both",
       "source": {
         "messageIds": [
-          "msg-4"
+          "msg-3",
+          "msg-6"
         ],
         "quotes": [
-          "Complete the spain configuration fully"
+          "Amend the app, revert back to the previous version",
+          "yes"
         ]
       },
       "acceptanceCriteria": [
-        "In frontend/src/lib/vat/euCountryConfig.ts, the ES entry has a non-zero standardRate, a non-empty reducedRates array (when applicable), a non-empty reverseChargeText, and configured is set to true.",
-        "Spain no longer shows \"Configuration Pending\" messaging in the VAT country details/transaction steps and the \"Start Calculator\" action is enabled for ES."
+        "Running the VAT calculator + invoice flow produces the same VAT rate/label/amount outcomes as the previous version (i.e., before the last VAT priority-logic changes).",
+        "No newly introduced VAT-priority-specific labels or outcomes (e.g., any newly added precedence behavior) appear if they did not exist in the prior version.",
+        "The app builds successfully without TypeScript errors (frontend) and Motoko compilation errors (backend)."
       ]
     },
     {
       "id": "REQ-2",
-      "text": "Implement Spain-specific VAT category-to-rate mapping so that selecting a VAT Category in the transaction step can compute an appropriate reduced/super-reduced rate for Spain where applicable, otherwise falling back to Spain's standard rate.",
-      "target": "frontend",
+      "text": "Ensure the rollback does not break access to already-saved invoices. Existing invoice records must remain listable and viewable after the rollback (including any fields currently stored on backend invoice records such as currency and VAT label).",
+      "target": "backend",
       "source": {
         "messageIds": [
-          "msg-4"
+          "msg-3",
+          "msg-6"
         ],
         "quotes": [
-          "Complete the spain configuration fully"
+          "Amend the app, revert back to the previous version",
+          "yes"
         ]
       },
       "acceptanceCriteria": [
-        "In frontend/src/lib/vat/vatCategoryRateRules.ts, Spain (\"ES\") is handled explicitly (e.g., within computeVatRateForCategory switch) and returns Spain-appropriate reduced rates for relevant categories and the standard rate for non-eligible categories.",
-        "When the selected country is ES, the VAT Category selection influences the effective VAT rate shown/used by the calculator (i.e., reduced categories result in a reduced rate and standard/others remain at the standard rate)."
+        "After deployment, a user with existing invoices can open the Invoices page and see prior invoices listed without runtime errors.",
+        "Opening/downloading an existing invoice record does not trap on missing fields and does not require manual data resets.",
+        "No state-wiping reinstall mode is required for this rollback."
       ]
     },
     {
       "id": "REQ-3",
-      "text": "Ensure the Spain configuration integrates cleanly with the existing transaction flow reduced-rate selection (vatTreatment=\"reduced\" and selectedReducedRate), so Spain’s reduced rates are selectable and used consistently in the calculation result.",
+      "text": "Update deployment verification to clearly indicate the rolled-back build version via the existing production marker mechanism, so that operators can confirm rollback in the browser console after deployment.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-4"
+          "msg-3",
+          "msg-6"
         ],
         "quotes": [
-          "Complete the spain configuration fully"
+          "Amend the app, revert back to the previous version",
+          "yes"
         ]
       },
       "acceptanceCriteria": [
-        "When ES is selected and the user chooses reduced VAT treatment, the UI offers Spain’s configured reduced rate options and uses the chosen rate as effectiveVatRate for calculations.",
-        "VAT results for ES reflect the selected reduced rate (vatRatePercent in the result matches the chosen reduced rate) and gross/vat amounts update accordingly."
+        "In production mode, the browser console marker reflects the rolled-back release identifier (e.g., the previous marker/version), allowing easy verification that rollback is deployed.",
+        "The production publish checklist remains consistent with the production marker output used for verification."
       ]
     }
   ],
   "constraints": [
-    "Do not modify any files under frontend/src/components/ui or any frontend immutablePaths listed in SYSTEM_CONTEXT.",
-    "Keep all VAT logic changes confined to the existing frontend VAT configuration/rules modules (no new backend services)."
+    "Backend must remain a single Motoko actor in backend/main.mo (no additional backend services).",
+    "Do not edit frontend immutable paths: frontend/src/hooks/useInternetIdentity.ts, frontend/src/hooks/useInternetIdentity.tsx, frontend/src/hooks/useActor.ts, frontend/src/main.tsx, frontend/src/components/ui.",
+    "Use English for any user-facing text."
   ],
   "nonGoals": [
-    "Adding non-Spain country configurations beyond what is required for Spain to be fully supported.",
-    "Changing authentication, payments, or invoice persistence behavior."
+    "Implementing new VAT logic or additional VAT scenarios beyond what existed in the previous version.",
+    "Adding new payment features, new analytics features, or new UI pages unrelated to the rollback.",
+    "Introducing schema-breaking changes that require wiping state."
   ],
   "imageRequirements": {
     "required": [],
     "edits": []
+  },
+  "userProfileUpdate": {
+    "goalsToAdd": [],
+    "goalsToRemove": [],
+    "preferencesToAdd": [],
+    "preferencesToRemove": [],
+    "miscToAdd": [],
+    "miscToRemove": [],
+    "fieldsToSet": {},
+    "fieldsToDelete": []
   }
 }

@@ -1,4 +1,6 @@
 // VAT Category type and labels
+import { lookupVatConfig } from './vatTable';
+
 export type VatCategory =
   | 'standard'
   | 'food'
@@ -42,8 +44,8 @@ export const VAT_CATEGORIES: VatCategory[] = [
 
 /**
  * Computes the VAT rate percent for a given country and VAT category.
- * Implements reduced rate logic for DE, FR, IT, SE, BE, ES.
- * For all other countries or when category is not eligible, returns standard rate.
+ * Uses VAT_TABLE for standard rates, implements reduced rate logic for DE, FR, IT, SE, BE, ES.
+ * For all other countries or when category is not eligible, returns standard rate from VAT_TABLE.
  */
 export function computeVatRateForCategory(
   countryCode: string,
@@ -55,27 +57,37 @@ export function computeVatRateForCategory(
     return standardRate;
   }
 
+  // Lookup VAT config from VAT_TABLE
+  const vatConfig = lookupVatConfig(countryCode);
+  const tableStandardRate = vatConfig?.standard || standardRate;
+  const tableReducedRate = vatConfig?.reduced || standardRate;
+
   switch (countryCode) {
     case 'DE':
-      return computeGermanyRate(category, standardRate);
+    case 'Germany':
+      return computeGermanyRate(category, tableStandardRate, tableReducedRate);
     case 'FR':
-      return computeFranceRate(category, standardRate);
+    case 'France':
+      return computeFranceRate(category, tableStandardRate, tableReducedRate);
     case 'IT':
-      return computeItalyRate(category, standardRate);
+    case 'Italy':
+      return computeItalyRate(category, tableStandardRate, tableReducedRate);
     case 'SE':
-      return computeSwedenRate(category, standardRate);
+    case 'Sweden':
+      return computeSwedenRate(category, tableStandardRate, tableReducedRate);
     case 'BE':
-      return computeBelgiumRate(category, standardRate);
+    case 'Belgium':
+      return computeBelgiumRate(category, tableStandardRate, tableReducedRate);
     case 'ES':
-      return computeSpainRate(category, standardRate);
+    case 'Spain':
+      return computeSpainRate(category, tableStandardRate, tableReducedRate);
     default:
-      // For all other countries, return standard rate
-      return standardRate;
+      // For all other countries, return standard rate from VAT_TABLE
+      return tableStandardRate;
   }
 }
 
-function computeGermanyRate(category: VatCategory, standardRate: number): number {
-  // Standard = 19%, Reduced = 7%
+function computeGermanyRate(category: VatCategory, standardRate: number, reducedRate: number): number {
   const eligibleCategories: VatCategory[] = [
     'food',
     'books',
@@ -85,14 +97,13 @@ function computeGermanyRate(category: VatCategory, standardRate: number): number
   ];
 
   if (eligibleCategories.includes(category)) {
-    return 7;
+    return reducedRate;
   }
 
-  return standardRate; // 19%
+  return standardRate;
 }
 
-function computeFranceRate(category: VatCategory, standardRate: number): number {
-  // Standard = 20%, Reduced = 10% / 5.5%
+function computeFranceRate(category: VatCategory, standardRate: number, reducedRate: number): number {
   const rate10Categories: VatCategory[] = [
     'restaurant',
     'transport',
@@ -108,18 +119,17 @@ function computeFranceRate(category: VatCategory, standardRate: number): number 
   ];
 
   if (rate10Categories.includes(category)) {
-    return 10;
+    return reducedRate; // 10%
   }
 
   if (rate5_5Categories.includes(category)) {
     return 5.5;
   }
 
-  return standardRate; // 20%
+  return standardRate;
 }
 
-function computeItalyRate(category: VatCategory, standardRate: number): number {
-  // Standard = 22%, Reduced = 10% / 5% / 4%
+function computeItalyRate(category: VatCategory, standardRate: number, reducedRate: number): number {
   const rate10Categories: VatCategory[] = [
     'restaurant',
     'accommodation',
@@ -133,7 +143,7 @@ function computeItalyRate(category: VatCategory, standardRate: number): number {
   const rate4Categories: VatCategory[] = ['food', 'books'];
 
   if (rate10Categories.includes(category)) {
-    return 10;
+    return reducedRate; // 10%
   }
 
   if (rate5Categories.includes(category)) {
@@ -144,11 +154,10 @@ function computeItalyRate(category: VatCategory, standardRate: number): number {
     return 4;
   }
 
-  return standardRate; // 22%
+  return standardRate;
 }
 
-function computeSwedenRate(category: VatCategory, standardRate: number): number {
-  // Standard = 25%, Reduced = 12% / 6%
+function computeSwedenRate(category: VatCategory, standardRate: number, reducedRate: number): number {
   const rate12Categories: VatCategory[] = [
     'food',
     'restaurant',
@@ -162,18 +171,17 @@ function computeSwedenRate(category: VatCategory, standardRate: number): number 
   ];
 
   if (rate12Categories.includes(category)) {
-    return 12;
+    return reducedRate; // 12%
   }
 
   if (rate6Categories.includes(category)) {
     return 6;
   }
 
-  return standardRate; // 25%
+  return standardRate;
 }
 
-function computeBelgiumRate(category: VatCategory, standardRate: number): number {
-  // Standard = 21%, Reduced = 12% / 6%
+function computeBelgiumRate(category: VatCategory, standardRate: number, reducedRate: number): number {
   const rate12Categories: VatCategory[] = ['restaurant'];
 
   const rate6Categories: VatCategory[] = [
@@ -190,14 +198,13 @@ function computeBelgiumRate(category: VatCategory, standardRate: number): number
   }
 
   if (rate6Categories.includes(category)) {
-    return 6;
+    return reducedRate; // 6%
   }
 
-  return standardRate; // 21%
+  return standardRate;
 }
 
-function computeSpainRate(category: VatCategory, standardRate: number): number {
-  // Standard = 21%, Reduced = 10% / 4% (super-reduced)
+function computeSpainRate(category: VatCategory, standardRate: number, reducedRate: number): number {
   const rate10Categories: VatCategory[] = [
     'restaurant',
     'accommodation',
@@ -214,12 +221,12 @@ function computeSpainRate(category: VatCategory, standardRate: number): number {
   ];
 
   if (rate10Categories.includes(category)) {
-    return 10;
+    return reducedRate; // 10%
   }
 
   if (rate4Categories.includes(category)) {
     return 4;
   }
 
-  return standardRate; // 21%
+  return standardRate;
 }

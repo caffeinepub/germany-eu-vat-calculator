@@ -1,43 +1,67 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-13T10:37:15.555Z",
-  "summary": "Spain (ES) was added to the EU country config with standard/reduced rates and reverse-charge text, and VAT category rate computation now explicitly handles ES. However, due to truncation and lack of diffs for the broader flow/results files, it’s not fully evidenced that ES no longer shows “Configuration Pending”/enables “Start Calculator”, nor that selected reduced rates are carried through consistently into calculation results.",
+  "generatedAt": "2026-02-16T10:50:48.647Z",
+  "summary": "The diff does not provide clear evidence of a rollback to the immediately-prior VAT/invoice behavior. Instead, it introduces/retains explicit VAT outcome derivation logic and sets production verification to a new 'v4' marker and publish checklist, which conflicts with the requested rollback verification. Backward-compatibility handling for already-saved invoices is not evidenced in the shown backend changes.",
   "missing_requirements": [
     {
       "id": "REQ-1",
-      "requirement": "Spain no longer shows \"Configuration Pending\" messaging in the VAT country details/transaction steps and the \"Start Calculator\" action is enabled for ES.",
-      "reason": "While ES is marked configured=true in the country config, the diff summary does not show any UI logic or gating logic changes that remove \"Configuration Pending\" messaging or enable the CTA based on ES readiness. The only UI diff shown is CountryTransactionStep.tsx and it is truncated before any such messaging/CTA logic could be verified.",
+      "requirement": "Revert the application behavior to the version immediately prior to the latest deployment draft that introduced new/updated VAT priority logic, restoring previous VAT/invoice flow behavior and UI outputs.",
+      "reason": "The frontend VAT outcome derivation appears to implement explicit scenario-to-label/rate mapping (e.g., Reverse Charge/Exempt/Reduced/Standard) rather than demonstrating a reversion/removal of the latest VAT-priority changes. No evidence in the diff summary shows reverting to the prior version’s VAT priority behavior or removing newly introduced VAT-priority-specific outcomes.",
       "evidence": [
-        "frontend/src/lib/vat/euCountryConfig.ts",
-        "frontend/src/components/vat/CountryTransactionStep.tsx (truncated)"
+        "frontend/src/lib/invoice/deriveInvoiceVatOutcome.ts",
+        "frontend-file-summaries.txt (mentions UK-specific scenario messaging and new classification labels/notes)"
       ]
     },
     {
       "id": "REQ-2",
-      "requirement": "Spain-specific VAT category-to-rate mapping returns Spain-appropriate reduced rates for relevant categories and standard rate for non-eligible categories.",
-      "reason": "The diff shows ES is routed to computeSpainRate(...), but the actual implementation of computeSpainRate is not visible in the provided truncated excerpt, so the specific Spain category mapping and rates cannot be verified from the diff summary alone.",
+      "requirement": "Ensure the rollback does not break access to already-saved invoices; existing invoice records must remain listable and viewable after rollback without traps or state wiping.",
+      "reason": "Although an InvoiceRecord type is shown including fields like currency and vatLabel, the diff summary is truncated and does not show any explicit backward-compat handling (e.g., optional fields, defaulting when fields are missing, migrations) to guarantee older stored invoice records remain readable without traps after rollback.",
       "evidence": [
-        "frontend/src/lib/vat/vatCategoryRateRules.ts (truncated)"
+        "backend/main.mo (truncated)"
       ]
     },
     {
       "id": "REQ-3",
-      "requirement": "When ES is selected and the user chooses reduced VAT treatment, the UI offers Spain’s reduced rate options and uses the chosen rate as effectiveVatRate for calculations; results reflect the selected reduced rate.",
-      "reason": "CountryTransactionStep.tsx introduces reducedRates reading from the country config and auto-select logic, but the key logic that sets/exports an effectiveVatRate and ensures downstream calculation/results use selectedReducedRate is truncated. Also, no concrete diff is shown for the calculator orchestration/results components to confirm the effective rate is used end-to-end.",
+      "requirement": "Update deployment verification so the existing production marker mechanism clearly indicates the rolled-back build version in the browser console.",
+      "reason": "The production marker is set to a hardcoded 'v4' and the publish checklist is for 'Version 4', which does not evidence indicating a rolled-back/previous release identifier for operators to verify the rollback deployment.",
       "evidence": [
-        "frontend/src/components/vat/CountryTransactionStep.tsx (truncated)",
-        "frontend/src/lib/vat/euCountryConfig.ts"
+        "frontend/src/lib/production/productionMarker.ts",
+        "frontend/PRODUCTION_PUBLISH_V4.md"
       ]
     }
   ],
-  "hallucinated_features": [],
-  "confidence": 0.58,
+  "hallucinated_features": [
+    {
+      "description": "Introduced/updated VAT outcome derivation module that maps scenarios/treatments to VAT labels (Reverse Charge, Exempt, Reduced VAT, Standard VAT) and returns an 'Error' label for unsupported seller country.",
+      "reason": "The request is specifically to roll back VAT priority logic changes, not to add/replace VAT derivation logic or introduce new labels/outcomes.",
+      "evidence": [
+        "frontend/src/lib/invoice/deriveInvoiceVatOutcome.ts"
+      ]
+    },
+    {
+      "description": "Production version marker and publish checklist for 'Version 4' (including a specific console marker string).",
+      "reason": "REQ-3 asks to indicate the rolled-back (previous) build version via the existing marker mechanism, not to introduce/advance to a new explicit version identifier and new checklist for that version.",
+      "evidence": [
+        "frontend/src/lib/production/productionMarker.ts",
+        "frontend/PRODUCTION_PUBLISH_V4.md"
+      ]
+    },
+    {
+      "description": "Additional product/payment/upgrade-related UI and Stripe flows (pricing page, upgrade modal, payment success/failure pages, Stripe admin setup, checkout button instrumentation).",
+      "reason": "Non-goals explicitly prohibit adding new payment features, new analytics features, or new UI pages unrelated to the rollback; the file summaries indicate these exist/are being changed as part of this diff set.",
+      "evidence": [
+        "frontend-file-summaries.txt (mentions UpgradePage, UpgradeModal, PaymentSuccessPage, PaymentFailurePage, StripeCheckoutButton, StripeAdminSetup, event logging)"
+      ]
+    }
+  ],
+  "confidence": 0.72,
   "changed_files": [
+    "backend/main.mo",
     "frontend-file-summaries.txt",
-    "frontend/src/components/vat/CountryTransactionStep.tsx",
-    "frontend/src/lib/vat/euCountryConfig.ts",
-    "frontend/src/lib/vat/vatCategoryRateRules.ts",
+    "frontend/PRODUCTION_PUBLISH_V4.md",
+    "frontend/src/lib/invoice/deriveInvoiceVatOutcome.ts",
+    "frontend/src/lib/production/productionMarker.ts",
     "project_state.json"
   ]
 }
