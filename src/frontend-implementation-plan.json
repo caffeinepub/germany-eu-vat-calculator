@@ -1,88 +1,185 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Restore UK (GB) VAT configuration, calculations, and UK/GB aliasing in VAT calculator UI",
+  "title": "Smart VAT Engine priority flow, eligibility enforcement, and updated product category dropdown",
   "requirements": [
     {
       "id": "REQ-1",
-      "summary": "Add United Kingdom (GB) to the country configuration used by VAT calculator UI and ensure it is treated as configured/available with correct UK rates.",
+      "summary": "Make the provided country VAT rates the authoritative source for the unified smart VAT engine.",
       "acceptanceCriteria": [
-        "Any UI that uses country configuration lookup (e.g., the country VAT details screen) successfully resolves 'GB' and does not show 'Country configuration not found' for the United Kingdom.",
-        "The United Kingdom configuration displays standard rate 20% and reduced rate 5% (and, where applicable, includes zero rate 0% as UK-specific).",
-        "UK is marked as configured/available in the same way as existing EU countries (i.e., the primary CTA to proceed is not disabled due to missing config)."
+        "VAT rates used by the unified VAT calculation match the provided VAT_CONFIG values for all listed countries.",
+        "GB configuration includes standard=20, reduced=5, zero=0 and is used when seller country is UK/GB."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/lib/vat/euCountryConfig.ts",
+          "path": "frontend/src/lib/vat/vatConfig.ts",
           "operation": "modify",
-          "description": "Add a United Kingdom (GB) entry to the UI-facing country configuration (flag, name, standard 20, reduced [5], and configured=true). Extend the config shape (if needed) to represent a UK-specific zero rate (0%) for display purposes, while keeping user-facing text in English."
+          "description": "Confirm VAT_CONFIG matches the provided authoritative rates for DE/FR/NL/PL/SE/IT/BE/AT/HU/ES/GB (including GB zero=0) and ensure it remains the single source used by the unified VAT calculation."
         },
         {
-          "path": "frontend/src/components/vat/CountryVatDetailsStep.tsx",
+          "path": "frontend/src/lib/vat/calculateUnifiedVat.ts",
           "operation": "modify",
-          "description": "Update the country VAT details display to correctly present UK (GB) as configured and show standard 20% and reduced 5%, and include UK-specific zero rate 0% when available from the country configuration (without modifying any files under frontend/src/components/ui)."
-        },
-        {
-          "path": "frontend/src/components/vat/CountryTransactionStep.tsx",
-          "operation": "modify",
-          "description": "Ensure the transaction step can load and proceed for countryCode 'GB' via the shared country configuration (so the flow is not blocked due to missing config) and that any UK-specific display strings remain English (without modifying any files under frontend/src/components/ui)."
+          "description": "Ensure the unified VAT engine pulls country rates from VAT_CONFIG (with UK→GB normalization) and uses those values for standard/reduced/zero where applicable."
         }
       ]
     },
     {
       "id": "REQ-2",
-      "summary": "Restore UK VAT rate handling in the unified frontend calculation flow so GB uses standard 20%, reduced 5%, and zero 0% where eligible with consistent result labels and cent-amount outputs.",
+      "summary": "Add explicit category eligibility lists (UK zero, UK reduced, EU reduced, exempt) and use them in unified VAT calculations.",
       "acceptanceCriteria": [
-        "When sellerCountry is 'GB' and the transaction is domestic UK, the calculator applies 20% VAT by default for standard/other categories and computes vatAmountCents and grossAmountCents correctly.",
-        "When sellerCountry is 'GB' and the selected/product category is UK reduced-eligible, the calculator applies 5% and computes amounts correctly.",
-        "When sellerCountry is 'GB' and the selected/product category is UK zero-eligible, the calculator applies 0% and computes amounts correctly.",
-        "For UK-specific scenarios already supported in the unified flow (reverse charge, export, exempt, UK zero/reduced), the returned result includes a consistent scenario/message/label and correct vatRatePercent and cent amounts."
+        "Eligibility lists exist as explicit lists (not keyword matching) and are used by the unified VAT calculation.",
+        "Exempt treatment is triggered when the selected product category is one of the exempt categories, regardless of country."
       ],
       "file_operations": [
         {
+          "path": "frontend/src/lib/vat/categoryEligibility.ts",
+          "operation": "modify",
+          "description": "Replace keyword-based exempt handling with explicit lists exactly as provided: UK_ZERO, UK_REDUCED, EU_REDUCED, EXEMPT_CATEGORIES (as exact identifiers, not keyword matching), and expose helpers used by the unified VAT engine."
+        },
+        {
           "path": "frontend/src/lib/vat/calculateUnifiedVat.ts",
           "operation": "modify",
-          "description": "Adjust unified VAT calculation handling for sellerCountry 'GB' to ensure UK domestic standard/reduced/zero eligibility produce consistent scenario/message/label outputs and correct vatRatePercent, vatAmountCents, and grossAmountCents (including differentiating domestic UK zero-rated vs export zero-rated scenarios where appropriate)."
-        },
-        {
-          "path": "frontend/src/lib/vat/vatCategoryRateRules.ts",
-          "operation": "modify",
-          "description": "Extend VAT category-to-rate computation to explicitly support UK (GB) handling for categories such as 'reduced' and 'zero' (UK-only) using the existing VAT table/config rates, so any UI paths relying on category-based rate selection behave consistently for GB."
-        },
-        {
-          "path": "frontend/src/components/vat/VatResultsStep.tsx",
-          "operation": "modify",
-          "description": "Confirm the results UI correctly renders UK outcomes from the unified flow (labels/messages and currency selection for UK/GBP) without relying on brittle string mismatches; keep user-facing text in English (without modifying any files under frontend/src/components/ui)."
+          "description": "Update the unified VAT engine to use the explicit eligibility lists (UK_ZERO/UK_REDUCED/EU_REDUCED/EXEMPT_CATEGORIES) when determining exempt/zero/reduced eligibility."
         }
       ]
     },
     {
       "id": "REQ-3",
-      "summary": "Handle UK/GB aliasing consistently across selection, URL query parsing, and configuration lookup so 'UK' behaves identically to 'GB'.",
+      "summary": "Implement the unified VAT engine’s exact priority order and labels for reverse charge, export, exempt, zero, reduced, and standard.",
       "acceptanceCriteria": [
-        "Navigating to the calculator with ?country=UK initializes the flow as United Kingdom and calculations run without a 'country not supported' error.",
-        "All VAT configuration lookups and country-dependent UI logic treat 'UK' as 'GB' consistently (no mixed state where some parts treat 'UK' differently than 'GB')."
+        "For B2B + vatCategory=reverse, VAT result is 0% with label 'Reverse Charge' and this takes precedence over export/exempt/zero/reduced.",
+        "If isExport is true, VAT result is 0% with label 'Zero Rated Export' and takes precedence over exempt/zero/reduced/standard.",
+        "If productCategory is in EXEMPT_CATEGORIES, VAT result is 0% with label 'Exempt' and takes precedence over zero/reduced/standard.",
+        "If seller country is GB, zero-rating is only applied when productCategory is in UK_ZERO (not by manual selection alone).",
+        "Reduced VAT is only applied when productCategory is eligible (UK_REDUCED for GB; EU_REDUCED for non-GB).",
+        "All other cases return standard VAT for the configured country with label 'Standard VAT'."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/lib/vat/euCountryConfig.ts",
+          "path": "frontend/src/lib/vat/calculateUnifiedVat.ts",
           "operation": "modify",
-          "description": "Normalize incoming country codes in getCountryConfig (and any other exported lookup helpers) so 'UK' is treated as 'GB' consistently for UI configuration resolution."
+          "description": "Refactor unified VAT calculation to follow the specified priority: (1) Reverse Charge only when vatCategory==='reverse' and transaction is B2B, (2) Export when isExport===true, (3) Exempt when productCategory is in EXEMPT_CATEGORIES, (4) UK Zero when seller country is GB and productCategory in UK_ZERO, (5) Reduced (UK_REDUCED for GB, EU_REDUCED otherwise), (6) Standard fallback. Ensure returned labels exactly match: 'Reverse Charge', 'Zero Rated Export', 'Exempt', 'Zero Rated', 'Reduced VAT', 'Standard VAT'."
+        }
+      ]
+    },
+    {
+      "id": "REQ-4",
+      "summary": "Enforce auto-fallback protection so reduced/zero cannot be forced by manual VAT category selection when the product category is ineligible.",
+      "acceptanceCriteria": [
+        "Selecting reduced/zero VAT category in the UI does not change the final VAT result unless the selected product category is eligible under the configured lists.",
+        "The final VAT result returned by the engine cannot be forced to reduced/zero by user selection when the product category is ineligible."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/lib/vat/calculateUnifiedVat.ts",
+          "operation": "modify",
+          "description": "Remove any logic that applies reduced/zero purely due to user-selected vatCategory; only apply reduced/zero when productCategory is eligible per the explicit lists, otherwise fall back to 'Standard VAT'."
         },
         {
-          "path": "frontend/src/lib/vat/vatTable.ts",
+          "path": "frontend/src/components/vat/TransactionDetailsStep.tsx",
           "operation": "modify",
-          "description": "Harden UK/GB normalization in VAT config utilities to ensure any code path providing 'UK' (including legacy name-based lookups and supported-code checks) resolves to the GB configuration without creating mixed 'UK' vs 'GB' state."
+          "description": "Adjust UI hints/warnings (English) so users understand reduced/zero selections do not override eligibility; keep existing dropdown usability fixes (safe z-index/overflow classes and current dropdown behavior) intact."
+        }
+      ]
+    },
+    {
+      "id": "REQ-5",
+      "summary": "Update product category dropdown to the exact UX list (with Domestic Fuel UK-only) while preserving existing dropdown rendering fixes.",
+      "acceptanceCriteria": [
+        "The product category dropdown shows exactly the requested options (including the three exempt categories as selectable options).",
+        "Domestic Fuel (UK) is only shown when the selected country is GB/UK.",
+        "Existing dropdown usability fixes are preserved (no regressions to clipping/overlay issues)."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/lib/vat/productCategoryOptions.ts",
+          "operation": "modify",
+          "description": "Replace current product category option definitions with the exact UX list and identifiers needed by the smart VAT engine: Basic Food, Books, Medical, Transport, Hotel, Financial Services, Insurance, Education, Domestic Fuel (UK), Others; ensure Domestic Fuel (UK) is flagged ukOnly and filtered out for non-GB/UK."
         },
         {
-          "path": "frontend/src/lib/vat/selectedSellerCountry.ts",
+          "path": "frontend/src/components/vat/TransactionDetailsStep.tsx",
           "operation": "modify",
-          "description": "Ensure seller country selection from the URL query parameter consistently normalizes 'UK' to 'GB' and that validation/error messaging remains stable (no false 'not supported' for UK)."
+          "description": "Wire the product category dropdown to use getProductCategoryOptions(country) so it renders exactly the required options and hides Domestic Fuel (UK) unless seller country is GB/UK; preserve existing select-trigger-safe/dropdown-safe and z-index/overflow fixes."
         },
         {
-          "path": "frontend/src/pages/CalculatorFlowPage.tsx",
+          "path": "frontend/src/components/vat/CountryTransactionStep.tsx",
           "operation": "modify",
-          "description": "Verify calculator flow initialization and navigation preserve normalized 'GB' when starting from ?country=UK (e.g., selection state and subsequent navigation/search updates), avoiding any mixed-code behavior across steps."
+          "description": "Update any product-category dropdown rendered in this step to use the updated productCategoryOptions filtering (GB/UK-only Domestic Fuel) while preserving existing dropdown overlay/clipping fixes."
+        }
+      ]
+    },
+    {
+      "id": "REQ-6",
+      "summary": "Force 'Others' product category to always produce Standard VAT regardless of VAT treatment controls.",
+      "acceptanceCriteria": [
+        "When 'Others' is selected, the engine returns standard VAT for the seller country and label 'Standard VAT' regardless of any VAT category/treatment selection."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/lib/vat/calculateUnifiedVat.ts",
+          "operation": "modify",
+          "description": "Add/ensure an explicit rule that when productCategory is 'others' (the dropdown's Others option), the calculation returns standard VAT for the configured seller country with label 'Standard VAT' regardless of vatCategory/treatment selections (while still respecting higher-priority reverse charge/export if applicable)."
+        }
+      ]
+    },
+    {
+      "id": "REQ-7",
+      "summary": "Standardize VAT computation outputs around the result builder fields and ensure UI/invoice derives displayed values from those outputs.",
+      "acceptanceCriteria": [
+        "VAT calculation produces values consistent with: vatAmount=(netAmount*rate)/100 and total=netAmount+vatAmount.",
+        "The displayed VAT rate/amount/total and the stored invoice values match the engine output."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/lib/vat/calculateUnifiedVat.ts",
+          "operation": "modify",
+          "description": "Use the shared buildResult(rate, netAmount, label) output as the canonical source for rate/vatAmount/total/label within the unified VAT engine, and map it consistently into the app’s VATCalculationResult fields (including cents conversions) so downstream UI/invoice values are derived from the same computed numbers."
+        },
+        {
+          "path": "frontend/src/components/vat/VatResultsStep.tsx",
+          "operation": "modify",
+          "description": "Ensure the results UI displays VAT rate/amount/total consistent with the unified engine outputs and labels, avoiding any independent recomputation that could diverge from buildResult-derived values."
+        },
+        {
+          "path": "frontend/src/components/invoice/InvoiceDetailsStep.tsx",
+          "operation": "modify",
+          "description": "Ensure invoice line item default VAT rate and any VAT-rate-dependent displayed totals remain consistent with the unified engine output (rate/amount/total/label), avoiding mismatches between displayed and persisted invoice values."
+        }
+      ]
+    },
+    {
+      "id": "REQ-8",
+      "summary": "Drive invoice legal wording from the VAT label returned by the engine with localized Reverse Charge text and specified English sentences for other labels.",
+      "acceptanceCriteria": [
+        "When the VAT label is 'Reverse Charge', the invoice legal wording uses DE/FR/IT/GB specific text when available, otherwise the fallback 'Reverse charge applies'.",
+        "When the VAT label is 'Exempt', 'Zero Rated', 'Reduced VAT', or 'Standard VAT', the invoice legal wording matches the provided English sentences.",
+        "Invoice wording selection is driven by the VAT label returned from the calculation (not by user-entered free text unless an explicit override is already part of the app)."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/lib/invoice/getInvoiceWording.ts",
+          "operation": "modify",
+          "description": "Align getInvoiceWording(country, label) with the provided logic: localized Reverse Charge for DE/FR/IT/GB with fallback 'Reverse charge applies'; and exact English sentences for 'Exempt', 'Zero Rated', 'Reduced VAT', and default 'Standard VAT'. Ensure wording selection keys off the engine label."
+        },
+        {
+          "path": "frontend/src/lib/vat/calculateUnifiedVat.ts",
+          "operation": "modify",
+          "description": "Ensure legal wording is requested using the VAT label returned by the engine (e.g., 'Reverse Charge', 'Exempt', 'Zero Rated', 'Reduced VAT', 'Standard VAT') so invoice text auto-switch is label-driven."
+        }
+      ]
+    },
+    {
+      "id": "REQ-9",
+      "summary": "Include the global legal disclaimer text verbatim in all generated invoice HTML outputs.",
+      "acceptanceCriteria": [
+        "Every invoice HTML output includes the disclaimer text verbatim in English.",
+        "The disclaimer is present regardless of VAT scenario (reverse charge/export/exempt/zero/reduced/standard)."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/lib/invoice/buildInvoiceHtml.ts",
+          "operation": "modify",
+          "description": "Verify the global VAT disclaimer string is included verbatim in the invoice HTML output for every scenario (no conditional removal) and remains English-only as required."
         }
       ]
     }

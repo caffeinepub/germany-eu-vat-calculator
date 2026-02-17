@@ -1,75 +1,196 @@
 {
   "kind": "build_request",
-  "title": "Restore missing UK VAT country configuration and calculations",
-  "projectName": "Glotaxa",
+  "title": "Implement Smart VAT Engine priority flow, eligibility enforcement, and updated product-category dropdown",
+  "projectName": "Smart VAT Invoice",
   "priority": "normal",
   "requirements": [
     {
       "id": "REQ-1",
-      "text": "Add United Kingdom (GB) to the country configuration used by the VAT calculator UI so that UK is treated as a fully supported, configured country (not shown as missing/unconfigured) wherever country configuration is displayed.",
+      "text": "Update the VAT rate configuration so the app uses the provided country VAT rates (DE/FR/NL/PL/SE/IT/BE/AT/HU/ES/GB with GB zero=0) as the authoritative source for the smart VAT engine.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-1"
+          "msg-2"
         ],
         "quotes": [
-          "UK country confiigeration is missing. Add back the UK Tax Rate and calculations as per the earlier versions"
+          "const VAT_CONFIG = {\n  DE: { standard: 19, reduced: 7 },\n  FR: { standard: 20, reduced: 10 },\n  NL: { standard: 21, reduced: 9 },\n  PL: { standard: 23, reduced: 8 },\n  SE: { standard: 25, reduced: 12 },\n  IT: { standard: 22, reduced: 10 },\n  BE: { standard: 21, reduced: 6 },\n  AT: { standard: 20, reduced: 10 },\n  HU: { standard: 27, reduced: 5 },\n  ES: { standard: 21, reduced: 10 },\n  GB: { standard: 20, reduced: 5, zero: 0 }\n};"
         ]
       },
       "acceptanceCriteria": [
-        "Any UI that uses country configuration lookup (e.g., the country VAT details screen) successfully resolves 'GB' and does not show 'Country configuration not found' for the United Kingdom.",
-        "The United Kingdom configuration displays standard rate 20% and reduced rate 5% (and, where applicable, includes zero rate 0% as UK-specific).",
-        "UK is marked as configured/available in the same way as existing EU countries (i.e., the primary CTA to proceed is not disabled due to missing config)."
+        "VAT rates used by the unified VAT calculation match the provided VAT_CONFIG values for all listed countries.",
+        "GB configuration includes standard=20, reduced=5, zero=0 and is used when seller country is UK/GB."
       ]
     },
     {
       "id": "REQ-2",
-      "text": "Restore the UK VAT rate handling and calculations so that selecting sellerCountry 'GB' applies UK rules (standard 20%, reduced 5%, zero-rated where eligible) consistently in the unified VAT calculation flow and in result outputs.",
+      "text": "Implement the provided category eligibility database and use it in VAT calculations: UK zero-eligible list, UK reduced-eligible list, EU reduced-eligible list, and exempt categories list (exempt applies to all countries).",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-1"
+          "msg-2"
         ],
         "quotes": [
-          "Add back the UK Tax Rate and calculations as per the earlier versions"
+          "const UK_ZERO = [\n  \"basic_food\",\n  \"childrens_clothing\",\n  \"books\",\n  \"printed_media\",\n  \"public_transport\",\n  \"exports\"\n];",
+          "const UK_REDUCED = [\n  \"domestic_fuel\",\n  \"energy_saving_materials\",\n  \"child_car_seats\"\n];",
+          "const EU_REDUCED = [\n  \"basic_food\",\n  \"books\",\n  \"printed_media\",\n  \"medicine\",\n  \"medical_equipment\",\n  \"passenger_transport\",\n  \"hotel_accommodation\",\n  \"cultural_events\",\n  \"social_housing_renovation\"\n];",
+          "const EXEMPT_CATEGORIES = [\n  \"financial_services\",\n  \"insurance\",\n  \"education\",\n  \"healthcare\",\n  \"postal_services\",\n  \"social_care\"\n];"
         ]
       },
       "acceptanceCriteria": [
-        "When sellerCountry is 'GB' and the transaction is domestic UK, the calculator applies 20% VAT by default for standard/other categories and computes vatAmountCents and grossAmountCents correctly.",
-        "When sellerCountry is 'GB' and the selected/product category is UK reduced-eligible, the calculator applies 5% and computes amounts correctly.",
-        "When sellerCountry is 'GB' and the selected/product category is UK zero-eligible, the calculator applies 0% and computes amounts correctly.",
-        "For UK-specific scenarios already supported in the unified flow (reverse charge, export, exempt, UK zero/reduced), the returned result includes a consistent scenario/message/label and correct vatRatePercent and cent amounts."
+        "Eligibility lists exist as explicit lists (not keyword matching) and are used by the unified VAT calculation.",
+        "Exempt treatment is triggered when the selected product category is one of the exempt categories, regardless of country."
       ]
     },
     {
       "id": "REQ-3",
-      "text": "Ensure UK/GB aliasing is handled consistently across the VAT calculator so that links or inputs using 'UK' behave identically to 'GB' (including country selection, URL query parameter, and config lookup).",
+      "text": "Amend the unified VAT engine to follow the exact priority order and behaviors specified: 1) Reverse Charge (only when vatCategory is reverse and transaction is B2B), 2) Export (if isExport is true), 3) Exempt (if productCategory is in exempt list), 4) Zero (UK only; if country is GB and productCategory is UK-zero eligible), 5) Reduced (UK reduced list when GB; EU reduced list otherwise), 6) Standard fallback.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-1"
+          "msg-2"
         ],
         "quotes": [
-          "UK country confiigeration is missing. Add back the UK Tax Rate and calculations as per the earlier versions"
+          "Reverse Charge\n2. Export\n3. Exempt\n4. Zero (UK only)\n5. Reduced\n6. Standard (fallback)",
+          "function calculateSmartVAT({\n  country,\n  netAmount,\n  vatCategory,\n  productCategory,\n  isExport,\n  isB2B\n}) {",
+          "// 1️⃣ Reverse Charge\n  if (vatCategory === \"reverse\" && isB2B) {\n    return buildResult(0, netAmount, \"Reverse Charge\");\n  }\n\n  // 2️⃣ Export\n  if (isExport) {\n    return buildResult(0, netAmount, \"Zero Rated Export\");\n  }\n\n  // 3️⃣ Exempt\n  if (EXEMPT_CATEGORIES.includes(productCategory)) {\n    return buildResult(0, netAmount, \"Exempt\");\n  }\n\n  // 4️⃣ UK Zero\n  if (country === \"GB\" && UK_ZERO.includes(productCategory)) {\n    return buildResult(0, netAmount, \"Zero Rated\");\n  }\n\n  // 5️⃣ UK Reduced\n  if (country === \"GB\" && UK_REDUCED.includes(productCategory)) {\n    return buildResult(config.reduced, netAmount, \"Reduced VAT\");\n  }\n\n  // 6️⃣ EU Reduced\n  if (country !== \"GB\" && EU_REDUCED.includes(productCategory)) {\n    return buildResult(config.reduced, netAmount, \"Reduced VAT\");\n  }\n\n  // 7️⃣ Fallback Standard\n  return buildResult(config.standard, netAmount, \"Standard VAT\");\n}"
         ]
       },
       "acceptanceCriteria": [
-        "Navigating to the calculator with ?country=UK initializes the flow as United Kingdom and calculations run without a 'country not supported' error.",
-        "All VAT configuration lookups and country-dependent UI logic treat 'UK' as 'GB' consistently (no mixed state where some parts treat 'UK' differently than 'GB')."
+        "For B2B + vatCategory=reverse, VAT result is 0% with label 'Reverse Charge' and this takes precedence over export/exempt/zero/reduced.",
+        "If isExport is true, VAT result is 0% with label 'Zero Rated Export' and takes precedence over exempt/zero/reduced/standard.",
+        "If productCategory is in EXEMPT_CATEGORIES, VAT result is 0% with label 'Exempt' and takes precedence over zero/reduced/standard.",
+        "If seller country is GB, zero-rating is only applied when productCategory is in UK_ZERO (not by manual selection alone).",
+        "Reduced VAT is only applied when productCategory is eligible (UK_REDUCED for GB; EU_REDUCED for non-GB).",
+        "All other cases return standard VAT for the configured country with label 'Standard VAT'."
+      ]
+    },
+    {
+      "id": "REQ-4",
+      "text": "Enforce auto-fallback protection: even if a user manually selects reduced/zero VAT categories, the VAT engine must automatically apply standard VAT whenever the selected product category is not eligible; no manual override is allowed.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-2"
+        ],
+        "quotes": [
+          "6️⃣ AUTO-FALLBACK PROTECTION (Prevents Misuse)\nEven if user manually selects reduced:\n\nIf product not in eligibility list → automatically apply standard.\n\nNo manual override allowed."
+        ]
+      },
+      "acceptanceCriteria": [
+        "Selecting reduced/zero VAT category in the UI does not change the final VAT result unless the selected product category is eligible under the configured lists.",
+        "The final VAT result returned by the engine cannot be forced to reduced/zero by user selection when the product category is ineligible."
+      ]
+    },
+    {
+      "id": "REQ-5",
+      "text": "Update the product category dropdown options to exactly match the requested UX list and keep prior dropdown rendering fixes intact (e.g., safe z-index/overflow classes and current dropdown behavior). The dropdown must include: Basic Food, Books, Medical, Transport, Hotel, Financial Services, Insurance, Education, Domestic Fuel (UK), Others.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-2"
+        ],
+        "quotes": [
+          "7️⃣ UX IMPROVEMENT\nDropdown:\n\n• Basic Food\n• Books\n• Medical\n• Transport\n• Hotel\n• Financial Services\n• Insurance\n• Education\n• Domestic Fuel (UK)\n• Others"
+        ]
+      },
+      "acceptanceCriteria": [
+        "The product category dropdown shows exactly the requested options (including the three exempt categories as selectable options).",
+        "Domestic Fuel (UK) is only shown when the selected country is GB/UK.",
+        "Existing dropdown usability fixes are preserved (no regressions to clipping/overlay issues)."
+      ]
+    },
+    {
+      "id": "REQ-6",
+      "text": "Implement the UI/logic rule: when productCategory is 'Others', the VAT result must always be Standard VAT (even if the user selected reduced/zero in the VAT category/treatment controls).",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-2"
+        ],
+        "quotes": [
+          "Logic:\n\nIf productCategory = \"Others\"\n→ Always Standard VAT"
+        ]
+      },
+      "acceptanceCriteria": [
+        "When 'Others' is selected, the engine returns standard VAT for the seller country and label 'Standard VAT' regardless of any VAT category/treatment selection."
+      ]
+    },
+    {
+      "id": "REQ-7",
+      "text": "Use the provided result builder output fields for VAT computation outputs (rate, vatAmount, total, label) and ensure the UI/invoice continues to display consistent results derived from these values.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-2"
+        ],
+        "quotes": [
+          "function buildResult(rate, netAmount, label) {\n\n  const vatAmount = (netAmount * rate) / 100;\n  const total = netAmount + vatAmount;\n\n  return {\n    rate,\n    vatAmount,\n    total,\n    label\n  };\n}"
+        ]
+      },
+      "acceptanceCriteria": [
+        "VAT calculation produces values consistent with: vatAmount=(netAmount*rate)/100 and total=netAmount+vatAmount.",
+        "The displayed VAT rate/amount/total and the stored invoice values match the engine output."
+      ]
+    },
+    {
+      "id": "REQ-8",
+      "text": "Ensure professional invoice wording auto-switch uses the provided logic for Reverse Charge (localized for DE/FR/IT/GB with fallback) and English text for Exempt / Zero Rated / Reduced VAT / Standard VAT, based on the VAT label returned by the engine.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-2"
+        ],
+        "quotes": [
+          "function getInvoiceWording(country, label) {",
+          "if (label === \"Reverse Charge\") {\n    return wording[country]?.reverse || \"Reverse charge applies\";\n  }\n\n  if (label === \"Exempt\") {\n    return \"VAT exempt under applicable VAT legislation.\";\n  }\n\n  if (label === \"Zero Rated\") {\n    return \"Zero-rated supply under applicable VAT legislation.\";\n  }\n\n  if (label === \"Reduced VAT\") {\n    return \"Reduced VAT rate applied as per national VAT law.\";\n  }\n\n  return \"Standard VAT applied as per national VAT law.\";\n}"
+        ]
+      },
+      "acceptanceCriteria": [
+        "When the VAT label is 'Reverse Charge', the invoice legal wording uses DE/FR/IT/GB specific text when available, otherwise the fallback 'Reverse charge applies'.",
+        "When the VAT label is 'Exempt', 'Zero Rated', 'Reduced VAT', or 'Standard VAT', the invoice legal wording matches the provided English sentences.",
+        "Invoice wording selection is driven by the VAT label returned from the calculation (not by user-entered free text unless an explicit override is already part of the app)."
+      ]
+    },
+    {
+      "id": "REQ-9",
+      "text": "Add the global legal disclaimer text to all generated invoices: \"VAT calculated based on selected country, product category and transaction type. The supplier is responsible for verifying compliance with applicable VAT legislation.\"",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-2"
+        ],
+        "quotes": [
+          "8️⃣ GLOBAL LEGAL DISCLAIMER (Add To All Invoices)\nVAT calculated based on selected country, product category and transaction type. The supplier is responsible for verifying compliance with applicable VAT legislation.\""
+        ]
+      },
+      "acceptanceCriteria": [
+        "Every invoice HTML output includes the disclaimer text verbatim in English.",
+        "The disclaimer is present regardless of VAT scenario (reverse charge/export/exempt/zero/reduced/standard)."
       ]
     }
   ],
   "constraints": [
-    "Do not edit files under frontend/src/components/ui or any paths listed as immutable in SYSTEM_CONTEXT.",
-    "Keep all VAT logic on the frontend (no new backend canisters/services; backend remains single-actor).",
-    "Use English for all user-facing text."
+    "Use English for any user-facing text in these changes.",
+    "Respect the existing frontend immutable paths; do not modify files under frontend/src/components/ui or the Internet Identity/actor hooks listed as immutable.",
+    "Keep the previously implemented dropdown behavior/fixes; do not reintroduce clipping/stacking issues."
   ],
   "nonGoals": [
-    "Adding non-UK/non-EU countries or implementing USA/APAC tax calculation support.",
-    "Changing Stripe/payment country allowlists unless they are directly required for UK VAT calculation/config display."
+    "Do not add new authentication providers (Internet Identity remains the only auth).",
+    "Do not add external databases or third-party backends for VAT rules.",
+    "Do not implement real-time features (WebSockets/chat/notifications)."
   ],
   "imageRequirements": {
     "required": [],
     "edits": []
+  },
+  "userProfileUpdate": {
+    "goalsToAdd": [],
+    "goalsToRemove": [],
+    "preferencesToAdd": [],
+    "preferencesToRemove": [],
+    "miscToAdd": [],
+    "miscToRemove": [],
+    "fieldsToSet": {},
+    "fieldsToDelete": []
   }
 }

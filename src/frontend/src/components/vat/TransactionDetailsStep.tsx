@@ -9,7 +9,8 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
 import { type VATCalculationInput } from '../../lib/vat/calculateVat';
 import { type VatCategory, VAT_CATEGORIES, VAT_CATEGORY_LABELS } from '../../lib/vat/vatCategoryRateRules';
-import { type ProductCategory, PRODUCT_CATEGORIES } from '../../lib/vat/reducedEligibility';
+import { type ProductCategory } from '../../lib/vat/reducedEligibility';
+import { getProductCategoryOptions, type ProductCategoryOption } from '../../lib/vat/productCategoryOptions';
 
 interface TransactionDetailsStepProps {
   initialData: VATCalculationInput;
@@ -24,25 +25,36 @@ export default function TransactionDetailsStep({
 }: TransactionDetailsStepProps) {
   const [customerType, setCustomerType] = useState<'B2C' | 'B2B'>(initialData.customerType);
   const [vatId, setVatId] = useState(initialData.vatId);
-  const [productCategory, setProductCategory] = useState<ProductCategory>(
-    initialData.productCategory || 'others'
-  );
+  const [productCategoryOption, setProductCategoryOption] = useState<string>('others');
   const [vatCategory, setVatCategory] = useState<VatCategory>(
-    initialData.vatCategory || 'others'
+    initialData.vatCategory || 'standard'
   );
   const [netAmount, setNetAmount] = useState(initialData.netAmount.toString());
 
+  const sellerCountry = initialData.sellerCountry || 'DE';
+  const categoryOptions = getProductCategoryOptions(sellerCountry);
+
   const handleNext = () => {
+    // Find the selected option to get exemptIdentifier
+    const selectedOption = categoryOptions.find(opt => 
+      `${opt.value}-${opt.label}` === productCategoryOption
+    );
+    
+    const productCategory = selectedOption?.value || 'others';
+    const exemptIdentifier = selectedOption?.exemptIdentifier || '';
+
     onNext({
       customerType,
       vatId: customerType === 'B2B' ? vatId : '',
       productCategory,
       vatCategory,
       netAmount: parseFloat(netAmount) || 0,
-    });
+      // Pass exemptIdentifier for exempt category detection
+      ...(exemptIdentifier && { exemptIdentifier }),
+    } as any);
   };
 
-  const showAutoFallbackWarning = productCategory === 'others';
+  const showAutoFallbackWarning = productCategoryOption.includes('Others');
 
   return (
     <div className="space-y-6" style={{ overflow: 'visible' }}>
@@ -89,16 +101,22 @@ export default function TransactionDetailsStep({
           {/* Product Category */}
           <div style={{ overflow: 'visible', position: 'relative', zIndex: 100 }}>
             <Label htmlFor="product-category">Product Category</Label>
-            <Select value={productCategory} onValueChange={(v) => setProductCategory(v as ProductCategory)}>
+            <Select 
+              value={productCategoryOption} 
+              onValueChange={setProductCategoryOption}
+            >
               <SelectTrigger id="product-category" className="select-trigger-safe">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent className="dropdown-safe">
-                {PRODUCT_CATEGORIES.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
-                  </SelectItem>
-                ))}
+                {categoryOptions.map((option) => {
+                  const uniqueKey = `${option.value}-${option.label}`;
+                  return (
+                    <SelectItem key={uniqueKey} value={uniqueKey}>
+                      {option.label}
+                    </SelectItem>
+                  );
+                })}
               </SelectContent>
             </Select>
           </div>

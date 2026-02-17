@@ -2,11 +2,10 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-add-united-kingdom-gb-to-the-country-configuration-used-by-the-vat-calculator-ui-so-that-uk-is-treated-as-a-fully-supported-configured-country-not-shown-as-missing-unconfigured-wherever-country-configuration-is-displayed",
-      "featureTitle": "Add United Kingdom (GB) to the country configuration used by the VAT calculator UI so that UK is treated as a fully supported, configured country (not shown as missing/unconfigured) wherever country configuration is displayed.",
+      "featureId": "feature-update-the-vat-rate-configuration-so-the-app-uses-the-provided-country-vat-rates-de-fr-nl-pl-se-it-be-at-hu-es-gb-with-gb-zero-0-as-the-authoritative-source-for-the-smart-vat-engine",
+      "featureTitle": "Update the VAT rate configuration so the app uses the provided country VAT rates (DE/FR/NL/PL/SE/IT/BE/AT/HU/ES/GB with GB zero=0) as the authoritative source for the smart VAT engine.",
       "files": [
-        "frontend/src/components/vat/CountryVatDetailsStep.tsx",
-        "frontend/src/lib/vat/euCountryConfig.ts"
+        "frontend/src/lib/vat/calculateUnifiedVat.ts"
       ],
       "components": [
         "stripe@3.0.0",
@@ -24,11 +23,11 @@
       "confidence": "high"
     },
     {
-      "featureId": "feature-restore-the-uk-vat-rate-handling-and-calculations-so-that-selecting-sellercountry-gb-applies-uk-rules-standard-20-reduced-5-zero-rated-where-eligible-consistently-in-the-unified-vat-calculation-flow-and-in-result-outputs",
-      "featureTitle": "Restore the UK VAT rate handling and calculations so that selecting sellerCountry 'GB' applies UK rules (standard 20%, reduced 5%, zero-rated where eligible) consistently in the unified VAT calculation flow and in result outputs.",
+      "featureId": "feature-implement-the-provided-category-eligibility-database-and-use-it-in-vat-calculations-uk-zero-eligible-list-uk-reduced-eligible-list-eu-reduced-eligible-list-and-exempt-categories-list-exempt-applies-to-all-countries",
+      "featureTitle": "Implement the provided category eligibility database and use it in VAT calculations: UK zero-eligible list, UK reduced-eligible list, EU reduced-eligible list, and exempt categories list (exempt applies to all countries).",
       "files": [
         "frontend/src/lib/vat/calculateUnifiedVat.ts",
-        "frontend/src/lib/vat/vatCategoryRateRules.ts"
+        "frontend/src/lib/vat/categoryEligibility.ts"
       ],
       "components": [
         "stripe@3.0.0",
@@ -46,10 +45,10 @@
       "confidence": "high"
     },
     {
-      "featureId": "feature-ensure-uk-gb-aliasing-is-handled-consistently-across-the-vat-calculator-so-that-links-or-inputs-using-uk-behave-identically-to-gb-including-country-selection-url-query-parameter-and-config-lookup",
-      "featureTitle": "Ensure UK/GB aliasing is handled consistently across the VAT calculator so that links or inputs using 'UK' behave identically to 'GB' (including country selection, URL query parameter, and config lookup).",
+      "featureId": "feature-amend-the-unified-vat-engine-to-follow-the-exact-priority-order-and-behaviors-specified-1-reverse-charge-only-when-vatcategory-is-reverse-and-transaction-is-b2b-2-export-if-isexport-is-true-3-exempt-if-productcategory-is-in-exempt-list-4-zero-uk-only-if-country-is-gb-and-productcategory-is-uk-zero-eligible-5-reduced-uk-reduced-list-when-gb-eu-reduced-list-otherwise-6-standard-fallback",
+      "featureTitle": "Amend the unified VAT engine to follow the exact priority order and behaviors specified: 1) Reverse Charge (only when vatCategory is reverse and transaction is B2B), 2) Export (if isExport is true), 3) Exempt (if productCategory is in exempt list), 4) Zero (UK only; if country is GB and productCategory is UK-zero eligible), 5) Reduced (UK reduced list when GB; EU reduced list otherwise), 6) Standard fallback.",
       "files": [
-        "frontend/src/lib/vat/euCountryConfig.ts"
+        "frontend/src/lib/vat/calculateUnifiedVat.ts"
       ],
       "components": [
         "stripe@3.0.0",
@@ -63,6 +62,114 @@
       ],
       "testIds": [
         "REQ-3"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-enforce-auto-fallback-protection-even-if-a-user-manually-selects-reduced-zero-vat-categories-the-vat-engine-must-automatically-apply-standard-vat-whenever-the-selected-product-category-is-not-eligible-no-manual-override-is-allowed",
+      "featureTitle": "Enforce auto-fallback protection: even if a user manually selects reduced/zero VAT categories, the VAT engine must automatically apply standard VAT whenever the selected product category is not eligible; no manual override is allowed.",
+      "files": [
+        "frontend/src/components/vat/TransactionDetailsStep.tsx",
+        "frontend/src/lib/vat/calculateUnifiedVat.ts"
+      ],
+      "components": [
+        "stripe@3.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0",
+        "http-outcalls@3.0.0",
+        "authorization@4.0.0"
+      ],
+      "testIds": [
+        "REQ-4"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-update-the-product-category-dropdown-options-to-exactly-match-the-requested-ux-list-and-keep-prior-dropdown-rendering-fixes-intact-e-g-safe-z-index-overflow-classes-and-current-dropdown-behavior-the-dropdown-must-include-basic-food-books-medical-transport-hotel-financial-services-insurance-education-domestic-fuel-uk-others",
+      "featureTitle": "Update the product category dropdown options to exactly match the requested UX list and keep prior dropdown rendering fixes intact (e.g., safe z-index/overflow classes and current dropdown behavior). The dropdown must include: Basic Food, Books, Medical, Transport, Hotel, Financial Services, Insurance, Education, Domestic Fuel (UK), Others.",
+      "files": [
+        "frontend/src/components/vat/TransactionDetailsStep.tsx",
+        "frontend/src/lib/vat/productCategoryOptions.ts"
+      ],
+      "components": [
+        "stripe@3.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0",
+        "http-outcalls@3.0.0",
+        "authorization@4.0.0"
+      ],
+      "testIds": [
+        "REQ-5"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-implement-the-ui-logic-rule-when-productcategory-is-others-the-vat-result-must-always-be-standard-vat-even-if-the-user-selected-reduced-zero-in-the-vat-category-treatment-controls",
+      "featureTitle": "Implement the UI/logic rule: when productCategory is 'Others', the VAT result must always be Standard VAT (even if the user selected reduced/zero in the VAT category/treatment controls).",
+      "files": [
+        "frontend/src/lib/vat/calculateUnifiedVat.ts"
+      ],
+      "components": [
+        "stripe@3.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0",
+        "http-outcalls@3.0.0",
+        "authorization@4.0.0"
+      ],
+      "testIds": [
+        "REQ-6"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-use-the-provided-result-builder-output-fields-for-vat-computation-outputs-rate-vatamount-total-label-and-ensure-the-ui-invoice-continues-to-display-consistent-results-derived-from-these-values",
+      "featureTitle": "Use the provided result builder output fields for VAT computation outputs (rate, vatAmount, total, label) and ensure the UI/invoice continues to display consistent results derived from these values.",
+      "files": [
+        "frontend/src/lib/vat/calculateUnifiedVat.ts"
+      ],
+      "components": [
+        "stripe@3.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0",
+        "http-outcalls@3.0.0",
+        "authorization@4.0.0"
+      ],
+      "testIds": [
+        "REQ-7"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-ensure-professional-invoice-wording-auto-switch-uses-the-provided-logic-for-reverse-charge-localized-for-de-fr-it-gb-with-fallback-and-english-text-for-exempt-zero-rated-reduced-vat-standard-vat-based-on-the-vat-label-returned-by-the-engine",
+      "featureTitle": "Ensure professional invoice wording auto-switch uses the provided logic for Reverse Charge (localized for DE/FR/IT/GB with fallback) and English text for Exempt / Zero Rated / Reduced VAT / Standard VAT, based on the VAT label returned by the engine.",
+      "files": [
+        "frontend/src/lib/invoice/getInvoiceWording.ts",
+        "frontend/src/lib/vat/calculateUnifiedVat.ts"
+      ],
+      "components": [
+        "stripe@3.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0",
+        "http-outcalls@3.0.0",
+        "authorization@4.0.0"
+      ],
+      "testIds": [
+        "REQ-8"
       ],
       "confidence": "high"
     }

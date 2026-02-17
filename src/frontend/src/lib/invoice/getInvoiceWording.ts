@@ -33,7 +33,7 @@ export function getInvoiceWording(country: string, label: string): string {
 
   // Zero Rated Export
   if (label === 'Zero Rated Export') {
-    return 'Zero-rated export under applicable VAT legislation.';
+    return 'Zero-rated supply under applicable VAT legislation.';
   }
 
   // Reduced VAT
@@ -41,6 +41,6 @@ export function getInvoiceWording(country: string, label: string): string {
     return 'Reduced VAT rate applied as per national VAT law.';
   }
 
-  // Standard VAT
+  // Standard VAT (default)
   return 'Standard VAT applied as per national VAT law.';
 }

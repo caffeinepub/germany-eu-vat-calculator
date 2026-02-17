@@ -1,56 +1,123 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-17T11:01:31.929Z",
+  "generatedAt": "2026-02-17T12:56:36.413Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 3,
-    "implemented": 3,
+    "total": 9,
+    "implemented": 8,
     "items": [
       {
         "id": "REQ-1",
-        "summary": "Add United Kingdom (GB) to the country configuration used by the VAT calculator UI so that UK is treated as a fully supported, configured country (not shown as missing/unconfigured) wherever country configuration is displayed.",
+        "summary": "Update the VAT rate configuration so the app uses the provided country VAT rates (DE/FR/NL/PL/SE/IT/BE/AT/HU/ES/GB with GB zero=0) as the authoritative source for the smart VAT engine.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/lib/vat/euCountryConfig.ts",
-          "frontend/src/components/vat/CountryVatDetailsStep.tsx",
-          "frontend/src/components/vat/CountryTransactionStep.tsx"
+          "frontend/src/lib/vat/vatConfig.ts",
+          "frontend/src/lib/vat/calculateUnifiedVat.ts"
         ],
         "matchedFiles": [
-          "frontend/src/lib/vat/euCountryConfig.ts",
-          "frontend/src/components/vat/CountryVatDetailsStep.tsx"
+          "frontend/src/lib/vat/calculateUnifiedVat.ts"
         ]
       },
       {
         "id": "REQ-2",
-        "summary": "Restore the UK VAT rate handling and calculations so that selecting sellerCountry 'GB' applies UK rules (standard 20%, reduced 5%, zero-rated where eligible) consistently in the unified VAT calculation flow and in result outputs.",
+        "summary": "Implement the provided category eligibility database and use it in VAT calculations: UK zero-eligible list, UK reduced-eligible list, EU reduced-eligible list, and exempt categories list (exempt applies to all countries).",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/lib/vat/calculateUnifiedVat.ts",
-          "frontend/src/lib/vat/vatCategoryRateRules.ts",
-          "frontend/src/components/vat/VatResultsStep.tsx"
+          "frontend/src/lib/vat/categoryEligibility.ts",
+          "frontend/src/lib/vat/calculateUnifiedVat.ts"
         ],
         "matchedFiles": [
-          "frontend/src/lib/vat/calculateUnifiedVat.ts",
-          "frontend/src/lib/vat/vatCategoryRateRules.ts"
+          "frontend/src/lib/vat/categoryEligibility.ts",
+          "frontend/src/lib/vat/calculateUnifiedVat.ts"
         ]
       },
       {
         "id": "REQ-3",
-        "summary": "Ensure UK/GB aliasing is handled consistently across the VAT calculator so that links or inputs using 'UK' behave identically to 'GB' (including country selection, URL query parameter, and config lookup).",
+        "summary": "Amend the unified VAT engine to follow the exact priority order and behaviors specified: 1) Reverse Charge (only when vatCategory is reverse and transaction is B2B), 2) Export (if isExport is true), 3) Exempt (if productCategory is in exempt list), 4) Zero (UK only; if country is GB and productCategory is UK-zero eligible), 5) Reduced (UK reduced list when GB; EU reduced list otherwise), 6) Standard fallback.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/lib/vat/euCountryConfig.ts",
-          "frontend/src/lib/vat/vatTable.ts",
-          "frontend/src/lib/vat/selectedSellerCountry.ts",
-          "frontend/src/pages/CalculatorFlowPage.tsx"
+          "frontend/src/lib/vat/calculateUnifiedVat.ts"
         ],
         "matchedFiles": [
-          "frontend/src/lib/vat/euCountryConfig.ts"
+          "frontend/src/lib/vat/calculateUnifiedVat.ts"
         ]
+      },
+      {
+        "id": "REQ-4",
+        "summary": "Enforce auto-fallback protection: even if a user manually selects reduced/zero VAT categories, the VAT engine must automatically apply standard VAT whenever the selected product category is not eligible; no manual override is allowed.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/lib/vat/calculateUnifiedVat.ts",
+          "frontend/src/components/vat/TransactionDetailsStep.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/lib/vat/calculateUnifiedVat.ts",
+          "frontend/src/components/vat/TransactionDetailsStep.tsx"
+        ]
+      },
+      {
+        "id": "REQ-5",
+        "summary": "Update the product category dropdown options to exactly match the requested UX list and keep prior dropdown rendering fixes intact (e.g., safe z-index/overflow classes and current dropdown behavior). The dropdown must include: Basic Food, Books, Medical, Transport, Hotel, Financial Services, Insurance, Education, Domestic Fuel (UK), Others.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/lib/vat/productCategoryOptions.ts",
+          "frontend/src/components/vat/TransactionDetailsStep.tsx",
+          "frontend/src/components/vat/CountryTransactionStep.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/lib/vat/productCategoryOptions.ts",
+          "frontend/src/components/vat/TransactionDetailsStep.tsx"
+        ]
+      },
+      {
+        "id": "REQ-6",
+        "summary": "Implement the UI/logic rule: when productCategory is 'Others', the VAT result must always be Standard VAT (even if the user selected reduced/zero in the VAT category/treatment controls).",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/lib/vat/calculateUnifiedVat.ts"
+        ],
+        "matchedFiles": [
+          "frontend/src/lib/vat/calculateUnifiedVat.ts"
+        ]
+      },
+      {
+        "id": "REQ-7",
+        "summary": "Use the provided result builder output fields for VAT computation outputs (rate, vatAmount, total, label) and ensure the UI/invoice continues to display consistent results derived from these values.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/lib/vat/calculateUnifiedVat.ts",
+          "frontend/src/components/vat/VatResultsStep.tsx",
+          "frontend/src/components/invoice/InvoiceDetailsStep.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/lib/vat/calculateUnifiedVat.ts"
+        ]
+      },
+      {
+        "id": "REQ-8",
+        "summary": "Ensure professional invoice wording auto-switch uses the provided logic for Reverse Charge (localized for DE/FR/IT/GB with fallback) and English text for Exempt / Zero Rated / Reduced VAT / Standard VAT, based on the VAT label returned by the engine.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/lib/invoice/getInvoiceWording.ts",
+          "frontend/src/lib/vat/calculateUnifiedVat.ts"
+        ],
+        "matchedFiles": [
+          "frontend/src/lib/invoice/getInvoiceWording.ts",
+          "frontend/src/lib/vat/calculateUnifiedVat.ts"
+        ]
+      },
+      {
+        "id": "REQ-9",
+        "summary": "Add the global legal disclaimer text to all generated invoices: \"VAT calculated based on selected country, product category and transaction type. The supplier is responsible for verifying compliance with applicable VAT legislation.\"",
+        "status": "missing",
+        "plannedFiles": [
+          "frontend/src/lib/invoice/buildInvoiceHtml.ts"
+        ],
+        "matchedFiles": []
       }
     ]
   },
@@ -59,10 +126,11 @@
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
-    "frontend/src/components/vat/CountryVatDetailsStep.tsx",
+    "frontend/src/components/vat/TransactionDetailsStep.tsx",
+    "frontend/src/lib/invoice/getInvoiceWording.ts",
     "frontend/src/lib/vat/calculateUnifiedVat.ts",
-    "frontend/src/lib/vat/euCountryConfig.ts",
-    "frontend/src/lib/vat/vatCategoryRateRules.ts",
+    "frontend/src/lib/vat/categoryEligibility.ts",
+    "frontend/src/lib/vat/productCategoryOptions.ts",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",
