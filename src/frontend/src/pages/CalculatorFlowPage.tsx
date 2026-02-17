@@ -1,36 +1,36 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useSearch } from '@tanstack/react-router';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { AlertTriangle } from 'lucide-react';
-import TransactionDetailsStep from '../components/vat/TransactionDetailsStep';
+import FlowStepper from '../components/vat/FlowStepper';
+import CountrySelectionStep from '../components/vat/CountrySelectionStep';
+import CountryTransactionStep from '../components/vat/CountryTransactionStep';
 import VatResultsStep from '../components/vat/VatResultsStep';
 import InvoiceDetailsStep from '../components/invoice/InvoiceDetailsStep';
 import InvoicePreview from '../components/invoice/InvoicePreview';
 import ExplainVatPanel from '../components/vat/ExplainVatPanel';
-import { type VATCalculationInput, type VATCalculationResult, calculateGermanyVAT } from '../lib/vat/calculateVat';
-import { type InvoiceDetails } from '../components/invoice/InvoiceDetailsStep';
+import { type VATCalculationInput, type VATCalculationResult } from '../lib/vat/calculateVat';
+import { calculateUnifiedVat } from '../lib/vat/calculateUnifiedVat';
 import { getSelectedSellerCountry } from '../lib/vat/selectedSellerCountry';
-import { lookupVatConfig } from '../lib/vat/vatTable';
 
-type Step = 'transaction' | 'results' | 'invoice' | 'preview' | 'explain';
+type FlowStep = 'country' | 'transaction' | 'results' | 'invoice' | 'preview' | 'explain';
+
+const FLOW_STEPS = [
+  { id: 'country', label: 'Country' },
+  { id: 'transaction', label: 'Transaction' },
+  { id: 'results', label: 'Results' },
+  { id: 'invoice', label: 'Invoice' },
+  { id: 'preview', label: 'Preview' },
+  { id: 'explain', label: 'Explain' },
+];
 
 export default function CalculatorFlowPage() {
   const navigate = useNavigate();
   const search = useSearch({ from: '/calculator' });
-  
-  // Get seller country from URL with validation
-  const sellerCountryResult = getSelectedSellerCountry();
-  const urlSellerCountry = sellerCountryResult.countryCode;
-  const hasCountryError = !sellerCountryResult.isValid;
-  const countryErrorMessage = sellerCountryResult.errorMessage;
-  
-  // Get VAT config for the selected country
-  const vatConfig = lookupVatConfig(urlSellerCountry);
-  const defaultCurrency = vatConfig?.currency || 'EUR';
-  
-  const [currentStep, setCurrentStep] = useState<Step>('transaction');
-  const [formData, setFormData] = useState<VATCalculationInput>({
-    sellerCountry: urlSellerCountry,
+  const urlCountry = search.country;
+
+  const [currentStep, setCurrentStep] = useState<FlowStep>('country');
+  const [selectedCountry, setSelectedCountry] = useState<string>('');
+  const [calculationInput, setCalculationInput] = useState<VATCalculationInput>({
+    sellerCountry: '',
     customerCountry: '',
     customerType: 'B2C',
     vatId: '',
@@ -39,46 +39,60 @@ export default function CalculatorFlowPage() {
     previousYearTurnover: 0,
     currentYearTurnover: 0,
     vatRate: 'standard',
-    currency: defaultCurrency,
+    productCategory: 'others',
+    vatCategory: 'others',
+    reverseCharge: false,
   });
-  const [result, setResult] = useState<VATCalculationResult | null>(null);
-  const [invoiceDetails, setInvoiceDetails] = useState<InvoiceDetails | null>(null);
+  const [calculationResult, setCalculationResult] = useState<VATCalculationResult | null>(null);
 
-  // Update seller country and currency when URL changes
+  // Initialize from URL parameter
   useEffect(() => {
-    const newSellerCountryResult = getSelectedSellerCountry();
-    const newCountry = newSellerCountryResult.countryCode;
-    const newVatConfig = lookupVatConfig(newCountry);
-    const newCurrency = newVatConfig?.currency || 'EUR';
-    
-    setFormData(prev => ({
-      ...prev,
-      sellerCountry: newCountry,
-      currency: newCurrency,
-    }));
-  }, [search.country]);
+    const result = getSelectedSellerCountry();
+    if (result.isValid && result.countryCode) {
+      setSelectedCountry(result.countryCode);
+      setCalculationInput((prev) => ({ ...prev, sellerCountry: result.countryCode }));
+      setCurrentStep('transaction');
+    } else {
+      setCurrentStep('country');
+    }
+  }, [urlCountry]);
 
-  const handleTransactionDetails = (data: Partial<VATCalculationInput>) => {
-    const updatedData = { ...formData, ...data };
-    setFormData(updatedData);
-    
-    // Calculate VAT
-    const calculationResult = calculateGermanyVAT(updatedData);
-    setResult(calculationResult);
+  const handleCountrySelect = (countryCode: string) => {
+    setSelectedCountry(countryCode);
+    setCalculationInput((prev) => ({ ...prev, sellerCountry: countryCode }));
+    navigate({ to: '/calculator', search: { country: countryCode } });
+    setCurrentStep('transaction');
+  };
+
+  const handleTransactionNext = (data: Partial<VATCalculationInput>) => {
+    const updatedInput = { ...calculationInput, ...data };
+    setCalculationInput(updatedInput);
+
+    const result = calculateUnifiedVat(updatedInput);
+    setCalculationResult(result);
     setCurrentStep('results');
   };
 
-  const handleViewInvoice = () => {
+  const handleResultsNext = () => {
     setCurrentStep('invoice');
   };
 
-  const handleInvoiceDetails = (details: InvoiceDetails) => {
-    setInvoiceDetails(details);
+  const handleInvoiceNext = () => {
     setCurrentStep('preview');
   };
 
-  const handleExplainVat = () => {
+  const handlePreviewNext = () => {
     setCurrentStep('explain');
+  };
+
+  const handleBackToCountry = () => {
+    setCurrentStep('country');
+    setSelectedCountry('');
+    navigate({ to: '/calculator', search: {} });
+  };
+
+  const handleBackToTransaction = () => {
+    setCurrentStep('transaction');
   };
 
   const handleBackToResults = () => {
@@ -89,86 +103,70 @@ export default function CalculatorFlowPage() {
     setCurrentStep('invoice');
   };
 
-  const handleBackToTransaction = () => {
-    setCurrentStep('transaction');
+  const handleBackToPreview = () => {
+    setCurrentStep('preview');
   };
 
-  const handleGenerateNew = () => {
-    setCurrentStep('transaction');
-    setResult(null);
-    setInvoiceDetails(null);
-  };
-
-  const handleRecalculate = (newResult: VATCalculationResult) => {
-    setResult(newResult);
-  };
-
-  // Show error state if country is invalid
-  if (hasCountryError) {
-    return (
-      <div className="container mx-auto px-4 py-16">
-        <div className="max-w-2xl mx-auto">
-          <Alert className="bg-red-50 border-red-200 dark:bg-red-950 dark:border-red-800">
-            <AlertTriangle className="h-5 w-5 text-red-600 dark:text-red-400" />
-            <AlertDescription className="ml-2 text-red-900 dark:text-red-100">
-              <p className="font-semibold mb-2">Invalid Country Selection</p>
-              <p className="text-sm">{countryErrorMessage}</p>
-              <p className="text-sm mt-2">
-                Please use a valid country code in the URL (e.g., ?country=GB) or remove the parameter to use the default (Germany).
-              </p>
-            </AlertDescription>
-          </Alert>
-        </div>
-      </div>
-    );
-  }
+  const stepIndex = {
+    country: 0,
+    transaction: 1,
+    results: 2,
+    invoice: 3,
+    preview: 4,
+    explain: 5,
+  }[currentStep];
 
   return (
-    <div className="container mx-auto px-4 py-16">
-      <div className="max-w-4xl mx-auto space-y-8">
-        {currentStep === 'transaction' && (
-          <TransactionDetailsStep
-            initialData={formData}
-            onNext={handleTransactionDetails}
-            onBack={() => navigate({ to: '/' })}
+    <div className="container mx-auto px-4 py-8 max-w-4xl" style={{ overflow: 'visible' }}>
+      <FlowStepper steps={FLOW_STEPS} currentStep={stepIndex} />
+
+      <div className="mt-8" style={{ overflow: 'visible' }}>
+        {currentStep === 'country' && (
+          <CountrySelectionStep onSelectCountry={handleCountrySelect} />
+        )}
+
+        {currentStep === 'transaction' && selectedCountry && (
+          <CountryTransactionStep
+            countryCode={selectedCountry}
+            initialData={calculationInput}
+            onNext={handleTransactionNext}
+            onBack={handleBackToCountry}
           />
         )}
-        
-        {currentStep === 'results' && result && (
+
+        {currentStep === 'results' && calculationResult && (
           <VatResultsStep
-            formData={formData}
-            result={result}
-            onViewInvoice={handleViewInvoice}
+            result={calculationResult}
+            formData={calculationInput}
+            onViewInvoice={handleResultsNext}
+            onExplainVat={handlePreviewNext}
             onBack={handleBackToTransaction}
-            onExplainVat={handleExplainVat}
-            onGenerateNew={handleGenerateNew}
+            onGenerateNew={handleBackToCountry}
             onOpenUpgradeModal={() => {}}
           />
         )}
-        
-        {currentStep === 'invoice' && result && (
+
+        {currentStep === 'invoice' && calculationResult && (
           <InvoiceDetailsStep
-            initialData={invoiceDetails || undefined}
-            formData={formData}
-            result={result}
-            onNext={handleInvoiceDetails}
+            vatResult={calculationResult}
+            calculationInput={calculationInput}
+            onNext={handleInvoiceNext}
             onBack={handleBackToResults}
-            onRecalculate={handleRecalculate}
           />
         )}
-        
-        {currentStep === 'preview' && result && invoiceDetails && (
+
+        {currentStep === 'preview' && calculationResult && (
           <InvoicePreview
-            formData={invoiceDetails}
-            result={result}
+            result={calculationResult}
+            calculationInput={calculationInput}
             onBack={handleBackToInvoice}
           />
         )}
-        
-        {currentStep === 'explain' && result && (
+
+        {currentStep === 'explain' && calculationResult && (
           <ExplainVatPanel
-            formData={formData}
-            result={result}
+            formData={calculationInput}
+            result={calculationResult}
           />
         )}
       </div>

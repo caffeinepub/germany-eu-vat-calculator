@@ -2,10 +2,11 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-revert-the-application-behavior-to-the-version-immediately-prior-to-the-latest-deployment-draft-the-draft-that-introduced-the-new-updated-vat-priority-logic-this-rollback-must-restore-the-previous-vat-invoice-flow-behavior-and-ui-outputs-as-they-were-before-the-latest-vat-priority-changes-were-applied",
-      "featureTitle": "Revert the application behavior to the version immediately prior to the latest deployment draft (the draft that introduced the new/updated “VAT priority logic”). This rollback must restore the previous VAT/invoice flow behavior and UI outputs as they were before the latest VAT-priority changes were applied.",
+      "featureId": "feature-add-united-kingdom-gb-to-the-country-configuration-used-by-the-vat-calculator-ui-so-that-uk-is-treated-as-a-fully-supported-configured-country-not-shown-as-missing-unconfigured-wherever-country-configuration-is-displayed",
+      "featureTitle": "Add United Kingdom (GB) to the country configuration used by the VAT calculator UI so that UK is treated as a fully supported, configured country (not shown as missing/unconfigured) wherever country configuration is displayed.",
       "files": [
-        "frontend/src/lib/invoice/deriveInvoiceVatOutcome.ts"
+        "frontend/src/components/vat/CountryVatDetailsStep.tsx",
+        "frontend/src/lib/vat/euCountryConfig.ts"
       ],
       "components": [
         "stripe@3.0.0",
@@ -23,11 +24,32 @@
       "confidence": "high"
     },
     {
-      "featureId": "feature-update-deployment-verification-to-clearly-indicate-the-rolled-back-build-version-via-the-existing-production-marker-mechanism-so-that-operators-can-confirm-rollback-in-the-browser-console-after-deployment",
-      "featureTitle": "Update deployment verification to clearly indicate the rolled-back build version via the existing production marker mechanism, so that operators can confirm rollback in the browser console after deployment.",
+      "featureId": "feature-restore-the-uk-vat-rate-handling-and-calculations-so-that-selecting-sellercountry-gb-applies-uk-rules-standard-20-reduced-5-zero-rated-where-eligible-consistently-in-the-unified-vat-calculation-flow-and-in-result-outputs",
+      "featureTitle": "Restore the UK VAT rate handling and calculations so that selecting sellerCountry 'GB' applies UK rules (standard 20%, reduced 5%, zero-rated where eligible) consistently in the unified VAT calculation flow and in result outputs.",
       "files": [
-        "frontend/PRODUCTION_PUBLISH_V4.md",
-        "frontend/src/lib/production/productionMarker.ts"
+        "frontend/src/lib/vat/calculateUnifiedVat.ts",
+        "frontend/src/lib/vat/vatCategoryRateRules.ts"
+      ],
+      "components": [
+        "stripe@3.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0",
+        "http-outcalls@3.0.0",
+        "authorization@4.0.0"
+      ],
+      "testIds": [
+        "REQ-2"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-ensure-uk-gb-aliasing-is-handled-consistently-across-the-vat-calculator-so-that-links-or-inputs-using-uk-behave-identically-to-gb-including-country-selection-url-query-parameter-and-config-lookup",
+      "featureTitle": "Ensure UK/GB aliasing is handled consistently across the VAT calculator so that links or inputs using 'UK' behave identically to 'GB' (including country selection, URL query parameter, and config lookup).",
+      "files": [
+        "frontend/src/lib/vat/euCountryConfig.ts"
       ],
       "components": [
         "stripe@3.0.0",

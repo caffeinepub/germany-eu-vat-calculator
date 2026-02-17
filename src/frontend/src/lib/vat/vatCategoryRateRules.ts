@@ -3,6 +3,10 @@ import { lookupVatConfig } from './vatTable';
 
 export type VatCategory =
   | 'standard'
+  | 'reduced'
+  | 'zero'
+  | 'exempt'
+  | 'reverse'
   | 'food'
   | 'books'
   | 'accommodation'
@@ -15,7 +19,11 @@ export type VatCategory =
   | 'others';
 
 export const VAT_CATEGORY_LABELS: Record<VatCategory, string> = {
-  standard: 'Standard Goods / Services',
+  standard: 'Standard Goods/Services',
+  reduced: 'Reduced Rate Eligible',
+  zero: 'Zero Rated (UK only)',
+  exempt: 'Exempt',
+  reverse: 'Reverse Charge',
   food: 'Food & Essential Goods',
   books: 'Books & Printed Media',
   accommodation: 'Accommodation & Hospitality',
@@ -25,11 +33,15 @@ export const VAT_CATEGORY_LABELS: Record<VatCategory, string> = {
   medical: 'Medical & Social Services',
   cultural: 'Cultural Events',
   utilities: 'Utilities (Electricity / Gas / Water)',
-  others: 'Others',
+  others: 'Others (Auto → Standard)',
 };
 
 export const VAT_CATEGORIES: VatCategory[] = [
   'standard',
+  'reduced',
+  'zero',
+  'exempt',
+  'reverse',
   'food',
   'books',
   'accommodation',
@@ -44,7 +56,7 @@ export const VAT_CATEGORIES: VatCategory[] = [
 
 /**
  * Computes the VAT rate percent for a given country and VAT category.
- * Uses VAT_TABLE for standard rates, implements reduced rate logic for DE, FR, IT, SE, BE, ES.
+ * Uses VAT_TABLE for standard rates, implements reduced rate logic for DE, FR, IT, SE, BE, ES, GB.
  * For all other countries or when category is not eligible, returns standard rate from VAT_TABLE.
  */
 export function computeVatRateForCategory(
@@ -62,7 +74,10 @@ export function computeVatRateForCategory(
   const tableStandardRate = vatConfig?.standard || standardRate;
   const tableReducedRate = vatConfig?.reduced || standardRate;
 
-  switch (countryCode) {
+  // Normalize UK -> GB
+  const normalizedCode = countryCode.toUpperCase() === 'UK' ? 'GB' : countryCode;
+
+  switch (normalizedCode) {
     case 'DE':
     case 'Germany':
       return computeGermanyRate(category, tableStandardRate, tableReducedRate);
@@ -81,6 +96,9 @@ export function computeVatRateForCategory(
     case 'ES':
     case 'Spain':
       return computeSpainRate(category, tableStandardRate, tableReducedRate);
+    case 'GB':
+    case 'United Kingdom':
+      return computeUKRate(category, tableStandardRate, tableReducedRate);
     default:
       // For all other countries, return standard rate from VAT_TABLE
       return tableStandardRate;
@@ -229,4 +247,29 @@ function computeSpainRate(category: VatCategory, standardRate: number, reducedRa
   }
 
   return standardRate;
+}
+
+function computeUKRate(category: VatCategory, standardRate: number, reducedRate: number): number {
+  // UK Zero Rate (0%)
+  const zeroCategories: VatCategory[] = [
+    'food',
+    'books',
+    'transport',
+  ];
+
+  // UK Reduced Rate (5%)
+  const reducedCategories: VatCategory[] = [
+    'utilities',
+    'construction',
+  ];
+
+  if (category === 'zero' || zeroCategories.includes(category)) {
+    return 0;
+  }
+
+  if (category === 'reduced' || reducedCategories.includes(category)) {
+    return reducedRate; // 5%
+  }
+
+  return standardRate; // 20%
 }

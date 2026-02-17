@@ -1,4 +1,4 @@
-# Production Publish Checklist - Version 4
+# Production Publish Checklist - Version 39
 
 ## Pre-Deployment Verification
 
@@ -29,20 +29,27 @@
 
 ### 5. Live App Checks
 - [ ] **App loads without errors:** Open the live URL and verify no console errors
-- [ ] **Console production marker:** Open browser DevTools Console and verify the marker appears immediately on page load: `🚀 Germany EU VAT Calculator v4 - Production Build`
-- [ ] **Browser tab title:** Verify tab shows "Germany EU Vat Calculator" (check immediately after load and after navigating between routes)
+- [ ] **Console production marker:** Open browser DevTools Console and verify the marker appears immediately on page load: `🚀 Glotaxa v39 - Production Build`
+- [ ] **Browser tab title:** Verify tab shows "Glotaxa" (check immediately after load and after navigating between routes)
 - [ ] **Routes accessible:** Test all main routes (see PRODUCTION_SMOKE_CHECK.md)
 - [ ] **Authentication works:** Test Internet Identity login/logout flow
 - [ ] **Stripe configuration:** Admin can configure Stripe (if not already done)
 - [ ] **Checkout flow:** Verify Stripe checkout redirects properly (see PRODUCTION_SMOKE_CHECK.md)
 
 ### 6. Metadata Verification
-- [ ] **Display name:** Confirm "Germany EU Vat Calculator" appears in UI header
-- [ ] **Deployment slug:** Verify slug is "germany-eu-vat-calculator" (check deployment output)
-- [ ] **Page title consistency:** Check browser tab shows "Germany EU Vat Calculator" on initial load and after route transitions
+- [ ] **Display name:** Confirm "Glotaxa" appears in UI header
+- [ ] **Deployment slug:** Verify slug is "glotaxa" (check deployment output)
+- [ ] **Page title consistency:** Check browser tab shows "Glotaxa" on initial load and after route transitions
 - [ ] **Build-time validation:** Confirm slug validation passed (no build errors)
 
-### 7. Security Checks
+### 7. Version 39 Specific Checks
+- [ ] **Console marker shows v39:** Verify exact text `🚀 Glotaxa v39 - Production Build`
+- [ ] **Invoice backward compatibility:** Existing invoices display correctly with currency and VAT labels
+- [ ] **VAT outcome derivation:** New invoices follow Version 39 logic (reverse charge → exempt → reduced → standard)
+- [ ] **No runtime errors:** Unsupported seller countries return explicit error state (no crashes)
+- [ ] **Legacy invoice support:** Invoices without currency/vatLabel display with safe fallbacks
+
+### 8. Security Checks
 - [ ] **No Stripe secrets exposed:** Run full security checklist from PRODUCTION_SMOKE_CHECK.md
 - [ ] **Checkout URL validation:** Verify only `https://checkout.stripe.com/` URLs are accepted
 - [ ] **Error handling:** Test that invalid/missing session URLs show error toast (not redirect to `/undefined`)
@@ -58,10 +65,12 @@ If critical issues are discovered:
 ## Success Criteria
 ✅ Production deployment completes without errors  
 ✅ Live app is reachable at recorded frontend canister URL  
-✅ Console shows Version 4 marker immediately on page load  
-✅ Browser tab title shows "Germany EU Vat Calculator" consistently across routes  
+✅ Console shows Version 39 marker immediately on page load  
+✅ Browser tab title shows "Glotaxa" consistently across routes  
 ✅ All routes render correctly without runtime errors  
 ✅ Internet Identity login/logout works  
+✅ Existing invoices display correctly (backward compatible)  
+✅ New invoices follow Version 39 VAT derivation logic  
 ✅ Stripe checkout creates sessions and redirects to valid Stripe URLs  
 ✅ Invalid/missing Stripe URLs show error toasts instead of redirecting  
 ✅ No sensitive data exposed in frontend bundle, page source, storage, or network  
@@ -74,5 +83,5 @@ If critical issues are discovered:
 
 ---
 
-**Version:** 4  
+**Version:** 39  
 **Last Updated:** February 16, 2026

@@ -1,4 +1,4 @@
-# Production Smoke Check - Version 5
+# Production Smoke Check - Version 39
 
 This document provides a quick verification runbook for testing the deployed production application.
 
@@ -8,7 +8,7 @@ This document provides a quick verification runbook for testing the deployed pro
 
 1. Open the deployed frontend canister URL in a browser
 2. Open browser DevTools (F12) → Console tab
-3. **Expected:** Console shows `🚀 Germany EU VAT Calculator v5 - Production Build` immediately on page load
+3. **Expected:** Console shows `🚀 Glotaxa v39 - Production Build` immediately on page load
 4. **Note:** This marker appears before any user interaction or navigation
 
 ## Required Routes Check
@@ -19,7 +19,7 @@ Test that all main routes render without errors:
 - **URL:** `/`
 - **Expected:** Landing page loads with tagline, features list, and CTA buttons
 - **Check:** No console errors, all images/assets load
-- **Navigation:** Header shows "Germany EU Vat Calculator" and navigation links work
+- **Navigation:** Header shows "Glotaxa" and navigation links work
 
 ### 2. Calculator Page
 - **URL:** `/calculator`
@@ -47,6 +47,7 @@ Test that all main routes render without errors:
 - **URL:** `/invoices`
 - **Expected:** Requires login; shows saved invoices list
 - **Check:** Page renders after authentication
+- **Backward Compatibility:** Existing invoices display correctly with currency and VAT label fields
 
 ## Internet Identity Authentication
 
@@ -113,6 +114,27 @@ Test that all main routes render without errors:
 - **Expected:** Subscribe buttons are disabled (grayed out)
 - **Expected:** Free plan button still works (shows "Current Plan" if on free)
 
+## Invoice Backward Compatibility (Version 39)
+
+### Existing Invoice Display
+1. Log in as user with existing saved invoices
+2. Navigate to `/invoices`
+3. **Expected:** All existing invoices display without errors
+4. **Check:** Invoice list shows:
+   - Invoice number and date
+   - VAT rate and amount with correct currency
+   - VAT label (Reverse Charge, Exempt, Reduced VAT, Standard VAT)
+5. **Legacy Records:** Invoices without currency/vatLabel fields display with safe fallbacks (EUR, "VAT")
+6. **No Backend Reset:** Existing invoice records remain intact (no reinstall required)
+
+### VAT Outcome Derivation (Version 39 Logic)
+1. Create new invoice via calculator
+2. **Reverse Charge:** Should produce 0% VAT with "Reverse Charge" label
+3. **Exempt:** Should produce 0% VAT with "Exempt" label
+4. **Reduced Rate:** Should apply reduced rate consistently (no fallback to standard)
+5. **Standard Rate:** Should apply standard rate as default
+6. **Unsupported Country:** Should return explicit error state (no runtime crash)
+
 ## Security Verification
 
 ### Critical: No Secrets Exposed
@@ -150,35 +172,36 @@ Test that all main routes render without errors:
 
 Open browser console (F12) and check for:
 
-- ✅ **Version marker:** `🚀 Germany EU VAT Calculator v5 - Production Build` (appears immediately on page load)
+- ✅ **Version marker:** `🚀 Glotaxa v39 - Production Build` (appears immediately on page load)
 - ✅ **No errors:** No red error messages during normal navigation
 - ⚠️ **Warnings:** Minor warnings are acceptable (e.g., React DevTools, third-party extensions)
 
 ## Metadata Verification
 
 ### Browser Tab Title
-- **Check:** Browser tab shows "Germany EU Vat Calculator"
+- **Check:** Browser tab shows "Glotaxa"
 - **Test:** Navigate between routes (`/`, `/calculator`, `/upgrade`, `/invoices`), title should remain consistent
 - **Note:** Title is set in `main.tsx` and reinforced in `AppLayout.tsx` on mount
 
 ### App Header
-- **Check:** Header displays "Germany EU Vat Calculator"
+- **Check:** Header displays "Glotaxa"
 - **Test:** Visible on all pages
 
 ### Deployment Slug
-- **Check:** Deployment used slug "germany-eu-vat-calculator"
+- **Check:** Deployment used slug "glotaxa"
 - **Validation:** Build-time validation passed (no errors during `pnpm build`)
 
 ## Quick Smoke Test Checklist
 
-- [ ] Console shows production marker immediately on page load
+- [ ] Console shows production marker `v39` immediately on page load
 - [ ] Landing page loads (`/`)
 - [ ] Calculator page loads (`/calculator`)
 - [ ] Upgrade page loads (`/upgrade`)
 - [ ] Payment success page loads (`/payment-success`)
 - [ ] Payment failure page loads (`/payment-failure`)
 - [ ] Invoices page loads for authenticated users (`/invoices`)
-- [ ] Browser tab title shows "Germany EU Vat Calculator" consistently across routes
+- [ ] Existing invoices display correctly with currency and VAT labels
+- [ ] Browser tab title shows "Glotaxa" consistently across routes
 - [ ] Header displays app name correctly
 - [ ] Login/logout works (Internet Identity)
 - [ ] Profile setup works for new users (modal appears once)
@@ -188,6 +211,7 @@ Open browser console (F12) and check for:
 - [ ] Stripe not configured: alert shows, buttons disabled
 - [ ] No Stripe secrets in page source, network logs, local storage, session storage, or console
 - [ ] No critical console errors
+- [ ] VAT outcome derivation follows Version 39 logic (reverse charge → exempt → reduced → standard)
 
 ## Troubleshooting
 
@@ -201,6 +225,12 @@ Open browser console (F12) and check for:
 - Check that `main.tsx` sets `document.title` on initialization
 - Verify `AppLayout.tsx` reinforces title in `useEffect`
 - Clear browser cache and reload
+
+### Issue: Invoices page shows errors or missing data
+- Check browser console for specific error messages
+- Verify backend is accessible and user is authenticated
+- Check that invoice records have required fields (currency, vatLabel)
+- Legacy records should display with safe fallbacks (EUR, "VAT")
 
 ### Issue: Checkout button does nothing
 - Check browser console for errors
@@ -234,6 +264,6 @@ Open browser console (F12) and check for:
 
 ---
 
-**Version:** 5  
-**Last Updated:** February 11, 2026  
+**Version:** 39  
+**Last Updated:** February 16, 2026  
 **Language:** English

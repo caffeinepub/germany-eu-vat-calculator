@@ -1,11 +1,12 @@
 # Specification
 
 ## Summary
-**Goal:** Roll back the app to the behavior and UI outputs from immediately before the most recent VAT priority logic changes, while keeping existing invoices accessible.
+**Goal:** Restore United Kingdom VAT country configuration and calculation behavior in the VAT calculator UI, including consistent handling of the GB/UK country code alias.
 
 **Planned changes:**
-- Revert VAT calculator + invoice flow logic and UI outputs to the pre–VAT-priority version.
-- Ensure existing saved invoices remain listable/viewable/downloadable without traps or manual resets after rollback.
-- Update the existing production console marker to reflect the rolled-back release identifier for deployment verification.
+- Add/restore the United Kingdom (GB) entry in the country configuration used by the VAT calculator UI so it resolves correctly wherever country configuration is displayed.
+- Ensure the UK configuration exposes the expected VAT rates (standard 20%, reduced 5%, and zero rate 0% where applicable) and is treated as configured/available (no disabled proceed CTA due to missing config).
+- Restore UK VAT rate selection and calculations in the unified VAT calculation flow when sellerCountry is GB, including correct vatRatePercent, vatAmountCents, and grossAmountCents across standard/reduced/zero-eligible cases and supported UK-specific scenarios.
+- Normalize country code handling so inputs/links using `UK` behave identically to `GB` across country selection, URL query parameters, and configuration lookups.
 
-**User-visible outcome:** VAT rate/label/amount results and invoice flow match the prior version (before the latest VAT-priority update), previously saved invoices still open normally, and operators can confirm the rollback via the production console marker.
+**User-visible outcome:** United Kingdom can be selected/linked to (via GB or UK) without “country configuration not found” errors, and UK VAT results are calculated and displayed correctly using 20%/5%/0% rates as applicable.

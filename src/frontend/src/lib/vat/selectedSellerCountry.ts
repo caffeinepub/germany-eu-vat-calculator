@@ -10,17 +10,18 @@ export interface SelectedSellerCountryResult {
 
 /**
  * Read the 'country' query parameter from URL and validate it
- * Returns normalized country code (e.g., UK -> GB) with fallback to DE
+ * Returns normalized country code (e.g., UK -> GB)
+ * If no country param, returns empty string (not DE default) for explicit country selection flow
  */
 export function getSelectedSellerCountry(): SelectedSellerCountryResult {
   try {
     const urlParams = new URLSearchParams(window.location.search);
     const countryParam = urlParams.get('country');
     
-    // No country param - default to DE
+    // No country param - return empty (no default)
     if (!countryParam) {
       return {
-        countryCode: 'DE',
+        countryCode: '',
         isValid: true,
       };
     }
@@ -37,7 +38,7 @@ export function getSelectedSellerCountry(): SelectedSellerCountryResult {
     if (!vatConfig) {
       const supported = getSupportedCountryCodes().join(', ');
       return {
-        countryCode: 'DE', // Fallback
+        countryCode: 'DE', // Fallback for error display
         isValid: false,
         errorMessage: `Country "${countryParam}" is not supported. Supported countries: ${supported}`,
       };

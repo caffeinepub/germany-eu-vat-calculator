@@ -4,6 +4,7 @@ export interface EUCountryConfig {
   flag: string;
   standardRate: number;
   reducedRates: number[];
+  zeroRate?: number;
   invoiceLabel: string;
   reverseChargeText: string;
   configured: boolean;
@@ -110,10 +111,34 @@ export const EU_COUNTRIES: Record<string, EUCountryConfig> = {
     reverseChargeText: 'Inversión del sujeto pasivo',
     configured: true,
   },
+  GB: {
+    code: 'GB',
+    name: 'United Kingdom',
+    flag: '🇬🇧',
+    standardRate: 20,
+    reducedRates: [5],
+    zeroRate: 0,
+    invoiceLabel: 'VAT',
+    reverseChargeText: 'Reverse charge',
+    configured: true,
+  },
 };
 
 export const COUNTRY_LIST = Object.values(EU_COUNTRIES);
 
+/**
+ * Get country configuration by code
+ * Normalizes UK -> GB
+ */
 export function getCountryConfig(countryCode: string): EUCountryConfig | null {
-  return EU_COUNTRIES[countryCode] || null;
+  if (!countryCode) return null;
+  
+  const normalized = countryCode.trim().toUpperCase();
+  
+  // UK alias
+  if (normalized === 'UK') {
+    return EU_COUNTRIES['GB'];
+  }
+  
+  return EU_COUNTRIES[normalized] || null;
 }

@@ -1,61 +1,68 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-16T10:50:48.651Z",
+  "generatedAt": "2026-02-17T11:01:31.929Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
     "total": 3,
-    "implemented": 2,
+    "implemented": 3,
     "items": [
       {
         "id": "REQ-1",
-        "summary": "Revert the application behavior to the version immediately prior to the latest deployment draft (the draft that introduced the new/updated “VAT priority logic”). This rollback must restore the previous VAT/invoice flow behavior and UI outputs as they were before the latest VAT-priority changes were applied.",
+        "summary": "Add United Kingdom (GB) to the country configuration used by the VAT calculator UI so that UK is treated as a fully supported, configured country (not shown as missing/unconfigured) wherever country configuration is displayed.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/lib/invoice/deriveInvoiceVatOutcome.ts",
-          "frontend/src/components/invoice/InvoicePreview.tsx",
-          "frontend/src/components/vat/VatResultsStep.tsx",
-          "frontend/src/pages/CalculatorFlowPage.tsx"
+          "frontend/src/lib/vat/euCountryConfig.ts",
+          "frontend/src/components/vat/CountryVatDetailsStep.tsx",
+          "frontend/src/components/vat/CountryTransactionStep.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/lib/invoice/deriveInvoiceVatOutcome.ts"
+          "frontend/src/lib/vat/euCountryConfig.ts",
+          "frontend/src/components/vat/CountryVatDetailsStep.tsx"
         ]
       },
       {
         "id": "REQ-2",
-        "summary": "Ensure the rollback does not break access to already-saved invoices. Existing invoice records must remain listable and viewable after the rollback (including any fields currently stored on backend invoice records such as currency and VAT label).",
-        "status": "unknown",
-        "plannedFiles": [],
-        "matchedFiles": []
+        "summary": "Restore the UK VAT rate handling and calculations so that selecting sellerCountry 'GB' applies UK rules (standard 20%, reduced 5%, zero-rated where eligible) consistently in the unified VAT calculation flow and in result outputs.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/lib/vat/calculateUnifiedVat.ts",
+          "frontend/src/lib/vat/vatCategoryRateRules.ts",
+          "frontend/src/components/vat/VatResultsStep.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/lib/vat/calculateUnifiedVat.ts",
+          "frontend/src/lib/vat/vatCategoryRateRules.ts"
+        ]
       },
       {
         "id": "REQ-3",
-        "summary": "Update deployment verification to clearly indicate the rolled-back build version via the existing production marker mechanism, so that operators can confirm rollback in the browser console after deployment.",
+        "summary": "Ensure UK/GB aliasing is handled consistently across the VAT calculator so that links or inputs using 'UK' behave identically to 'GB' (including country selection, URL query parameter, and config lookup).",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/lib/production/productionMarker.ts",
-          "frontend/src/components/layout/AppLayout.tsx",
-          "frontend/PRODUCTION_PUBLISH_V4.md"
+          "frontend/src/lib/vat/euCountryConfig.ts",
+          "frontend/src/lib/vat/vatTable.ts",
+          "frontend/src/lib/vat/selectedSellerCountry.ts",
+          "frontend/src/pages/CalculatorFlowPage.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/lib/production/productionMarker.ts",
-          "frontend/PRODUCTION_PUBLISH_V4.md"
+          "frontend/src/lib/vat/euCountryConfig.ts"
         ]
       }
     ]
   },
   "changedFiles": [
-    "backend/main.mo",
     "build-request.json",
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
-    "frontend/PRODUCTION_PUBLISH_V4.md",
-    "frontend/src/lib/invoice/deriveInvoiceVatOutcome.ts",
-    "frontend/src/lib/production/productionMarker.ts",
+    "frontend/src/components/vat/CountryVatDetailsStep.tsx",
+    "frontend/src/lib/vat/calculateUnifiedVat.ts",
+    "frontend/src/lib/vat/euCountryConfig.ts",
+    "frontend/src/lib/vat/vatCategoryRateRules.ts",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

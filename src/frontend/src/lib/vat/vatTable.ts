@@ -1,5 +1,7 @@
 // VAT_TABLE: Single source of truth for country VAT rates, currency, and VAT prefix
 
+import { VAT_CONFIG } from './vatConfig';
+
 export interface CountryVatConfig {
   standard: number;
   reduced: number;
@@ -9,17 +11,17 @@ export interface CountryVatConfig {
 
 // Central VAT configuration table - keyed by 2-letter country codes
 export const VAT_TABLE: Record<string, CountryVatConfig> = {
-  DE: { standard: 19, reduced: 7, currency: 'EUR', prefix: 'DE' },
-  FR: { standard: 20, reduced: 10, currency: 'EUR', prefix: 'FR' },
-  NL: { standard: 21, reduced: 9, currency: 'EUR', prefix: 'NL' },
-  PL: { standard: 23, reduced: 8, currency: 'EUR', prefix: 'PL' },
-  SE: { standard: 25, reduced: 12, currency: 'EUR', prefix: 'SE' },
-  IT: { standard: 22, reduced: 10, currency: 'EUR', prefix: 'IT' },
-  BE: { standard: 21, reduced: 6, currency: 'EUR', prefix: 'BE' },
-  AT: { standard: 20, reduced: 10, currency: 'EUR', prefix: 'AT' },
-  HU: { standard: 27, reduced: 5, currency: 'EUR', prefix: 'HU' },
-  ES: { standard: 21, reduced: 10, currency: 'EUR', prefix: 'ES' },
-  GB: { standard: 20, reduced: 5, currency: 'GBP', prefix: 'GB' },
+  DE: { standard: VAT_CONFIG.DE.standard, reduced: VAT_CONFIG.DE.reduced, currency: 'EUR', prefix: 'DE' },
+  FR: { standard: VAT_CONFIG.FR.standard, reduced: VAT_CONFIG.FR.reduced, currency: 'EUR', prefix: 'FR' },
+  NL: { standard: VAT_CONFIG.NL.standard, reduced: VAT_CONFIG.NL.reduced, currency: 'EUR', prefix: 'NL' },
+  PL: { standard: VAT_CONFIG.PL.standard, reduced: VAT_CONFIG.PL.reduced, currency: 'EUR', prefix: 'PL' },
+  SE: { standard: VAT_CONFIG.SE.standard, reduced: VAT_CONFIG.SE.reduced, currency: 'EUR', prefix: 'SE' },
+  IT: { standard: VAT_CONFIG.IT.standard, reduced: VAT_CONFIG.IT.reduced, currency: 'EUR', prefix: 'IT' },
+  BE: { standard: VAT_CONFIG.BE.standard, reduced: VAT_CONFIG.BE.reduced, currency: 'EUR', prefix: 'BE' },
+  AT: { standard: VAT_CONFIG.AT.standard, reduced: VAT_CONFIG.AT.reduced, currency: 'EUR', prefix: 'AT' },
+  HU: { standard: VAT_CONFIG.HU.standard, reduced: VAT_CONFIG.HU.reduced, currency: 'EUR', prefix: 'HU' },
+  ES: { standard: VAT_CONFIG.ES.standard, reduced: VAT_CONFIG.ES.reduced, currency: 'EUR', prefix: 'ES' },
+  GB: { standard: VAT_CONFIG.GB.standard, reduced: VAT_CONFIG.GB.reduced, currency: 'GBP', prefix: 'GB' },
 };
 
 // Legacy name-based lookup for backward compatibility

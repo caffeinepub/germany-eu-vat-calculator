@@ -1,5 +1,6 @@
 import { type VatCategory } from './vatCategoryRateRules';
 import { lookupVatConfig } from './vatTable';
+import { type ProductCategory } from './reducedEligibility';
 
 export type ServiceCategory = 'digital' | 'physical' | 'consulting' | 'saas' | 'others';
 
@@ -16,6 +17,7 @@ export interface VATCalculationInput {
   reverseCharge?: boolean;
   selectedCountry?: string;
   vatCategory?: VatCategory;
+  productCategory?: ProductCategory;
   // New fields for VAT treatment selection
   vatTreatment?: 'standard' | 'reduced' | 'exempt';
   selectedReducedRate?: number | null;

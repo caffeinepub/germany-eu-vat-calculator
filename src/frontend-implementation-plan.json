@@ -1,61 +1,88 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Rollback VAT priority logic changes in VAT + invoice flow (frontend-only) and update production marker",
+  "title": "Restore UK (GB) VAT configuration, calculations, and UK/GB aliasing in VAT calculator UI",
   "requirements": [
     {
       "id": "REQ-1",
-      "summary": "Rollback VAT calculator + invoice UI outputs to pre–VAT-priority behavior by reverting the invoice VAT outcome derivation and any UI labels introduced by the new priority rules.",
+      "summary": "Add United Kingdom (GB) to the country configuration used by VAT calculator UI and ensure it is treated as configured/available with correct UK rates.",
       "acceptanceCriteria": [
-        "Running the VAT calculator + invoice flow produces the same VAT rate/label/amount outcomes as the previous version (i.e., before the last VAT priority-logic changes).",
-        "No newly introduced VAT-priority-specific labels or outcomes (e.g., any newly added precedence behavior) appear if they did not exist in the prior version.",
-        "The app builds successfully without TypeScript errors (frontend) and Motoko compilation errors (backend)."
+        "Any UI that uses country configuration lookup (e.g., the country VAT details screen) successfully resolves 'GB' and does not show 'Country configuration not found' for the United Kingdom.",
+        "The United Kingdom configuration displays standard rate 20% and reduced rate 5% (and, where applicable, includes zero rate 0% as UK-specific).",
+        "UK is marked as configured/available in the same way as existing EU countries (i.e., the primary CTA to proceed is not disabled due to missing config)."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/lib/invoice/deriveInvoiceVatOutcome.ts",
+          "path": "frontend/src/lib/vat/euCountryConfig.ts",
           "operation": "modify",
-          "description": "Revert the new strict VAT-priority decision logic to the prior invoice VAT outcome behavior (rates/labels/amounts), removing any newly introduced precedence rules and labels (e.g., export-precedence/\"Zero Rated Export\" if it was not present previously)."
+          "description": "Add a United Kingdom (GB) entry to the UI-facing country configuration (flag, name, standard 20, reduced [5], and configured=true). Extend the config shape (if needed) to represent a UK-specific zero rate (0%) for display purposes, while keeping user-facing text in English."
         },
         {
-          "path": "frontend/src/components/invoice/InvoicePreview.tsx",
+          "path": "frontend/src/components/vat/CountryVatDetailsStep.tsx",
           "operation": "modify",
-          "description": "Align invoice save/download VAT rate/label/currency derivation with the rolled-back VAT outcome logic so persisted invoice metadata and on-screen totals reflect the pre-change behavior."
+          "description": "Update the country VAT details display to correctly present UK (GB) as configured and show standard 20% and reduced 5%, and include UK-specific zero rate 0% when available from the country configuration (without modifying any files under frontend/src/components/ui)."
+        },
+        {
+          "path": "frontend/src/components/vat/CountryTransactionStep.tsx",
+          "operation": "modify",
+          "description": "Ensure the transaction step can load and proceed for countryCode 'GB' via the shared country configuration (so the flow is not blocked due to missing config) and that any UK-specific display strings remain English (without modifying any files under frontend/src/components/ui)."
+        }
+      ]
+    },
+    {
+      "id": "REQ-2",
+      "summary": "Restore UK VAT rate handling in the unified frontend calculation flow so GB uses standard 20%, reduced 5%, and zero 0% where eligible with consistent result labels and cent-amount outputs.",
+      "acceptanceCriteria": [
+        "When sellerCountry is 'GB' and the transaction is domestic UK, the calculator applies 20% VAT by default for standard/other categories and computes vatAmountCents and grossAmountCents correctly.",
+        "When sellerCountry is 'GB' and the selected/product category is UK reduced-eligible, the calculator applies 5% and computes amounts correctly.",
+        "When sellerCountry is 'GB' and the selected/product category is UK zero-eligible, the calculator applies 0% and computes amounts correctly.",
+        "For UK-specific scenarios already supported in the unified flow (reverse charge, export, exempt, UK zero/reduced), the returned result includes a consistent scenario/message/label and correct vatRatePercent and cent amounts."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/lib/vat/calculateUnifiedVat.ts",
+          "operation": "modify",
+          "description": "Adjust unified VAT calculation handling for sellerCountry 'GB' to ensure UK domestic standard/reduced/zero eligibility produce consistent scenario/message/label outputs and correct vatRatePercent, vatAmountCents, and grossAmountCents (including differentiating domestic UK zero-rated vs export zero-rated scenarios where appropriate)."
+        },
+        {
+          "path": "frontend/src/lib/vat/vatCategoryRateRules.ts",
+          "operation": "modify",
+          "description": "Extend VAT category-to-rate computation to explicitly support UK (GB) handling for categories such as 'reduced' and 'zero' (UK-only) using the existing VAT table/config rates, so any UI paths relying on category-based rate selection behave consistently for GB."
         },
         {
           "path": "frontend/src/components/vat/VatResultsStep.tsx",
           "operation": "modify",
-          "description": "Update VAT results UI rendering to remove/avoid any newly introduced VAT-priority-specific labels/outcomes and ensure displayed VAT information matches the rolled-back calculation/invoice flow behavior."
-        },
-        {
-          "path": "frontend/src/pages/CalculatorFlowPage.tsx",
-          "operation": "modify",
-          "description": "Verify the VAT-to-invoice navigation and step state remains consistent after the rollback (no references to the reverted VAT-priority behavior), ensuring the flow outputs match the pre-change version."
+          "description": "Confirm the results UI correctly renders UK outcomes from the unified flow (labels/messages and currency selection for UK/GBP) without relying on brittle string mismatches; keep user-facing text in English (without modifying any files under frontend/src/components/ui)."
         }
       ]
     },
     {
       "id": "REQ-3",
-      "summary": "Update the production console marker to clearly indicate the rolled-back build version and keep the publish checklist consistent with the marker output.",
+      "summary": "Handle UK/GB aliasing consistently across selection, URL query parsing, and configuration lookup so 'UK' behaves identically to 'GB'.",
       "acceptanceCriteria": [
-        "In production mode, the browser console marker reflects the rolled-back release identifier (e.g., the previous marker/version), allowing easy verification that rollback is deployed.",
-        "The production publish checklist remains consistent with the production marker output used for verification."
+        "Navigating to the calculator with ?country=UK initializes the flow as United Kingdom and calculations run without a 'country not supported' error.",
+        "All VAT configuration lookups and country-dependent UI logic treat 'UK' as 'GB' consistently (no mixed state where some parts treat 'UK' differently than 'GB')."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/lib/production/productionMarker.ts",
+          "path": "frontend/src/lib/vat/euCountryConfig.ts",
           "operation": "modify",
-          "description": "Change the production marker version identifier to the rolled-back release value (e.g., from v5 back to the prior version) so operators can verify rollback via the browser console."
+          "description": "Normalize incoming country codes in getCountryConfig (and any other exported lookup helpers) so 'UK' is treated as 'GB' consistently for UI configuration resolution."
         },
         {
-          "path": "frontend/src/components/layout/AppLayout.tsx",
+          "path": "frontend/src/lib/vat/vatTable.ts",
           "operation": "modify",
-          "description": "Wire the existing production marker mechanism to run on initial app load from within the layout (import and call the marker logger once) so the console marker reliably appears after deployment."
+          "description": "Harden UK/GB normalization in VAT config utilities to ensure any code path providing 'UK' (including legacy name-based lookups and supported-code checks) resolves to the GB configuration without creating mixed 'UK' vs 'GB' state."
         },
         {
-          "path": "frontend/PRODUCTION_PUBLISH_V4.md",
+          "path": "frontend/src/lib/vat/selectedSellerCountry.ts",
           "operation": "modify",
-          "description": "Update the checklist text to match the rolled-back production marker string/version so the documented verification step remains consistent with the console output."
+          "description": "Ensure seller country selection from the URL query parameter consistently normalizes 'UK' to 'GB' and that validation/error messaging remains stable (no false 'not supported' for UK)."
+        },
+        {
+          "path": "frontend/src/pages/CalculatorFlowPage.tsx",
+          "operation": "modify",
+          "description": "Verify calculator flow initialization and navigation preserve normalized 'GB' when starting from ?country=UK (e.g., selection state and subsequent navigation/search updates), avoiding any mixed-code behavior across steps."
         }
       ]
     }

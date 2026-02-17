@@ -1,90 +1,75 @@
 {
   "kind": "build_request",
-  "title": "Retry rollback: revert app to the previous version (undo latest VAT priority logic changes)",
+  "title": "Restore missing UK VAT country configuration and calculations",
+  "projectName": "Glotaxa",
   "priority": "normal",
   "requirements": [
     {
       "id": "REQ-1",
-      "text": "Revert the application behavior to the version immediately prior to the latest deployment draft (the draft that introduced the new/updated “VAT priority logic”). This rollback must restore the previous VAT/invoice flow behavior and UI outputs as they were before the latest VAT-priority changes were applied.",
-      "target": "both",
+      "text": "Add United Kingdom (GB) to the country configuration used by the VAT calculator UI so that UK is treated as a fully supported, configured country (not shown as missing/unconfigured) wherever country configuration is displayed.",
+      "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-3",
-          "msg-6"
+          "msg-1"
         ],
         "quotes": [
-          "Amend the app, revert back to the previous version",
-          "yes"
+          "UK country confiigeration is missing. Add back the UK Tax Rate and calculations as per the earlier versions"
         ]
       },
       "acceptanceCriteria": [
-        "Running the VAT calculator + invoice flow produces the same VAT rate/label/amount outcomes as the previous version (i.e., before the last VAT priority-logic changes).",
-        "No newly introduced VAT-priority-specific labels or outcomes (e.g., any newly added precedence behavior) appear if they did not exist in the prior version.",
-        "The app builds successfully without TypeScript errors (frontend) and Motoko compilation errors (backend)."
+        "Any UI that uses country configuration lookup (e.g., the country VAT details screen) successfully resolves 'GB' and does not show 'Country configuration not found' for the United Kingdom.",
+        "The United Kingdom configuration displays standard rate 20% and reduced rate 5% (and, where applicable, includes zero rate 0% as UK-specific).",
+        "UK is marked as configured/available in the same way as existing EU countries (i.e., the primary CTA to proceed is not disabled due to missing config)."
       ]
     },
     {
       "id": "REQ-2",
-      "text": "Ensure the rollback does not break access to already-saved invoices. Existing invoice records must remain listable and viewable after the rollback (including any fields currently stored on backend invoice records such as currency and VAT label).",
-      "target": "backend",
+      "text": "Restore the UK VAT rate handling and calculations so that selecting sellerCountry 'GB' applies UK rules (standard 20%, reduced 5%, zero-rated where eligible) consistently in the unified VAT calculation flow and in result outputs.",
+      "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-3",
-          "msg-6"
+          "msg-1"
         ],
         "quotes": [
-          "Amend the app, revert back to the previous version",
-          "yes"
+          "Add back the UK Tax Rate and calculations as per the earlier versions"
         ]
       },
       "acceptanceCriteria": [
-        "After deployment, a user with existing invoices can open the Invoices page and see prior invoices listed without runtime errors.",
-        "Opening/downloading an existing invoice record does not trap on missing fields and does not require manual data resets.",
-        "No state-wiping reinstall mode is required for this rollback."
+        "When sellerCountry is 'GB' and the transaction is domestic UK, the calculator applies 20% VAT by default for standard/other categories and computes vatAmountCents and grossAmountCents correctly.",
+        "When sellerCountry is 'GB' and the selected/product category is UK reduced-eligible, the calculator applies 5% and computes amounts correctly.",
+        "When sellerCountry is 'GB' and the selected/product category is UK zero-eligible, the calculator applies 0% and computes amounts correctly.",
+        "For UK-specific scenarios already supported in the unified flow (reverse charge, export, exempt, UK zero/reduced), the returned result includes a consistent scenario/message/label and correct vatRatePercent and cent amounts."
       ]
     },
     {
       "id": "REQ-3",
-      "text": "Update deployment verification to clearly indicate the rolled-back build version via the existing production marker mechanism, so that operators can confirm rollback in the browser console after deployment.",
+      "text": "Ensure UK/GB aliasing is handled consistently across the VAT calculator so that links or inputs using 'UK' behave identically to 'GB' (including country selection, URL query parameter, and config lookup).",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-3",
-          "msg-6"
+          "msg-1"
         ],
         "quotes": [
-          "Amend the app, revert back to the previous version",
-          "yes"
+          "UK country confiigeration is missing. Add back the UK Tax Rate and calculations as per the earlier versions"
         ]
       },
       "acceptanceCriteria": [
-        "In production mode, the browser console marker reflects the rolled-back release identifier (e.g., the previous marker/version), allowing easy verification that rollback is deployed.",
-        "The production publish checklist remains consistent with the production marker output used for verification."
+        "Navigating to the calculator with ?country=UK initializes the flow as United Kingdom and calculations run without a 'country not supported' error.",
+        "All VAT configuration lookups and country-dependent UI logic treat 'UK' as 'GB' consistently (no mixed state where some parts treat 'UK' differently than 'GB')."
       ]
     }
   ],
   "constraints": [
-    "Backend must remain a single Motoko actor in backend/main.mo (no additional backend services).",
-    "Do not edit frontend immutable paths: frontend/src/hooks/useInternetIdentity.ts, frontend/src/hooks/useInternetIdentity.tsx, frontend/src/hooks/useActor.ts, frontend/src/main.tsx, frontend/src/components/ui.",
-    "Use English for any user-facing text."
+    "Do not edit files under frontend/src/components/ui or any paths listed as immutable in SYSTEM_CONTEXT.",
+    "Keep all VAT logic on the frontend (no new backend canisters/services; backend remains single-actor).",
+    "Use English for all user-facing text."
   ],
   "nonGoals": [
-    "Implementing new VAT logic or additional VAT scenarios beyond what existed in the previous version.",
-    "Adding new payment features, new analytics features, or new UI pages unrelated to the rollback.",
-    "Introducing schema-breaking changes that require wiping state."
+    "Adding non-UK/non-EU countries or implementing USA/APAC tax calculation support.",
+    "Changing Stripe/payment country allowlists unless they are directly required for UK VAT calculation/config display."
   ],
   "imageRequirements": {
     "required": [],
     "edits": []
-  },
-  "userProfileUpdate": {
-    "goalsToAdd": [],
-    "goalsToRemove": [],
-    "preferencesToAdd": [],
-    "preferencesToRemove": [],
-    "miscToAdd": [],
-    "miscToRemove": [],
-    "fieldsToSet": {},
-    "fieldsToDelete": []
   }
 }

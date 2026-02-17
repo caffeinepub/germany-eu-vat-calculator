@@ -11,9 +11,15 @@ export function useListInvoices() {
     queryKey: ['invoices'],
     queryFn: async () => {
       if (!actor) throw new Error('Actor not available');
-      return actor.listInvoices();
+      try {
+        return await actor.listInvoices();
+      } catch (error) {
+        console.error('Failed to list invoices:', error);
+        throw error;
+      }
     },
     enabled: !!actor && !actorFetching && !!identity,
+    retry: 1,
   });
 }
 
@@ -23,7 +29,12 @@ export function useDownloadInvoicePdf() {
   return useMutation({
     mutationFn: async (invoiceId: string) => {
       if (!actor) throw new Error('Actor not available');
-      return actor.downloadInvoiceAsPdf(invoiceId);
+      try {
+        return await actor.downloadInvoiceAsPdf(invoiceId);
+      } catch (error) {
+        console.error('Failed to download invoice PDF:', error);
+        throw error;
+      }
     },
   });
 }
@@ -34,7 +45,12 @@ export function useDownloadInvoicesZip() {
   return useMutation({
     mutationFn: async (invoiceIds: string[]) => {
       if (!actor) throw new Error('Actor not available');
-      return actor.downloadInvoicesAsZip(invoiceIds);
+      try {
+        return await actor.downloadInvoicesAsZip(invoiceIds);
+      } catch (error) {
+        console.error('Failed to download invoices ZIP:', error);
+        throw error;
+      }
     },
   });
 }
@@ -45,7 +61,12 @@ export function useDownloadMonthZip() {
   return useMutation({
     mutationFn: async ({ year, month }: { year: number; month: number }) => {
       if (!actor) throw new Error('Actor not available');
-      return actor.downloadMonthInvoicesAsZip(BigInt(year), BigInt(month));
+      try {
+        return await actor.downloadMonthInvoicesAsZip(BigInt(year), BigInt(month));
+      } catch (error) {
+        console.error('Failed to download month ZIP:', error);
+        throw error;
+      }
     },
   });
 }
@@ -56,7 +77,12 @@ export function useExportCsv() {
   return useMutation({
     mutationFn: async () => {
       if (!actor) throw new Error('Actor not available');
-      return actor.exportInvoicesAsCsv();
+      try {
+        return await actor.exportInvoicesAsCsv();
+      } catch (error) {
+        console.error('Failed to export CSV:', error);
+        throw error;
+      }
     },
   });
 }
@@ -67,7 +93,12 @@ export function useExportExcel() {
   return useMutation({
     mutationFn: async () => {
       if (!actor) throw new Error('Actor not available');
-      return actor.exportInvoicesAsExcel();
+      try {
+        return await actor.exportInvoicesAsExcel();
+      } catch (error) {
+        console.error('Failed to export Excel:', error);
+        throw error;
+      }
     },
   });
 }

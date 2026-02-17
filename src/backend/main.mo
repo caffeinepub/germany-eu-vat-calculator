@@ -15,6 +15,7 @@ import MixinAuthorization "authorization/MixinAuthorization";
 import AccessControl "authorization/access-control";
 
 
+// Version 39 relaunch/rollback with migration support for older entries.
 
 actor {
   // Stripe integration (public interface)
@@ -315,7 +316,10 @@ actor {
         // Verify ownership or admin access
         switch (inv.owner) {
           case (null) {
-            // Legacy invoice without owner - allow access
+            // Legacy invoice without owner - require admin access for security
+            if (not AccessControl.isAdmin(accessControlState, caller)) {
+              Runtime.trap("Unauthorized: Legacy invoices require admin access");
+            };
             invoice;
           };
           case (?owner) {
@@ -383,7 +387,10 @@ actor {
       case (?inv) {
         switch (inv.owner) {
           case (null) {
-            // Legacy invoice without owner - allow access
+            // Legacy invoice without owner - require admin access
+            if (not AccessControl.isAdmin(accessControlState, caller)) {
+              Runtime.trap("Unauthorized: Legacy invoices require admin access");
+            };
           };
           case (?owner) {
             if (caller != owner and not AccessControl.isAdmin(accessControlState, caller)) {
@@ -405,6 +412,31 @@ actor {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
       Runtime.trap("Unauthorized: Only users can download batch invoices");
     };
+    
+    // Verify ownership of all requested invoices
+    for (id in ids.vals()) {
+      let invoice = invoices.get(id);
+      switch (invoice) {
+        case (null) {
+          Runtime.trap("Invoice not found: " # id);
+        };
+        case (?inv) {
+          switch (inv.owner) {
+            case (null) {
+              if (not AccessControl.isAdmin(accessControlState, caller)) {
+                Runtime.trap("Unauthorized: Legacy invoices require admin access");
+              };
+            };
+            case (?owner) {
+              if (caller != owner and not AccessControl.isAdmin(accessControlState, caller)) {
+                Runtime.trap("Unauthorized: Can only download your own invoices");
+              };
+            };
+          };
+        };
+      };
+    };
+    
     let zipContent = "ZIP archive placeholder".encodeUtf8();
     {
       filename = "invoices-batch.zip";
@@ -654,4 +686,3 @@ actor {
     };
   };
 };
-

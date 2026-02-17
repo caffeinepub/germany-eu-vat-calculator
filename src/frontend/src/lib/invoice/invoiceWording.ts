@@ -7,40 +7,48 @@ export interface CountryWording {
 
 export const WORDING: Record<string, CountryWording> = {
   Germany: {
-    reverse: 'Steuerschuldnerschaft des Leistungsempfängers (§ 13b UStG).',
-    exempt: 'Steuerfreie Leistung gemäß § 4 UStG.',
+    reverse: 'Steuerschuldnerschaft des Leistungsempfängers (§13b UStG)',
+    exempt: 'VAT exempt under Article 132 EU VAT Directive.',
   },
   DE: {
-    reverse: 'Steuerschuldnerschaft des Leistungsempfängers (§ 13b UStG).',
-    exempt: 'Steuerfreie Leistung gemäß § 4 UStG.',
+    reverse: 'Steuerschuldnerschaft des Leistungsempfängers (§13b UStG)',
+    exempt: 'VAT exempt under Article 132 EU VAT Directive.',
   },
   France: {
-    reverse: 'Autoliquidation – TVA due par le preneur.',
-    exempt: 'Exonération de TVA selon CGI.',
+    reverse: 'Autoliquidation – Article 283 CGI',
+    exempt: 'VAT exempt under Article 132 EU VAT Directive.',
   },
   FR: {
-    reverse: 'Autoliquidation – TVA due par le preneur.',
-    exempt: 'Exonération de TVA selon CGI.',
+    reverse: 'Autoliquidation – Article 283 CGI',
+    exempt: 'VAT exempt under Article 132 EU VAT Directive.',
   },
   Italy: {
-    reverse: 'Inversione contabile.',
-    exempt: 'Operazione esente art.10 DPR 633/72.',
+    reverse: 'Inversione contabile – Art. 17 DPR 633/72',
+    exempt: 'VAT exempt under Article 132 EU VAT Directive.',
   },
   IT: {
-    reverse: 'Inversione contabile.',
-    exempt: 'Operazione esente art.10 DPR 633/72.',
+    reverse: 'Inversione contabile – Art. 17 DPR 633/72',
+    exempt: 'VAT exempt under Article 132 EU VAT Directive.',
+  },
+  Netherlands: {
+    reverse: 'BTW verlegd',
+    exempt: 'VAT exempt under Article 132 EU VAT Directive.',
+  },
+  NL: {
+    reverse: 'BTW verlegd',
+    exempt: 'VAT exempt under Article 132 EU VAT Directive.',
   },
   'United Kingdom': {
-    reverse: 'Reverse charge – customer to account for VAT.',
-    exempt: 'VAT exempt supply under UK legislation.',
+    reverse: 'Reverse charge: Customer to account for VAT',
+    exempt: 'VAT exempt under Article 132 EU VAT Directive.',
   },
   GB: {
-    reverse: 'Reverse charge – customer to account for VAT.',
-    exempt: 'VAT exempt supply under UK legislation.',
+    reverse: 'Reverse charge: Customer to account for VAT',
+    exempt: 'VAT exempt under Article 132 EU VAT Directive.',
   },
   UK: {
-    reverse: 'Reverse charge – customer to account for VAT.',
-    exempt: 'VAT exempt supply under UK legislation.',
+    reverse: 'Reverse charge: Customer to account for VAT',
+    exempt: 'VAT exempt under Article 132 EU VAT Directive.',
   },
 };
 
@@ -62,6 +70,6 @@ export function getCountryWording(
   if (scenario === 'reverse') {
     return 'Reverse charge applies under EU VAT Directive Article 44/196';
   } else {
-    return 'VAT exempt supply under applicable VAT legislation.';
+    return 'VAT exempt under Article 132 EU VAT Directive.';
   }
 }

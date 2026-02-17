@@ -5,7 +5,7 @@
 
 import { APP_META } from '@/config/appMeta';
 
-const PRODUCTION_VERSION = 'v4';
+const PRODUCTION_VERSION = 'v39';
 const MARKER_MESSAGE = `🚀 ${APP_META.displayName} ${PRODUCTION_VERSION} - Production Build`;
 
 /**

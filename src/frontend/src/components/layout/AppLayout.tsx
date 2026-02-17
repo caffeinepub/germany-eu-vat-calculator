@@ -52,7 +52,7 @@ export default function AppLayout() {
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
-      <header className="border-b border-border backdrop-blur-sm sticky top-0 z-50">
+      <header className="border-b border-border backdrop-blur-sm sticky top-0" style={{ zIndex: 40 }}>
         {/* Brand area with light blue background */}
         <div className="bg-[var(--header-brand-bg)] border-b border-border/50">
           <div className="container mx-auto px-4 py-4">
@@ -75,8 +75,9 @@ export default function AppLayout() {
                   className={`hidden sm:flex ${getTabClassName('/calculator')}`}
                 >
                   <Calculator className="h-4 w-4 mr-2" />
-                  Calculate
+                  Calculator
                 </Button>
+
                 {isAuthenticated && (
                   <Button
                     variant="ghost"
@@ -88,6 +89,7 @@ export default function AppLayout() {
                     Invoices
                   </Button>
                 )}
+
                 <Button
                   variant="ghost"
                   size="sm"
@@ -98,26 +100,30 @@ export default function AppLayout() {
                   Pricing
                 </Button>
               </div>
+
               <LoginButton />
             </nav>
           </div>
         </div>
       </header>
 
-      <main className="flex-1">
+      <main className="flex-1" style={{ overflow: 'visible' }}>
         <Outlet />
       </main>
 
-      <footer className="border-t border-border bg-card/30 py-8 mt-16">
+      <footer className="border-t border-border bg-card/30 py-6 mt-auto">
         <div className="container mx-auto px-4">
-          <div className="text-center text-sm text-muted-foreground">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-muted-foreground">
+            <p>© {new Date().getFullYear()} {APP_META.displayName}. All rights reserved.</p>
             <p>
-              © {new Date().getFullYear()}. Built with ❤️ using{' '}
+              Built with love using{' '}
               <a
-                href={`https://caffeine.ai/?utm_source=Caffeine-footer&utm_medium=referral&utm_content=${encodeURIComponent(window.location.hostname)}`}
+                href={`https://caffeine.ai/?utm_source=Caffeine-footer&utm_medium=referral&utm_content=${encodeURIComponent(
+                  typeof window !== 'undefined' ? window.location.hostname : 'unknown-app'
+                )}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-foreground hover:text-primary transition-colors font-medium"
+                className="text-primary hover:underline font-medium"
               >
                 caffeine.ai
               </a>

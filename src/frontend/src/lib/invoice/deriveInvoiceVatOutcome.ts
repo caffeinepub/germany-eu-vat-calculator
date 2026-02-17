@@ -13,58 +13,8 @@ export interface InvoiceVatOutcome {
 }
 
 /**
- * Calculate VAT based on VAT engine result
- */
-function calculateVAT(
-  netAmount: number,
-  vatType: string,
-  standardRate: number,
-  reducedRate: number,
-  currency: string
-): InvoiceVatOutcome {
-  // REVERSE CHARGE
-  if (vatType === 'reverse') {
-    return {
-      vatRate: 0,
-      vatAmount: 0,
-      vatLabel: 'Reverse Charge',
-      currency,
-    };
-  }
-  
-  // EXEMPT
-  if (vatType === 'exempt') {
-    return {
-      vatRate: 0,
-      vatAmount: 0,
-      vatLabel: 'Exempt',
-      currency,
-    };
-  }
-  
-  // REDUCED RATE
-  if (vatType === 'reduced') {
-    const vatAmount = netAmount * (reducedRate / 100);
-    return {
-      vatRate: reducedRate,
-      vatAmount,
-      vatLabel: 'Reduced VAT',
-      currency,
-    };
-  }
-  
-  // STANDARD RATE (Default)
-  const vatAmount = netAmount * (standardRate / 100);
-  return {
-    vatRate: standardRate,
-    vatAmount,
-    vatLabel: 'Standard VAT',
-    currency,
-  };
-}
-
-/**
  * Derive invoice VAT outcome from calculation result
+ * Uses the canonical VAT result from the unified engine
  */
 export function deriveInvoiceVatOutcome(
   input: VATCalculationInput,
@@ -76,7 +26,7 @@ export function deriveInvoiceVatOutcome(
   // Lookup VAT config for seller country
   const vatConfig = lookupVatConfig(sellerCountry);
   
-  // If VAT config is not found, return error state
+  // If VAT config is not found, return explicit error state
   if (!vatConfig) {
     return {
       vatRate: 0,
@@ -87,21 +37,34 @@ export function deriveInvoiceVatOutcome(
     };
   }
   
-  const standardRate = vatConfig.standard;
-  const reducedRate = vatConfig.reduced;
   const currency = vatConfig.currency;
   
-  // Determine VAT type from result scenario
-  let vatType = 'standard';
+  // Use the result from the unified VAT engine
+  const vatRate = result.vatRatePercent;
+  const vatAmount = result.vatAmountCents / 100;
   
-  if (input.reverseCharge || result.scenario === 'reverse-charge') {
-    vatType = 'reverse';
-  } else if (result.scenario === 'vat-exempt' || result.scenario === 'uk-exempt' || input.vatTreatment === 'exempt') {
-    vatType = 'exempt';
-  } else if (input.vatRate === 'reduced' || input.vatTreatment === 'reduced') {
-    vatType = 'reduced';
+  // Derive label from scenario and message
+  let vatLabel = result.message || 'Standard VAT';
+  
+  // Map scenario to canonical labels
+  if (result.scenario === 'reverse-charge' || result.scenario === 'uk-reverse-charge') {
+    vatLabel = 'Reverse Charge';
+  } else if (result.scenario === 'vat-exempt' || result.scenario === 'uk-exempt') {
+    vatLabel = 'Exempt';
+  } else if (result.scenario === 'uk-export-zero' && result.message === 'Zero Rated Export') {
+    vatLabel = 'Zero Rated Export';
+  } else if (result.scenario === 'uk-export-zero' && result.message === 'Zero Rated') {
+    vatLabel = 'Zero Rated';
+  } else if (result.scenario === 'b2c-reduced') {
+    vatLabel = 'Reduced VAT';
+  } else if (result.scenario === 'b2c-standard') {
+    vatLabel = 'Standard VAT';
   }
   
-  // Use the VAT engine
-  return calculateVAT(netAmount, vatType, standardRate, reducedRate, currency);
+  return {
+    vatRate,
+    vatAmount,
+    vatLabel,
+    currency,
+  };
 }

@@ -33,7 +33,7 @@ export default function CountryVatDetailsStep({
     `${country.invoiceLabel} calculation`,
     'Reverse charge support',
     'Invoice ready',
-    'EU compliant formatting',
+    country.code === 'GB' ? 'UK compliant formatting' : 'EU compliant formatting',
   ];
 
   return (
@@ -74,6 +74,14 @@ export default function CountryVatDetailsStep({
                         </Badge>
                       ))}
                     </div>
+                  </div>
+                )}
+                {country.zeroRate !== undefined && (
+                  <div>
+                    <div className="text-sm text-muted-foreground mb-1">Zero Rate (UK-specific)</div>
+                    <Badge variant="outline" className="text-base">
+                      {country.zeroRate}%
+                    </Badge>
                   </div>
                 )}
               </div>
