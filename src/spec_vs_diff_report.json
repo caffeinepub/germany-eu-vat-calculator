@@ -1,92 +1,42 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-17T12:56:36.409Z",
-  "summary": "Diff implements a new category eligibility module, a new product-category dropdown option source with UK-only filtering, and updates to the unified VAT engine and invoice wording. However, several BuildRequest requirements are not fully evidenced in the diff summary (notably VAT_CONFIG updates, result-builder output usage consistency, and the global invoice disclaimer). The diff also introduces extra eligibility/exempt categories and an \"exemptIdentifier\" mechanism not explicitly requested.",
+  "generatedAt": "2026-02-18T12:07:32.487Z",
+  "summary": "Diff adds an explicit Back button to the initial Country selection step and adds Back/Continue controls to the VAT Explanation step, plus a generic `handleBack` in `CalculatorFlowPage` that decrements `currentStep` or navigates to `/` when on the first step. However, the diff summary does not provide clear evidence that *every* calculator step (Transaction Details, VAT Results, Invoice Preview) now exposes a visible Back control, and it introduces unrelated features (PDF export/paywall and backend calculation consistency checking).",
   "missing_requirements": [
     {
       "id": "REQ-1",
-      "requirement": "Update VAT rate configuration to use the provided country VAT rates (DE/FR/NL/PL/SE/IT/BE/AT/HU/ES/GB with GB zero=0) as authoritative source.",
-      "reason": "The diff shows calculateUnifiedVat importing VAT_CONFIG, but no changes to the VAT_CONFIG source itself are shown, so the required country rates and GB zero=0 cannot be verified as implemented.",
+      "requirement": "Add a visible Back button/navigation control on every step (“tab”) of the VAT calculator flow (Select Country, Transaction Details, VAT Results, Explanation, Invoice Preview).",
+      "reason": "The diff shows Back buttons added for Select Country (`CountrySelectionStep.tsx`) and for Explanation (`ExplainVatPanel.tsx`), but there is no direct evidence in the provided diff content that the Transaction Details step, VAT Results step, and Invoice Preview step UIs include a visible Back action/button.",
       "evidence": [
-        "frontend/src/lib/vat/calculateUnifiedVat.ts (imports VAT_CONFIG but VAT_CONFIG file not shown/modified)"
-      ]
-    },
-    {
-      "id": "REQ-3",
-      "requirement": "Unified VAT engine must follow exact priority order and behaviors (Reverse Charge > Export > Exempt > UK Zero > Reduced > Standard fallback) with specified labels.",
-      "reason": "The file is truncated mid-way and does not provide complete evidence that EU reduced logic (non-GB) and the final standard fallback path are implemented exactly as specified, nor that the exact required labels (e.g., 'Reduced VAT', 'Standard VAT') are consistently used.",
-      "evidence": [
-        "frontend/src/lib/vat/calculateUnifiedVat.ts (truncated; shows priorities 1-5 partially, but remainder not visible)"
-      ]
-    },
-    {
-      "id": "REQ-4",
-      "requirement": "Enforce auto-fallback protection so manual reduced/zero selection cannot override eligibility; ineligible selections must fall back to standard VAT.",
-      "reason": "The shown logic applies UK zero/reduced based on eligibility lists, but due to truncation it is not verifiable that (a) non-GB reduced is gated by EU eligibility, and (b) user-selected vatCategory reduced/zero never forces reduced/zero when ineligible across all paths.",
-      "evidence": [
-        "frontend/src/lib/vat/calculateUnifiedVat.ts (truncated; cannot confirm full fallback behavior)"
-      ]
-    },
-    {
-      "id": "REQ-6",
-      "requirement": "When productCategory is 'Others', VAT result must always be Standard VAT regardless of VAT treatment selection.",
-      "reason": "Comments mention including \"others\" in standard fallback, but the actual standard fallback branch is not visible due to truncation. Additionally, TransactionDetailsStep uses a string like `${value}-${label}` for selection, and only passes `productCategory` plus an `exemptIdentifier`; there is no explicit evidence in the shown engine code that 'others' forces standard regardless of `vatCategory` in all cases.",
-      "evidence": [
-        "frontend/src/lib/vat/calculateUnifiedVat.ts (truncated; standard fallback not visible)",
-        "frontend/src/components/vat/TransactionDetailsStep.tsx (passes productCategory and vatCategory forward)"
-      ]
-    },
-    {
-      "id": "REQ-7",
-      "requirement": "Use provided result builder output fields (rate, vatAmount, total, label) and ensure UI/invoice derives consistent results from these values.",
-      "reason": "calculateUnifiedVat calls buildResult(...) but then returns a structure containing cent-based fields (netAmountCents, vatAmountCents, grossAmountCents, vatRatePercent) and does not show returning/propagating the builder's (rate, vatAmount, total, label) outputs. This does not evidence compliance with the specified output contract.",
-      "evidence": [
-        "frontend/src/lib/vat/calculateUnifiedVat.ts (calls buildResult but returns cent-based fields; `result` variable appears unused in shown sections)"
-      ]
-    },
-    {
-      "id": "REQ-9",
-      "requirement": "Add the global legal disclaimer text to all generated invoices (verbatim).",
-      "reason": "No invoice HTML/template generation changes are shown that add the disclaimer text. The only invoice-related change shown is wording selection logic, not disclaimer injection.",
-      "evidence": [
-        "frontend/src/lib/invoice/getInvoiceWording.ts (no disclaimer text present)",
-        "frontend-file-summaries.txt (mentions invoice preview/persistence but no disclaimer addition is evidenced)"
+        "frontend/src/components/vat/CountrySelectionStep.tsx",
+        "frontend/src/components/vat/ExplainVatPanel.tsx",
+        "frontend/src/pages/CalculatorFlowPage.tsx (truncated)"
       ]
     }
   ],
   "hallucinated_features": [
     {
-      "description": "Introduced additional UK zero/reduced eligibility categories beyond the requested UX/category list (e.g., 'children-clothing', 'newspapers', 'energy-saving', 'child-car-seats').",
-      "reason": "BuildRequest asks for explicit eligibility lists and a specific dropdown UX list; it does not request adding extra internal eligibility categories not represented in the UX list.",
+      "description": "Pro-only “Export as PDF” functionality (with paywall dialog/alert) added to the VAT Explanation panel.",
+      "reason": "BuildRequest only asks for Back navigation across steps; it explicitly notes non-goals around changing logic/routing and does not request PDF export or paywall behavior.",
       "evidence": [
-        "frontend/src/lib/vat/categoryEligibility.ts (UK_ZERO includes 'children-clothing', 'newspapers'; UK_REDUCED includes 'energy-saving', 'child-car-seats')"
+        "frontend/src/components/vat/ExplainVatPanel.tsx"
       ]
     },
     {
-      "description": "Added extra exempt categories beyond the requested selectable exempt options (e.g., 'healthcare', 'postal-services', 'social-care').",
-      "reason": "REQ-5 requires exactly three exempt categories as selectable dropdown options (Financial Services, Insurance, Education). The diff adds additional exempt identifiers to EXEMPT_CATEGORIES that are not reflected in the requested UX list.",
+      "description": "Backend calculation consistency check calling `actor.calculate(...)` in the calculator flow.",
+      "reason": "BuildRequest states no backend changes are required and focuses on Back navigation UI; adding extra backend calls/consistency checking is not requested for this change.",
       "evidence": [
-        "frontend/src/lib/vat/categoryEligibility.ts (EXEMPT_CATEGORIES includes 'healthcare', 'postal-services', 'social-care' in addition to the three requested)"
-      ]
-    },
-    {
-      "description": "Implemented an 'exemptIdentifier' plumbing mechanism where exempt detection is driven by a separate identifier passed from the dropdown rather than purely by productCategory membership.",
-      "reason": "REQ-2/REQ-3 specify exempt is triggered when selected product category is in an exempt list; they do not describe an additional identifier field passed through the form state. This may be a valid implementation approach, but it is not explicitly requested.",
-      "evidence": [
-        "frontend/src/components/vat/TransactionDetailsStep.tsx (adds and passes `exemptIdentifier`)",
-        "frontend/src/lib/vat/calculateUnifiedVat.ts (checks `exemptIdentifier` with isExemptCategory)"
+        "frontend/src/pages/CalculatorFlowPage.tsx (truncated)"
       ]
     }
   ],
-  "confidence": 0.66,
+  "confidence": 0.68,
   "changed_files": [
     "frontend-file-summaries.txt",
-    "frontend/src/components/vat/TransactionDetailsStep.tsx",
-    "frontend/src/lib/invoice/getInvoiceWording.ts",
-    "frontend/src/lib/vat/calculateUnifiedVat.ts",
-    "frontend/src/lib/vat/categoryEligibility.ts",
-    "frontend/src/lib/vat/productCategoryOptions.ts",
+    "frontend/src/components/vat/CountrySelectionStep.tsx",
+    "frontend/src/components/vat/ExplainVatPanel.tsx",
+    "frontend/src/pages/CalculatorFlowPage.tsx",
     "project_state.json"
   ]
 }

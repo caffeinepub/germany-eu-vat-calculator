@@ -3,10 +3,12 @@ import { lookupVatConfig } from './vatTable';
 import { type ProductCategory } from './reducedEligibility';
 
 export type ServiceCategory = 'digital' | 'physical' | 'consulting' | 'saas' | 'others';
+export type SupplyType = 'goods' | 'services';
 
 export interface VATCalculationInput {
   sellerCountry: string;
   customerCountry: string;
+  buyerCountry?: string; // New field for Buyer Country
   customerType: 'B2C' | 'B2B';
   vatId: string;
   serviceCategory: ServiceCategory;
@@ -18,6 +20,8 @@ export interface VATCalculationInput {
   selectedCountry?: string;
   vatCategory?: VatCategory;
   productCategory?: ProductCategory;
+  isExport?: boolean; // New field for explicit export toggle
+  supplyType?: SupplyType; // New field for goods/services
   // New fields for VAT treatment selection
   vatTreatment?: 'standard' | 'reduced' | 'exempt';
   selectedReducedRate?: number | null;
@@ -49,6 +53,7 @@ export interface VATCalculationResult {
   legalNote: string | null;
   scenario: 'kleinunternehmer' | 'reverse-charge' | 'vat-exempt' | 'b2c-standard' | 'b2c-reduced' | 'digital-b2c-eu' | 'intra-eu-supply' | 'uk-domestic' | 'uk-export-zero' | 'uk-reverse-charge' | 'uk-exempt';
   message?: string;
+  crossBorderVatTreatment?: string; // New field for cross-border treatment
 }
 
 export function calculateEUVAT(input: VATCalculationInput, countryRate: number): VATCalculationResult {

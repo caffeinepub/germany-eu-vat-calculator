@@ -3,6 +3,7 @@
 
 import { lookupVatConfig } from '../vat/vatTable';
 import { type VATCalculationInput, type VATCalculationResult } from '../vat/calculateVat';
+import { getCrossBorderDisplayLabel } from '../vat/determineCrossBorderVAT';
 
 export interface InvoiceVatOutcome {
   vatRate: number;
@@ -43,22 +44,29 @@ export function deriveInvoiceVatOutcome(
   const vatRate = result.vatRatePercent;
   const vatAmount = result.vatAmountCents / 100;
   
-  // Derive label from scenario and message
+  // Derive label from cross-border treatment first, then scenario and message
   let vatLabel = result.message || 'Standard VAT';
   
-  // Map scenario to canonical labels
-  if (result.scenario === 'reverse-charge' || result.scenario === 'uk-reverse-charge') {
-    vatLabel = 'Reverse Charge';
-  } else if (result.scenario === 'vat-exempt' || result.scenario === 'uk-exempt') {
-    vatLabel = 'Exempt';
-  } else if (result.scenario === 'uk-export-zero' && result.message === 'Zero Rated Export') {
-    vatLabel = 'Zero Rated Export';
-  } else if (result.scenario === 'uk-export-zero' && result.message === 'Zero Rated') {
-    vatLabel = 'Zero Rated';
-  } else if (result.scenario === 'b2c-reduced') {
-    vatLabel = 'Reduced VAT';
-  } else if (result.scenario === 'b2c-standard') {
-    vatLabel = 'Standard VAT';
+  // Prioritize cross-border treatment label
+  if (result.crossBorderVatTreatment) {
+    vatLabel = getCrossBorderDisplayLabel(result.crossBorderVatTreatment as any);
+  } else {
+    // Map scenario to canonical labels
+    if (result.scenario === 'reverse-charge' || result.scenario === 'uk-reverse-charge') {
+      vatLabel = 'Reverse Charge';
+    } else if (result.scenario === 'vat-exempt' || result.scenario === 'uk-exempt') {
+      vatLabel = 'Exempt';
+    } else if (result.scenario === 'uk-export-zero' && result.message === 'Zero Rated Export') {
+      vatLabel = 'Zero Rated Export';
+    } else if (result.scenario === 'uk-export-zero' && result.message === 'Zero Rated') {
+      vatLabel = 'Zero Rated';
+    } else if (result.scenario === 'b2c-reduced') {
+      vatLabel = 'Reduced VAT';
+    } else if (result.scenario === 'b2c-standard') {
+      vatLabel = 'Standard VAT';
+    } else if (result.scenario === 'intra-eu-supply') {
+      vatLabel = 'Intra-EU Supply (0%)';
+    }
   }
   
   return {

@@ -14,6 +14,7 @@ export interface CalculationResult {
   'exchangeRateAdjustment' : number,
   'priceNetEuros' : number,
   'priceGrossEuros' : number,
+  'vatRate' : number,
   'ifReverseChargeRequired' : boolean,
 }
 export interface CsvFile { 'content' : string, 'filename' : string }
@@ -87,8 +88,15 @@ export interface VatCalculation {
   'vatIdNumber' : [] | [string],
   'toCountry' : string,
   'priceGrossCents' : bigint,
+  'vatRatePercent' : number,
   'category' : ServiceProductCategory,
   'fromCountry' : string,
+}
+export interface VatRateEntry {
+  'country' : string,
+  'vatId' : [] | [bigint],
+  'percent' : number,
+  'vatLabel' : string,
 }
 export interface ZipFile { 'content' : Uint8Array, 'filename' : string }
 export interface http_header { 'value' : string, 'name' : string }
@@ -99,6 +107,7 @@ export interface http_request_result {
 }
 export interface _SERVICE {
   '_initializeAccessControlWithSecret' : ActorMethod<[string], undefined>,
+  'addVatRate' : ActorMethod<[bigint, VatRateEntry], undefined>,
   'assignCallerUserRole' : ActorMethod<[Principal, UserRole], undefined>,
   'calculate' : ActorMethod<[VatCalculation], CalculationResult>,
   'canICallApi' : ActorMethod<[], string>,
@@ -126,12 +135,15 @@ export interface _SERVICE {
   'getStripeSessionStatus' : ActorMethod<[string], StripeSessionStatus>,
   'getUsage' : ActorMethod<[string], bigint>,
   'getUserProfile' : ActorMethod<[Principal], [] | [UserProfile]>,
+  'getVatRates' : ActorMethod<[], Array<VatRateEntry>>,
   'incrementUsage' : ActorMethod<[string], bigint>,
   'isCallerAdmin' : ActorMethod<[], boolean>,
   'isStripeConfigured' : ActorMethod<[], boolean>,
   'listInvoices' : ActorMethod<[], Array<InvoiceRecord>>,
   'logEvent' : ActorMethod<[EventRecord], undefined>,
   'permissionCheck' : ActorMethod<[], PlanType>,
+  'regressionTest' : ActorMethod<[], boolean>,
+  'removeVatRate' : ActorMethod<[bigint], undefined>,
   'saveCallerUserProfile' : ActorMethod<[UserProfile], undefined>,
   'saveInvoice' : ActorMethod<
     [string, string, string, string, number, number, string, string],

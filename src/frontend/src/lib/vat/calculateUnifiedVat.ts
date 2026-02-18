@@ -1,38 +1,37 @@
 import { type VATCalculationInput, type VATCalculationResult } from './calculateVat';
 import { VAT_CONFIG } from './vatConfig';
-import {
-  isUKZeroEligible,
-  isUKReducedEligible,
-  isEUReducedEligible,
-  isExemptCategory,
-} from './categoryEligibility';
+import { determineVATRate } from './determineVatRate';
+import { calculateVAT } from './calculateVatAmounts';
 import { type ProductCategory } from './reducedEligibility';
-import { buildResult } from './vatResultBuilder';
+import { 
+  determineCrossBorderVAT, 
+  mapTreatmentToVATRate, 
+  getCrossBorderInvoiceWording,
+  type SupplyType,
+  type CrossBorderVATTreatment
+} from './determineCrossBorderVAT';
 import { getInvoiceWording } from '../invoice/getInvoiceWording';
 
 /**
- * Smart VAT Engine with exact priority flow:
- * 1. Reverse Charge (B2B + vatCategory=reverse)
- * 2. Export (isExport=true)
- * 3. Exempt (productCategory in EXEMPT_CATEGORIES)
- * 4. Zero (UK only, productCategory in UK_ZERO)
- * 5. Reduced (UK_REDUCED for GB, EU_REDUCED for others)
- * 6. Standard (fallback, including "others")
+ * Smart VAT Engine using cross-border VAT treatment engine.
+ * Implements exact priority flow with automatic VAT rate selection.
  */
 export function calculateUnifiedVat(input: VATCalculationInput): VATCalculationResult {
   const netAmountCents = Math.round(input.netAmount * 100);
   const netAmount = input.netAmount;
   const sellerCountry = input.sellerCountry;
-  const buyerCountry = input.customerCountry;
+  const buyerCountry = input.buyerCountry || input.customerCountry;
   const isB2B = input.customerType === 'B2B';
   const vatCategory = input.vatCategory || 'standard';
   const productCategory = (input.productCategory as ProductCategory) || 'others';
+  const supplyType: SupplyType = (input.supplyType as SupplyType) || 'services';
   
   // Track if this is an exempt category by identifier
   const exemptIdentifier = (input as any).exemptIdentifier || '';
 
-  // Normalize UK -> GB
+  // Normalize UK -> GB for both seller and customer
   const normalizedSellerCountry = sellerCountry.toUpperCase() === 'UK' ? 'GB' : sellerCountry;
+  const normalizedBuyerCountry = buyerCountry ? (buyerCountry.toUpperCase() === 'UK' ? 'GB' : buyerCountry) : normalizedSellerCountry;
 
   // Validate country config
   const vatConfig = VAT_CONFIG[normalizedSellerCountry];
@@ -40,121 +39,99 @@ export function calculateUnifiedVat(input: VATCalculationInput): VATCalculationR
     throw new Error(`Country not supported: ${sellerCountry}`);
   }
 
-  const standardRate = vatConfig.standard;
-  const reducedRate = vatConfig.reduced;
-  const zeroRate = vatConfig.zero ?? 0;
-  const isExport = normalizedSellerCountry !== buyerCountry && buyerCountry;
+  // Check if this is a cross-border transaction
+  const isCrossBorder = normalizedSellerCountry !== normalizedBuyerCountry;
+  const isExport: boolean = input.isExport !== undefined ? Boolean(input.isExport) : isCrossBorder;
 
-  // PRIORITY 1: Reverse Charge (only when vatCategory=reverse AND B2B)
-  if (vatCategory === 'reverse' && isB2B) {
-    const result = buildResult(0, netAmount, 'Reverse Charge');
-    const legalNote = getInvoiceWording(normalizedSellerCountry, 'Reverse Charge');
-    
-    return {
-      netAmountCents,
-      vatAmountCents: 0,
-      grossAmountCents: netAmountCents,
-      vatRatePercent: 0,
-      legalNote,
-      scenario: 'reverse-charge',
-      message: 'Reverse Charge',
-    };
-  }
-
-  // PRIORITY 2: Export
-  if (isExport) {
-    const result = buildResult(0, netAmount, 'Zero Rated Export');
-    const legalNote = getInvoiceWording(normalizedSellerCountry, 'Zero Rated Export');
-    
-    return {
-      netAmountCents,
-      vatAmountCents: 0,
-      grossAmountCents: netAmountCents,
-      vatRatePercent: 0,
-      legalNote,
-      scenario: 'uk-export-zero',
-      message: 'Zero Rated Export',
-    };
-  }
-
-  // PRIORITY 3: Exempt (when exemptIdentifier is in EXEMPT_CATEGORIES)
-  if (exemptIdentifier && isExemptCategory(exemptIdentifier)) {
-    const result = buildResult(0, netAmount, 'Exempt');
-    const legalNote = getInvoiceWording(normalizedSellerCountry, 'Exempt');
-    
-    return {
-      netAmountCents,
-      vatAmountCents: 0,
-      grossAmountCents: netAmountCents,
-      vatRatePercent: 0,
-      legalNote,
-      scenario: 'vat-exempt',
-      message: 'Exempt',
-    };
-  }
-
-  // PRIORITY 4: UK Zero (only when seller is GB and productCategory is eligible)
-  if (normalizedSellerCountry === 'GB' && isUKZeroEligible(productCategory)) {
-    const result = buildResult(0, netAmount, 'Zero Rated');
-    const legalNote = getInvoiceWording(normalizedSellerCountry, 'Zero Rated');
-    
-    return {
-      netAmountCents,
-      vatAmountCents: 0,
-      grossAmountCents: netAmountCents,
-      vatRatePercent: 0,
-      legalNote,
-      scenario: 'uk-export-zero',
-      message: 'Zero Rated',
-    };
-  }
-
-  // PRIORITY 5: UK Reduced (only when seller is GB and productCategory is eligible)
-  if (normalizedSellerCountry === 'GB' && isUKReducedEligible(productCategory)) {
-    const result = buildResult(reducedRate, netAmount, 'Reduced VAT');
-    const vatAmountCents = Math.round(netAmountCents * (reducedRate / 100));
-    const grossAmountCents = netAmountCents + vatAmountCents;
-    
-    return {
-      netAmountCents,
-      vatAmountCents,
-      grossAmountCents,
-      vatRatePercent: reducedRate,
-      legalNote: getInvoiceWording(normalizedSellerCountry, 'Reduced VAT'),
-      scenario: 'b2c-reduced',
-      message: 'Reduced VAT',
-    };
-  }
-
-  // PRIORITY 6: EU Reduced (only when seller is NOT GB and productCategory is eligible)
-  if (normalizedSellerCountry !== 'GB' && isEUReducedEligible(productCategory)) {
-    const result = buildResult(reducedRate, netAmount, 'Reduced VAT');
-    const vatAmountCents = Math.round(netAmountCents * (reducedRate / 100));
-    const grossAmountCents = netAmountCents + vatAmountCents;
-    
-    return {
-      netAmountCents,
-      vatAmountCents,
-      grossAmountCents,
-      vatRatePercent: reducedRate,
-      legalNote: getInvoiceWording(normalizedSellerCountry, 'Reduced VAT'),
-      scenario: 'b2c-reduced',
-      message: 'Reduced VAT',
-    };
-  }
-
-  // PRIORITY 7: Standard (fallback for all other cases, including "others")
-  const result = buildResult(standardRate, netAmount, 'Standard VAT');
-  const vatAmountCents = Math.round(netAmountCents * (standardRate / 100));
-  const grossAmountCents = netAmountCents + vatAmountCents;
+  // Determine cross-border VAT treatment
+  let crossBorderTreatment: CrossBorderVATTreatment | undefined;
+  let vatRatePercent: number;
   
+  if (isCrossBorder) {
+    crossBorderTreatment = determineCrossBorderVAT({
+      sellerCountry: normalizedSellerCountry,
+      buyerCountry: normalizedBuyerCountry,
+      isB2B,
+      supplyType,
+    });
+    
+    // Map treatment to VAT rate
+    vatRatePercent = mapTreatmentToVATRate(crossBorderTreatment, vatConfig.standard);
+  } else {
+    // Domestic transaction - use standard VAT rate determination
+    vatRatePercent = determineVATRate({
+      country: normalizedSellerCountry,
+      vatCategory,
+      productCategory: exemptIdentifier || productCategory,
+      isExport,
+      isB2B,
+    });
+  }
+
+  // Calculate VAT amounts using the shared formula
+  const { vatAmount, total } = calculateVAT(netAmount, vatRatePercent);
+  const vatAmountCents = Math.round(vatAmount * 100);
+  const grossAmountCents = Math.round(total * 100);
+
+  // Determine scenario, message, and legal note
+  let scenario: VATCalculationResult['scenario'] = 'b2c-standard';
+  let message = 'Standard VAT';
+  let legalNote = getInvoiceWording(normalizedSellerCountry, 'Standard VAT');
+
+  // Handle cross-border treatments
+  if (crossBorderTreatment) {
+    if (crossBorderTreatment === 'INTRA_EU_SUPPLY_0_PERCENT') {
+      scenario = 'intra-eu-supply';
+      message = 'Intra-EU Supply (0%)';
+      legalNote = getCrossBorderInvoiceWording(crossBorderTreatment);
+    } else if (crossBorderTreatment === 'REVERSE_CHARGE') {
+      scenario = 'reverse-charge';
+      message = 'Reverse Charge (0%)';
+      legalNote = getCrossBorderInvoiceWording(crossBorderTreatment);
+    } else if (crossBorderTreatment === 'EXPORT_0_PERCENT') {
+      scenario = 'uk-export-zero';
+      message = 'Export (0%)';
+      legalNote = getCrossBorderInvoiceWording(crossBorderTreatment);
+    } else if (crossBorderTreatment === 'CHARGE_SELLER_VAT') {
+      scenario = 'b2c-standard';
+      message = 'Seller VAT';
+      legalNote = getInvoiceWording(normalizedSellerCountry, 'Standard VAT');
+    }
+  } else {
+    // Domestic scenarios
+    if (vatRatePercent === 0) {
+      if (vatCategory === 'reverse' && isB2B && isCrossBorder) {
+        scenario = 'reverse-charge';
+        message = 'Reverse Charge';
+        legalNote = getInvoiceWording(normalizedSellerCountry, 'Reverse Charge');
+      } else if (isExport) {
+        scenario = 'uk-export-zero';
+        message = 'Zero Rated Export';
+        legalNote = getInvoiceWording(normalizedSellerCountry, 'Zero Rated Export');
+      } else if (vatCategory === 'exempt' || exemptIdentifier) {
+        scenario = 'vat-exempt';
+        message = 'Exempt';
+        legalNote = getInvoiceWording(normalizedSellerCountry, 'Exempt');
+      } else if (vatCategory === 'zero') {
+        scenario = 'uk-export-zero';
+        message = 'Zero Rated';
+        legalNote = getInvoiceWording(normalizedSellerCountry, 'Zero Rated');
+      }
+    } else if (vatRatePercent === vatConfig.reduced) {
+      scenario = 'b2c-reduced';
+      message = 'Reduced VAT';
+      legalNote = getInvoiceWording(normalizedSellerCountry, 'Reduced VAT');
+    }
+  }
+
   return {
     netAmountCents,
     vatAmountCents,
     grossAmountCents,
-    vatRatePercent: standardRate,
-    legalNote: getInvoiceWording(normalizedSellerCountry, 'Standard VAT'),
-    scenario: 'b2c-standard',
-    message: 'Standard VAT',
+    vatRatePercent,
+    legalNote,
+    scenario,
+    message,
+    crossBorderVatTreatment: crossBorderTreatment,
   };
 }

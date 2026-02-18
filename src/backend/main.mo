@@ -6,11 +6,12 @@ import Nat "mo:core/Nat";
 import Map "mo:core/Map";
 import Float "mo:core/Float";
 import Text "mo:core/Text";
+import Array "mo:core/Array";
 import Iter "mo:core/Iter";
 import Int "mo:core/Int";
+import Runtime "mo:core/Runtime";
 import Stripe "stripe/stripe";
 import OutCall "http-outcalls/outcall";
-import Runtime "mo:core/Runtime";
 import MixinAuthorization "authorization/MixinAuthorization";
 import AccessControl "authorization/access-control";
 
@@ -103,10 +104,12 @@ actor {
   let _usageLimits = Map.empty<Text, UsageLimit>();
   var _events = Map.empty<Text, EventRecord>();
 
+  // Public for analytics - accessible to all users including guests
   public shared ({ caller }) func logEvent(event : EventRecord) : async () {
     _events.add(event.id, event);
   };
 
+  // Public for anonymous usage tracking - accessible to all users including guests
   public shared ({ caller }) func incrementUsage(fingerprint : Text) : async Nat {
     let now = Time.now();
     switch (_usageLimits.get(fingerprint)) {
@@ -141,6 +144,7 @@ actor {
     };
   };
 
+  // Public for anonymous usage tracking - accessible to all users including guests
   public query ({ caller }) func getUsage(fingerprint : Text) : async Nat {
     switch (_usageLimits.get(fingerprint)) {
       case (null) { 0 };
@@ -182,7 +186,9 @@ actor {
 
   func countMonthlyInvoices(user : Principal) : Nat {
     let now = Time.now();
-    let currentMonth = Int.abs(now / 2_592_000_000_000_000) % 12 + 1;
+    let currentMonth = if (now >= 0) { (now / 2_592_000_000_000_000) % 12 + 1 } else {
+      ((-now) / 2_592_000_000_000_000) % 12 + 1;
+    };
     let currentYear = now / 31_536_000_000_000_000;
 
     switch (userInvoiceIds.get(user)) {
@@ -193,7 +199,11 @@ actor {
           switch (invoices.get(id)) {
             case (null) {};
             case (?invoice) {
-              let invoiceMonth = Int.abs(invoice.createdAt / 2_592_000_000_000_000) % 12 + 1;
+              let invoiceMonth = if (invoice.createdAt >= 0) {
+                (invoice.createdAt / 2_592_000_000_000_000) % 12 + 1;
+              } else {
+                ((-invoice.createdAt) / 2_592_000_000_000_000) % 12 + 1;
+              };
               let invoiceYear = invoice.createdAt / 31_536_000_000_000_000;
               if (invoiceMonth == currentMonth and invoiceYear == currentYear) {
                 count += 1;
@@ -244,15 +254,16 @@ actor {
     currency : Text,
     vatLabel : Text,
   ) : async () {
-    var plan : PlanType = #free;
-    var monthlyCount = 0;
+    // Only authenticated users can save invoices
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can save invoices");
+    };
 
-    if (AccessControl.hasPermission(accessControlState, caller, #user)) {
-      plan := getUserPlan(caller);
-      monthlyCount := countMonthlyInvoices(caller);
-      if (plan == #free and monthlyCount >= 5) {
-        Runtime.trap("Free plan limit reached: Maximum 5 invoices per month");
-      };
+    let plan = getUserPlan(caller);
+    let monthlyCount = countMonthlyInvoices(caller);
+
+    if (plan == #free and monthlyCount >= 5) {
+      Runtime.trap("Free plan limit reached: Maximum 5 invoices per month");
     };
 
     let invoice : InvoiceRecord = {
@@ -270,17 +281,15 @@ actor {
 
     invoices.add(id, invoice);
 
-    if (AccessControl.hasPermission(accessControlState, caller, #user)) {
-      switch (userInvoiceIds.get(caller)) {
-        case (null) {
-          let newList = List.fromArray([id]);
-          userInvoiceIds.add(caller, newList);
-        };
-        case (?existingList) {
-          let updatedList = List.fromArray([id]);
-          existingList.addAll(updatedList.values());
-          userInvoiceIds.add(caller, existingList);
-        };
+    switch (userInvoiceIds.get(caller)) {
+      case (null) {
+        let newList = List.fromArray([id]);
+        userInvoiceIds.add(caller, newList);
+      };
+      case (?existingList) {
+        let updatedList = List.fromArray([id]);
+        existingList.addAll(updatedList.values());
+        userInvoiceIds.add(caller, existingList);
       };
     };
   };
@@ -412,7 +421,7 @@ actor {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
       Runtime.trap("Unauthorized: Only users can download batch invoices");
     };
-    
+
     // Verify ownership of all requested invoices
     for (id in ids.vals()) {
       let invoice = invoices.get(id);
@@ -436,7 +445,7 @@ actor {
         };
       };
     };
-    
+
     let zipContent = "ZIP archive placeholder".encodeUtf8();
     {
       filename = "invoices-batch.zip";
@@ -486,12 +495,21 @@ actor {
     #others;
   };
 
+  // Backend VAT rate entity (deprecated after rollout, now only used for frontend VAT selector)
+  public type VatRateEntry = {
+    percent : Float;
+    country : Text;
+    vatLabel : Text;
+    vatId : ?Nat;
+  };
+
   public type VatCalculation = {
     fromCountry : Text;
     toCountry : Text;
     vatIdNumber : ?Text;
     category : ServiceProductCategory;
     priceGrossCents : Nat;
+    vatRatePercent : Float; // UK reduced VAT 5%, UK standard VAT 20%, Germany 19%
   };
 
   public type CalculationResult = {
@@ -499,6 +517,28 @@ actor {
     exchangeRateAdjustment : Float;
     priceNetEuros : Float;
     priceGrossEuros : Float;
+    vatRate : Float; // UK VAT 20%, Germany 19%, UK reduced VAT 5%
+  };
+
+  var vatRates = Map.empty<Nat, VatRateEntry>();
+
+  // Public for all users - VAT rates are public information
+  public query func getVatRates() : async [VatRateEntry] {
+    vatRates.values().toArray();
+  };
+
+  public shared ({ caller }) func addVatRate(id : Nat, rate : VatRateEntry) : async () {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
+      Runtime.trap("Unauthorized access: Only admin can add VAT rates");
+    };
+    vatRates.add(id, rate);
+  };
+
+  public shared ({ caller }) func removeVatRate(id : Nat) : async () {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
+      Runtime.trap("Unauthorized access: Only admin can remove VAT rates");
+    };
+    vatRates.remove(id);
   };
 
   func reverseChargeRequired(fromCountry : Text, toCountry : Text, vatIdNumber : ?Text, category : ServiceProductCategory) : Bool {
@@ -558,10 +598,12 @@ actor {
     };
   };
 
+  // Public for all users - VAT calculation is a public utility
   public shared ({ caller }) func calculate(rate : VatCalculation) : async CalculationResult {
     let exchangeRateAdjustment = getExchangeRateAdjustment(rate.fromCountry, rate.toCountry);
 
     let shouldReverseCharge = reverseChargeRequired(rate.fromCountry, rate.toCountry, rate.vatIdNumber, rate.category);
+
     let priceInFloat = rate.priceGrossCents.toFloat();
 
     if (shouldReverseCharge) {
@@ -570,11 +612,12 @@ actor {
         exchangeRateAdjustment = exchangeRateAdjustment;
         priceNetEuros = priceInFloat / 10000.0 * exchangeRateAdjustment;
         priceGrossEuros = priceInFloat / 10000.0 * exchangeRateAdjustment;
+        vatRate = rate.vatRatePercent;
       };
     };
 
     let adjustedValue = priceInFloat * exchangeRateAdjustment / 10000.0;
-    let priceNetEuro = adjustedValue / 1.19;
+    let priceNetEuro = adjustedValue / (1.0 + (rate.vatRatePercent / 100.0));
     let priceGrossEuro = adjustedValue;
 
     {
@@ -582,21 +625,106 @@ actor {
       exchangeRateAdjustment;
       priceNetEuros = priceNetEuro;
       priceGrossEuros = priceGrossEuro;
+      vatRate = rate.vatRatePercent;
     };
   };
 
-  public query func getLastCalculation() : async ?VatCalculation {
+  // Public for testing - regression tests should be accessible
+  public shared ({ caller }) func regressionTest() : async Bool {
+    assert(await assertEqual(
+      await calculate({
+        fromCountry = "UK";
+        toCountry = "UK";
+        vatIdNumber = null;
+        category = #consultingDevelopment;
+        priceGrossCents = 2400;
+        vatRatePercent = 5.0;
+      }),
+      {
+        ifReverseChargeRequired = false;
+        exchangeRateAdjustment = 1.0;
+        priceNetEuros = 19.0;
+        priceGrossEuros = 20.0;
+        vatRate = 5.0;
+      }
+    ));
+
+    assert(await assertEqual(
+      await calculate({
+        fromCountry = "UK";
+        toCountry = "UK";
+        vatIdNumber = null;
+        category = #consultingDevelopment;
+        priceGrossCents = 2400;
+        vatRatePercent = 20.0;
+      }),
+      {
+        ifReverseChargeRequired = false;
+        exchangeRateAdjustment = 1.0;
+        priceNetEuros = 16.0;
+        priceGrossEuros = 20.0;
+        vatRate = 20.0;
+      }
+    ));
+
+    assert(await assertEqual(
+      await calculate({
+        fromCountry = "DE";
+        toCountry = "DE";
+        vatIdNumber = null;
+        category = #consultingDevelopment;
+        priceGrossCents = 2400;
+        vatRatePercent = 19.0;
+      }),
+      {
+        ifReverseChargeRequired = false;
+        exchangeRateAdjustment = 1.0;
+        priceNetEuros = 16.805;
+        priceGrossEuros = 20.0;
+        vatRate = 19.0;
+      }
+    ));
+
+    true;
+  };
+
+  func assertEqual(a : CalculationResult, b : CalculationResult) : async Bool {
+    let epsilon = 0.001;
+    let result = (
+      a.ifReverseChargeRequired == b.ifReverseChargeRequired and
+      Float.abs(a.exchangeRateAdjustment - b.exchangeRateAdjustment) < epsilon and
+      Float.abs(a.priceNetEuros - b.priceNetEuros) < epsilon and
+      Float.abs(a.priceGrossEuros - b.priceGrossEuros) < epsilon and
+      Float.abs(a.vatRate - b.vatRate) < epsilon
+    );
+
+    if (not result) {
+      assert(false); // Explicitly trigger failed assertion for deterministic test
+    };
+    result;
+  };
+
+  public query ({ caller }) func getLastCalculation() : async ?VatCalculation {
     null;
   };
 
+  // Stripe session status should verify ownership
   public shared ({ caller }) func getStripeSessionStatus(sessionId : Text) : async Stripe.StripeSessionStatus {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can check session status");
+    };
     await Stripe.getSessionStatus(getStripeConfiguration(), sessionId, transform);
   };
 
+  // Creating checkout sessions requires user authentication
   public shared ({ caller }) func createCheckoutSession(items : [Stripe.ShoppingItem], successUrl : Text, cancelUrl : Text) : async Text {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can create checkout sessions");
+    };
     await Stripe.createCheckoutSession(getStripeConfiguration(), caller, items, successUrl, cancelUrl, transform);
   };
 
+  // Public for all users - checking configuration status is public information
   public query func isStripeConfigured() : async Bool {
     configuration != null;
   };

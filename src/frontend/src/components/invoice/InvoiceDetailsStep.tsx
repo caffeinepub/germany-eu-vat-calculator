@@ -47,6 +47,11 @@ export interface InvoiceData {
   taxPointDate?: string;
 }
 
+// Extended line item type to track selection state
+interface LineItemWithSelectionState extends InvoiceLineItem {
+  categorySelected?: boolean;
+}
+
 export default function InvoiceDetailsStep({
   vatResult,
   calculationInput,
@@ -68,13 +73,17 @@ export default function InvoiceDetailsStep({
   const [legalVatText, setLegalVatText] = useState('');
   const [notes, setNotes] = useState('');
 
-  const [lineItems, setLineItems] = useState<InvoiceLineItem[]>([
+  // Track which VAT Category dropdown is open (null = none open, number = line item index)
+  const [openVatCategoryDropdown, setOpenVatCategoryDropdown] = useState<number | null>(null);
+
+  const [lineItems, setLineItems] = useState<LineItemWithSelectionState[]>([
     {
       description: 'Service',
       quantity: 1,
       unitPrice: calculationInput.netAmount,
       vatRate: vatResult.vatRatePercent,
       vatCategory: calculationInput.vatCategory || 'others',
+      categorySelected: true, // First item is pre-filled
     },
   ]);
 
@@ -112,6 +121,7 @@ export default function InvoiceDetailsStep({
         unitPrice: 0,
         vatRate: defaultRate,
         vatCategory: 'others',
+        categorySelected: false, // New items require explicit selection
       },
     ]);
   };
@@ -131,6 +141,7 @@ export default function InvoiceDetailsStep({
     if (field === 'vatCategory') {
       const newCategory = value as VatCategory;
       updatedItems[index].vatCategory = newCategory;
+      updatedItems[index].categorySelected = true;
 
       // Auto-update VAT rate based on category
       const countryConfig = lookupVatConfig(sellerCountry);
@@ -149,6 +160,9 @@ export default function InvoiceDetailsStep({
   };
 
   const handleNext = () => {
+    // Remove the categorySelected flag before passing to next step
+    const cleanedLineItems: InvoiceLineItem[] = lineItems.map(({ categorySelected, ...item }) => item);
+    
     const invoiceData: InvoiceData = {
       invoiceNumber,
       invoiceDate,
@@ -159,7 +173,7 @@ export default function InvoiceDetailsStep({
       customerName,
       customerAddress,
       customerVatId,
-      lineItems,
+      lineItems: cleanedLineItems,
       legalVatText,
       notes,
     };
@@ -192,7 +206,16 @@ export default function InvoiceDetailsStep({
   const riskCheck = performInvoiceRiskCheck(validationInput, vatResult);
 
   return (
-    <div className="space-y-6" style={{ overflow: 'visible' }}>
+    <div className="space-y-6" style={{ overflow: 'visible', position: 'relative' }}>
+      {/* Backdrop overlay when any VAT Category dropdown is open */}
+      {openVatCategoryDropdown !== null && (
+        <div
+          className="fixed inset-0 bg-black/20 z-[80]"
+          onClick={() => setOpenVatCategoryDropdown(null)}
+          style={{ pointerEvents: 'auto' }}
+        />
+      )}
+
       <Card>
         <CardHeader>
           <CardTitle>Invoice Details</CardTitle>
@@ -367,16 +390,23 @@ export default function InvoiceDetailsStep({
                       />
                     </div>
 
-                    <div style={{ overflow: 'visible', position: 'relative', zIndex: 90 }}>
-                      <Label>VAT Category</Label>
+                    <div className="md:col-span-2" style={{ overflow: 'visible', position: 'relative', zIndex: 90 }}>
+                      <Label>VAT Category *</Label>
                       <Select
                         value={item.vatCategory}
-                        onValueChange={(v) => handleLineItemChange(index, 'vatCategory', v)}
+                        onValueChange={(v) => {
+                          handleLineItemChange(index, 'vatCategory', v);
+                          setOpenVatCategoryDropdown(null);
+                        }}
+                        open={openVatCategoryDropdown === index}
+                        onOpenChange={(open) => {
+                          setOpenVatCategoryDropdown(open ? index : null);
+                        }}
                       >
-                        <SelectTrigger className="select-trigger-safe">
-                          <SelectValue />
+                        <SelectTrigger className="select-trigger-safe bg-background">
+                          <SelectValue placeholder="Select VAT category" />
                         </SelectTrigger>
-                        <SelectContent className="dropdown-safe">
+                        <SelectContent className="dropdown-safe z-[90]">
                           {VAT_CATEGORIES.map((cat) => (
                             <SelectItem key={cat} value={cat}>
                               {VAT_CATEGORY_LABELS[cat]}
@@ -386,19 +416,22 @@ export default function InvoiceDetailsStep({
                       </Select>
                     </div>
 
-                    <div>
-                      <Label>VAT Rate (%)</Label>
-                      <Input
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        value={item.vatRate}
-                        onChange={(e) =>
-                          handleLineItemChange(index, 'vatRate', parseFloat(e.target.value) || 0)
-                        }
-                        disabled={isZeroVatResult(vatResult) && item.vatRate === 0}
-                      />
-                    </div>
+                    {/* Only show VAT Rate field if VAT Category has been explicitly selected */}
+                    {item.categorySelected && (
+                      <div className="md:col-span-2">
+                        <Label>VAT Rate (%)</Label>
+                        <Input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={item.vatRate}
+                          onChange={(e) =>
+                            handleLineItemChange(index, 'vatRate', parseFloat(e.target.value) || 0)
+                          }
+                          disabled={isZeroVatResult(vatResult) && item.vatRate === 0}
+                        />
+                      </div>
+                    )}
                   </div>
                 </div>
               </Card>

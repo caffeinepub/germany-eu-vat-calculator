@@ -17,7 +17,8 @@ export function performInvoiceRiskCheck(
   const warnings: string[] = [];
 
   // Check mandatory fields
-  const autoLegalText = getAutoLegalVatText(result.scenario);
+  const sellerCountry = input.sellerCountry || 'DE';
+  const autoLegalText = getAutoLegalVatText(result.scenario, sellerCountry, result.crossBorderVatTreatment);
   const fieldValidation = validateInvoiceMandatoryFields(input, result, autoLegalText);
   
   if (!fieldValidation.allPassed) {

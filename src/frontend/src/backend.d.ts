@@ -25,6 +25,7 @@ export interface CalculationResult {
     exchangeRateAdjustment: number;
     priceNetEuros: number;
     priceGrossEuros: number;
+    vatRate: number;
     ifReverseChargeRequired: boolean;
 }
 export interface http_header {
@@ -36,14 +37,17 @@ export interface http_request_result {
     body: Uint8Array;
     headers: Array<http_header>;
 }
-export interface ExcelFile {
-    content: Uint8Array;
-    filename: string;
+export interface VatRateEntry {
+    country: string;
+    vatId?: bigint;
+    percent: number;
+    vatLabel: string;
 }
 export interface VatCalculation {
     vatIdNumber?: string;
     toCountry: string;
     priceGrossCents: bigint;
+    vatRatePercent: number;
     category: ServiceProductCategory;
     fromCountry: string;
 }
@@ -77,6 +81,10 @@ export interface InvoiceRecord {
     vatAmount: number;
     vatRate: number;
     htmlSource: string;
+}
+export interface ExcelFile {
+    content: Uint8Array;
+    filename: string;
 }
 export interface EventRecord {
     id: string;
@@ -129,6 +137,7 @@ export enum UserRole {
     guest = "guest"
 }
 export interface backendInterface {
+    addVatRate(id: bigint, rate: VatRateEntry): Promise<void>;
     assignCallerUserRole(user: Principal, role: UserRole): Promise<void>;
     calculate(rate: VatCalculation): Promise<CalculationResult>;
     canICallApi(): Promise<string>;
@@ -153,12 +162,15 @@ export interface backendInterface {
     getStripeSessionStatus(sessionId: string): Promise<StripeSessionStatus>;
     getUsage(fingerprint: string): Promise<bigint>;
     getUserProfile(user: Principal): Promise<UserProfile | null>;
+    getVatRates(): Promise<Array<VatRateEntry>>;
     incrementUsage(fingerprint: string): Promise<bigint>;
     isCallerAdmin(): Promise<boolean>;
     isStripeConfigured(): Promise<boolean>;
     listInvoices(): Promise<Array<InvoiceRecord>>;
     logEvent(event: EventRecord): Promise<void>;
     permissionCheck(): Promise<PlanType>;
+    regressionTest(): Promise<boolean>;
+    removeVatRate(id: bigint): Promise<void>;
     saveCallerUserProfile(profile: UserProfile): Promise<void>;
     saveInvoice(id: string, invoiceNumber: string, invoiceDate: string, htmlSource: string, vatAmount: number, vatRate: number, currency: string, vatLabel: string): Promise<void>;
     setStripeConfiguration(config: StripeConfiguration): Promise<void>;

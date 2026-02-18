@@ -62,9 +62,9 @@
     --chart-4: oklch(75% 0.08 280);
     --chart-5: oklch(68% 0.14 340);
     
-    /* Header-specific colors for dark mode */
-    --header-brand-bg: oklch(22% 0.05 240);
-    --header-tab-bg: oklch(25% 0.01 120);
+    /* Header-specific colors */
+    --header-brand-bg: oklch(20% 0.05 240);
+    --header-tab-bg: oklch(22% 0.01 120);
   }
 }
 
@@ -77,72 +77,35 @@
   }
 }
 
-/* Safe dropdown styling to prevent overlap and ensure proper layering */
-@layer components {
-  .dropdown-safe {
-    @apply z-[99999] max-h-[240px] overflow-y-auto;
-  }
-
-  .select-trigger-safe {
-    @apply relative z-[100];
-  }
-
-  /* Transaction VAT Category wrapper with extra bottom spacing to prevent dropdown overlap */
-  .transaction-vat-category-wrapper {
-    @apply pb-2 md:pb-0;
-    min-height: 80px;
-  }
+/* Dropdown-safe utility classes with maximum z-index */
+.dropdown-safe {
+  z-index: 99999 !important;
+  position: relative;
 }
 
-/* Global dropdown layering fixes - prevent clipping and ensure proper z-index stacking */
-@layer utilities {
-  /* 1️⃣ Remove overflow clipping from layout containers that might contain dropdowns */
-  .container,
-  main,
-  section,
-  article {
-    overflow: visible !important;
-  }
+.select-trigger-safe {
+  position: relative;
+  z-index: 1;
+}
 
-  /* 2️⃣ Allow Card components to show dropdown overflow */
-  [class*="card"] > *,
-  [class*="Card"] > * {
-    overflow: visible !important;
-  }
+/* Ensure layout containers don't clip dropdowns */
+main,
+.main-content,
+[role="main"] {
+  overflow: visible !important;
+}
 
-  /* 3️⃣ Radix Popper content wrapper - maximum z-index to render above everything */
-  [data-radix-popper-content-wrapper] {
-    z-index: 99999 !important;
-  }
+/* Global fix: Radix popper content wrappers must render above all content */
+[data-radix-popper-content-wrapper] {
+  z-index: 99999 !important;
+}
 
-  /* 4️⃣ All dropdown/popover/select content - ensure high z-index */
-  [role="listbox"],
-  [role="menu"],
-  [role="dialog"],
-  [data-radix-select-content],
-  [data-radix-dropdown-menu-content],
-  [data-radix-popover-content] {
-    z-index: 99999 !important;
-  }
+/* Ensure Select content portal renders above everything */
+[data-radix-select-content] {
+  z-index: 99999 !important;
+}
 
-  /* 5️⃣ Prevent lower sections from creating stacking contexts that cover dropdowns */
-  .space-y-3 > *,
-  .space-y-4 > *,
-  .space-y-6 > * {
-    position: relative;
-    z-index: 1;
-  }
-
-  /* 6️⃣ Ensure header stays below dropdowns */
-  header {
-    z-index: 40 !important;
-  }
-
-  /* 7️⃣ Tables and lists should not create stacking contexts */
-  table,
-  [class*="table"],
-  ul,
-  ol {
-    position: static !important;
-  }
+/* Ensure proper stacking for invoice VAT category dropdowns */
+[data-radix-select-viewport] {
+  z-index: 99999 !important;
 }

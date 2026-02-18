@@ -11,6 +11,7 @@ import { type VATCalculationInput } from '../../lib/vat/calculateVat';
 import { type VatCategory, VAT_CATEGORIES, VAT_CATEGORY_LABELS } from '../../lib/vat/vatCategoryRateRules';
 import { type ProductCategory } from '../../lib/vat/reducedEligibility';
 import { getProductCategoryOptions, type ProductCategoryOption } from '../../lib/vat/productCategoryOptions';
+import VatCategoryItemsPicker from './VatCategoryItemsPicker';
 
 interface TransactionDetailsStepProps {
   initialData: VATCalculationInput;
@@ -84,97 +85,85 @@ export default function TransactionDetailsStep({
             </RadioGroup>
           </div>
 
-          {/* VAT ID (B2B only) */}
+          {/* VAT ID for B2B */}
           {customerType === 'B2B' && (
             <div>
-              <Label htmlFor="vat-id">Customer VAT ID (optional)</Label>
+              <Label htmlFor="vat-id" className="text-sm font-medium mb-2 block">
+                Customer VAT ID (Optional)
+              </Label>
               <Input
                 id="vat-id"
                 value={vatId}
                 onChange={(e) => setVatId(e.target.value)}
                 placeholder="e.g., DE123456789"
-                className="font-mono"
               />
             </div>
           )}
 
           {/* Product Category */}
-          <div style={{ overflow: 'visible', position: 'relative', zIndex: 100 }}>
-            <Label htmlFor="product-category">Product Category</Label>
-            <Select 
-              value={productCategoryOption} 
-              onValueChange={setProductCategoryOption}
-            >
-              <SelectTrigger id="product-category" className="select-trigger-safe">
-                <SelectValue />
+          <div>
+            <Label htmlFor="product-category" className="text-sm font-medium mb-2 block">
+              Product Category
+            </Label>
+            <Select value={productCategoryOption} onValueChange={setProductCategoryOption}>
+              <SelectTrigger id="product-category" className="select-trigger-safe dropdown-safe">
+                <SelectValue placeholder="Select product category" />
               </SelectTrigger>
-              <SelectContent className="dropdown-safe">
-                {categoryOptions.map((option) => {
-                  const uniqueKey = `${option.value}-${option.label}`;
-                  return (
-                    <SelectItem key={uniqueKey} value={uniqueKey}>
-                      {option.label}
-                    </SelectItem>
-                  );
-                })}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* VAT Category */}
-          <div style={{ overflow: 'visible', position: 'relative', zIndex: 90 }}>
-            <Label htmlFor="vat-category">VAT Category</Label>
-            <Select value={vatCategory} onValueChange={(v) => setVatCategory(v as VatCategory)}>
-              <SelectTrigger id="vat-category" className="select-trigger-safe">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent className="dropdown-safe">
-                {VAT_CATEGORIES.map((cat) => (
-                  <SelectItem key={cat} value={cat}>
-                    {VAT_CATEGORY_LABELS[cat]}
+              <SelectContent className="dropdown-safe" style={{ overflow: 'visible' }}>
+                {categoryOptions.map((option, index) => (
+                  <SelectItem key={`${option.value}-${option.label}-${index}`} value={`${option.value}-${option.label}`}>
+                    {option.label}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
+            {showAutoFallbackWarning && (
+              <Alert className="mt-2 bg-amber-50 border-amber-200">
+                <AlertCircle className="h-4 w-4 text-amber-600" />
+                <AlertDescription className="text-amber-800 text-sm">
+                  This category will automatically use the standard VAT rate.
+                </AlertDescription>
+              </Alert>
+            )}
           </div>
 
-          {/* Auto-fallback warning */}
-          {showAutoFallbackWarning && (
-            <Alert className="bg-amber-50 border-amber-200 dark:bg-amber-950 dark:border-amber-800">
-              <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-              <AlertDescription className="ml-2 text-amber-900 dark:text-amber-100">
-                <p className="font-medium">Auto-fallback to Standard Rate</p>
-                <p className="text-sm mt-1">
-                  The "Others" category will use the standard VAT rate. If your product/service qualifies for a reduced rate, please select the appropriate category.
-                </p>
-              </AlertDescription>
-            </Alert>
-          )}
+          {/* VAT Category - Now using visible items picker */}
+          <div>
+            <VatCategoryItemsPicker
+              categories={VAT_CATEGORIES}
+              selectedValue={vatCategory}
+              onSelect={(category) => setVatCategory(category)}
+            />
+          </div>
 
           {/* Net Amount */}
           <div>
-            <Label htmlFor="net-amount">Net Amount (€)</Label>
+            <Label htmlFor="net-amount" className="text-sm font-medium mb-2 block">
+              Net Amount (€)
+            </Label>
             <Input
               id="net-amount"
               type="number"
               step="0.01"
-              min="0"
               value={netAmount}
               onChange={(e) => setNetAmount(e.target.value)}
               placeholder="0.00"
-              className="font-mono"
             />
           </div>
         </CardContent>
       </Card>
 
-      {/* Navigation */}
-      <div className="flex justify-between">
-        <Button variant="outline" onClick={onBack}>
+      {/* Action Buttons */}
+      <div className="flex gap-3">
+        <Button onClick={onBack} variant="outline" className="flex-1">
           Back
         </Button>
-        <Button onClick={handleNext} disabled={!netAmount || parseFloat(netAmount) <= 0}>
-          Calculate VAT
+        <Button 
+          onClick={handleNext} 
+          className="flex-1"
+          disabled={!netAmount || parseFloat(netAmount) <= 0}
+        >
+          Next
         </Button>
       </div>
     </div>

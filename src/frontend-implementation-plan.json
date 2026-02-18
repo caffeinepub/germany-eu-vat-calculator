@@ -1,185 +1,57 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Smart VAT Engine priority flow, eligibility enforcement, and updated product category dropdown",
+  "title": "Add Back navigation across VAT calculator flow steps",
   "requirements": [
     {
       "id": "REQ-1",
-      "summary": "Make the provided country VAT rates the authoritative source for the unified smart VAT engine.",
+      "summary": "Ensure every calculator step exposes a visible Back action that navigates to the immediately previous step while preserving in-flow state and using the shared Button styling.",
       "acceptanceCriteria": [
-        "VAT rates used by the unified VAT calculation match the provided VAT_CONFIG values for all listed countries.",
-        "GB configuration includes standard=20, reduced=5, zero=0 and is used when seller country is UK/GB."
+        "On /calculator, each step in the multi-step flow (Select Country, Transaction Details, VAT Results, Explanation, Invoice Preview) provides a Back action that returns to the immediately previous step in the flow.",
+        "The Back action uses the existing step state so that when returning to a prior step, previously selected/entered values are still shown (no loss of form selections due to navigation).",
+        "The Back button label is in English and consistently styled with existing buttons (using the shared Button component)."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/lib/vat/vatConfig.ts",
+          "path": "frontend/src/pages/CalculatorFlowPage.tsx",
           "operation": "modify",
-          "description": "Confirm VAT_CONFIG matches the provided authoritative rates for DE/FR/NL/PL/SE/IT/BE/AT/HU/ES/GB (including GB zero=0) and ensure it remains the single source used by the unified VAT calculation."
+          "description": "Wire Back navigation into every step render by passing the existing handleBack callback to steps that currently lack it, and ensure step transitions use currentStep decrement (no state reset) so previously entered selections remain visible when navigating back."
         },
         {
-          "path": "frontend/src/lib/vat/calculateUnifiedVat.ts",
+          "path": "frontend/src/components/vat/CountrySelectionStep.tsx",
           "operation": "modify",
-          "description": "Ensure the unified VAT engine pulls country rates from VAT_CONFIG (with UK→GB normalization) and uses those values for standard/reduced/zero where applicable."
+          "description": "Add a visible Back button (using the shared Button component) to the Select Country step UI and call an injected onBack handler so the flow can navigate to the previous step/location without clearing selection state."
+        },
+        {
+          "path": "frontend/src/components/vat/ExplainVatPanel.tsx",
+          "operation": "modify",
+          "description": "Add Back/Continue navigation controls (using the shared Button component) to the Explanation step UI, driven by injected onBack/onNext callbacks, without altering the existing explanation/tabs/paywall behavior."
         }
       ]
     },
     {
       "id": "REQ-2",
-      "summary": "Add explicit category eligibility lists (UK zero, UK reduced, EU reduced, exempt) and use them in unified VAT calculations.",
+      "summary": "Add Back navigation specifically to Select Country and Explanation steps, integrating them with CalculatorFlowPage step navigation (including Back-to-home behavior from the initial step and Back/Continue actions on Explanation).",
       "acceptanceCriteria": [
-        "Eligibility lists exist as explicit lists (not keyword matching) and are used by the unified VAT calculation.",
-        "Exempt treatment is triggered when the selected product category is one of the exempt categories, regardless of country."
+        "The “Select Country” step UI includes a Back button that returns the user to the previous location (or, if there is no prior step, navigates back to the app home/landing route) without breaking the flow.",
+        "The “Explanation” step UI includes both Back and Continue actions: Back returns to “VAT Results”; Continue advances to “Invoice Preview”.",
+        "CalculatorFlowPage step transitions remain consistent (i.e., no step skipping, and currentStep updates correctly when using Back/Continue)."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/lib/vat/categoryEligibility.ts",
+          "path": "frontend/src/pages/CalculatorFlowPage.tsx",
           "operation": "modify",
-          "description": "Replace keyword-based exempt handling with explicit lists exactly as provided: UK_ZERO, UK_REDUCED, EU_REDUCED, EXEMPT_CATEGORIES (as exact identifiers, not keyword matching), and expose helpers used by the unified VAT engine."
+          "description": "Update step wiring so: (1) CountrySelectionStep receives an onBack that invokes the existing handleBack logic (which navigates to '/' when currentStep is 0), and (2) ExplainVatPanel receives onBack (to return to VAT Results) and onNext/Continue (to advance to Invoice Preview) via the existing handleBack/handleNext logic, keeping currentStep consistent."
         },
         {
-          "path": "frontend/src/lib/vat/calculateUnifiedVat.ts",
+          "path": "frontend/src/components/vat/CountrySelectionStep.tsx",
           "operation": "modify",
-          "description": "Update the unified VAT engine to use the explicit eligibility lists (UK_ZERO/UK_REDUCED/EU_REDUCED/EXEMPT_CATEGORIES) when determining exempt/zero/reduced eligibility."
-        }
-      ]
-    },
-    {
-      "id": "REQ-3",
-      "summary": "Implement the unified VAT engine’s exact priority order and labels for reverse charge, export, exempt, zero, reduced, and standard.",
-      "acceptanceCriteria": [
-        "For B2B + vatCategory=reverse, VAT result is 0% with label 'Reverse Charge' and this takes precedence over export/exempt/zero/reduced.",
-        "If isExport is true, VAT result is 0% with label 'Zero Rated Export' and takes precedence over exempt/zero/reduced/standard.",
-        "If productCategory is in EXEMPT_CATEGORIES, VAT result is 0% with label 'Exempt' and takes precedence over zero/reduced/standard.",
-        "If seller country is GB, zero-rating is only applied when productCategory is in UK_ZERO (not by manual selection alone).",
-        "Reduced VAT is only applied when productCategory is eligible (UK_REDUCED for GB; EU_REDUCED for non-GB).",
-        "All other cases return standard VAT for the configured country with label 'Standard VAT'."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/lib/vat/calculateUnifiedVat.ts",
-          "operation": "modify",
-          "description": "Refactor unified VAT calculation to follow the specified priority: (1) Reverse Charge only when vatCategory==='reverse' and transaction is B2B, (2) Export when isExport===true, (3) Exempt when productCategory is in EXEMPT_CATEGORIES, (4) UK Zero when seller country is GB and productCategory in UK_ZERO, (5) Reduced (UK_REDUCED for GB, EU_REDUCED otherwise), (6) Standard fallback. Ensure returned labels exactly match: 'Reverse Charge', 'Zero Rated Export', 'Exempt', 'Zero Rated', 'Reduced VAT', 'Standard VAT'."
-        }
-      ]
-    },
-    {
-      "id": "REQ-4",
-      "summary": "Enforce auto-fallback protection so reduced/zero cannot be forced by manual VAT category selection when the product category is ineligible.",
-      "acceptanceCriteria": [
-        "Selecting reduced/zero VAT category in the UI does not change the final VAT result unless the selected product category is eligible under the configured lists.",
-        "The final VAT result returned by the engine cannot be forced to reduced/zero by user selection when the product category is ineligible."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/lib/vat/calculateUnifiedVat.ts",
-          "operation": "modify",
-          "description": "Remove any logic that applies reduced/zero purely due to user-selected vatCategory; only apply reduced/zero when productCategory is eligible per the explicit lists, otherwise fall back to 'Standard VAT'."
+          "description": "Extend props to accept onBack and render a Back button that triggers it; ensure UI placement does not interfere with country selection controls."
         },
         {
-          "path": "frontend/src/components/vat/TransactionDetailsStep.tsx",
+          "path": "frontend/src/components/vat/ExplainVatPanel.tsx",
           "operation": "modify",
-          "description": "Adjust UI hints/warnings (English) so users understand reduced/zero selections do not override eligibility; keep existing dropdown usability fixes (safe z-index/overflow classes and current dropdown behavior) intact."
-        }
-      ]
-    },
-    {
-      "id": "REQ-5",
-      "summary": "Update product category dropdown to the exact UX list (with Domestic Fuel UK-only) while preserving existing dropdown rendering fixes.",
-      "acceptanceCriteria": [
-        "The product category dropdown shows exactly the requested options (including the three exempt categories as selectable options).",
-        "Domestic Fuel (UK) is only shown when the selected country is GB/UK.",
-        "Existing dropdown usability fixes are preserved (no regressions to clipping/overlay issues)."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/lib/vat/productCategoryOptions.ts",
-          "operation": "modify",
-          "description": "Replace current product category option definitions with the exact UX list and identifiers needed by the smart VAT engine: Basic Food, Books, Medical, Transport, Hotel, Financial Services, Insurance, Education, Domestic Fuel (UK), Others; ensure Domestic Fuel (UK) is flagged ukOnly and filtered out for non-GB/UK."
-        },
-        {
-          "path": "frontend/src/components/vat/TransactionDetailsStep.tsx",
-          "operation": "modify",
-          "description": "Wire the product category dropdown to use getProductCategoryOptions(country) so it renders exactly the required options and hides Domestic Fuel (UK) unless seller country is GB/UK; preserve existing select-trigger-safe/dropdown-safe and z-index/overflow fixes."
-        },
-        {
-          "path": "frontend/src/components/vat/CountryTransactionStep.tsx",
-          "operation": "modify",
-          "description": "Update any product-category dropdown rendered in this step to use the updated productCategoryOptions filtering (GB/UK-only Domestic Fuel) while preserving existing dropdown overlay/clipping fixes."
-        }
-      ]
-    },
-    {
-      "id": "REQ-6",
-      "summary": "Force 'Others' product category to always produce Standard VAT regardless of VAT treatment controls.",
-      "acceptanceCriteria": [
-        "When 'Others' is selected, the engine returns standard VAT for the seller country and label 'Standard VAT' regardless of any VAT category/treatment selection."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/lib/vat/calculateUnifiedVat.ts",
-          "operation": "modify",
-          "description": "Add/ensure an explicit rule that when productCategory is 'others' (the dropdown's Others option), the calculation returns standard VAT for the configured seller country with label 'Standard VAT' regardless of vatCategory/treatment selections (while still respecting higher-priority reverse charge/export if applicable)."
-        }
-      ]
-    },
-    {
-      "id": "REQ-7",
-      "summary": "Standardize VAT computation outputs around the result builder fields and ensure UI/invoice derives displayed values from those outputs.",
-      "acceptanceCriteria": [
-        "VAT calculation produces values consistent with: vatAmount=(netAmount*rate)/100 and total=netAmount+vatAmount.",
-        "The displayed VAT rate/amount/total and the stored invoice values match the engine output."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/lib/vat/calculateUnifiedVat.ts",
-          "operation": "modify",
-          "description": "Use the shared buildResult(rate, netAmount, label) output as the canonical source for rate/vatAmount/total/label within the unified VAT engine, and map it consistently into the app’s VATCalculationResult fields (including cents conversions) so downstream UI/invoice values are derived from the same computed numbers."
-        },
-        {
-          "path": "frontend/src/components/vat/VatResultsStep.tsx",
-          "operation": "modify",
-          "description": "Ensure the results UI displays VAT rate/amount/total consistent with the unified engine outputs and labels, avoiding any independent recomputation that could diverge from buildResult-derived values."
-        },
-        {
-          "path": "frontend/src/components/invoice/InvoiceDetailsStep.tsx",
-          "operation": "modify",
-          "description": "Ensure invoice line item default VAT rate and any VAT-rate-dependent displayed totals remain consistent with the unified engine output (rate/amount/total/label), avoiding mismatches between displayed and persisted invoice values."
-        }
-      ]
-    },
-    {
-      "id": "REQ-8",
-      "summary": "Drive invoice legal wording from the VAT label returned by the engine with localized Reverse Charge text and specified English sentences for other labels.",
-      "acceptanceCriteria": [
-        "When the VAT label is 'Reverse Charge', the invoice legal wording uses DE/FR/IT/GB specific text when available, otherwise the fallback 'Reverse charge applies'.",
-        "When the VAT label is 'Exempt', 'Zero Rated', 'Reduced VAT', or 'Standard VAT', the invoice legal wording matches the provided English sentences.",
-        "Invoice wording selection is driven by the VAT label returned from the calculation (not by user-entered free text unless an explicit override is already part of the app)."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/lib/invoice/getInvoiceWording.ts",
-          "operation": "modify",
-          "description": "Align getInvoiceWording(country, label) with the provided logic: localized Reverse Charge for DE/FR/IT/GB with fallback 'Reverse charge applies'; and exact English sentences for 'Exempt', 'Zero Rated', 'Reduced VAT', and default 'Standard VAT'. Ensure wording selection keys off the engine label."
-        },
-        {
-          "path": "frontend/src/lib/vat/calculateUnifiedVat.ts",
-          "operation": "modify",
-          "description": "Ensure legal wording is requested using the VAT label returned by the engine (e.g., 'Reverse Charge', 'Exempt', 'Zero Rated', 'Reduced VAT', 'Standard VAT') so invoice text auto-switch is label-driven."
-        }
-      ]
-    },
-    {
-      "id": "REQ-9",
-      "summary": "Include the global legal disclaimer text verbatim in all generated invoice HTML outputs.",
-      "acceptanceCriteria": [
-        "Every invoice HTML output includes the disclaimer text verbatim in English.",
-        "The disclaimer is present regardless of VAT scenario (reverse charge/export/exempt/zero/reduced/standard)."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/lib/invoice/buildInvoiceHtml.ts",
-          "operation": "modify",
-          "description": "Verify the global VAT disclaimer string is included verbatim in the invoice HTML output for every scenario (no conditional removal) and remains English-only as required."
+          "description": "Extend props to accept onBack and onNext, and render a Back button (goes to VAT Results) plus a Continue button (goes to Invoice Preview) in addition to the existing Export PDF control."
         }
       ]
     }

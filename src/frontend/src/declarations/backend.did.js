@@ -8,6 +8,12 @@
 
 import { IDL } from '@icp-sdk/core/candid';
 
+export const VatRateEntry = IDL.Record({
+  'country' : IDL.Text,
+  'vatId' : IDL.Opt(IDL.Nat),
+  'percent' : IDL.Float64,
+  'vatLabel' : IDL.Text,
+});
 export const UserRole = IDL.Variant({
   'admin' : IDL.Null,
   'user' : IDL.Null,
@@ -24,6 +30,7 @@ export const VatCalculation = IDL.Record({
   'vatIdNumber' : IDL.Opt(IDL.Text),
   'toCountry' : IDL.Text,
   'priceGrossCents' : IDL.Nat,
+  'vatRatePercent' : IDL.Float64,
   'category' : ServiceProductCategory,
   'fromCountry' : IDL.Text,
 });
@@ -31,6 +38,7 @@ export const CalculationResult = IDL.Record({
   'exchangeRateAdjustment' : IDL.Float64,
   'priceNetEuros' : IDL.Float64,
   'priceGrossEuros' : IDL.Float64,
+  'vatRate' : IDL.Float64,
   'ifReverseChargeRequired' : IDL.Bool,
 });
 export const ShoppingItem = IDL.Record({
@@ -125,6 +133,7 @@ export const TransformationOutput = IDL.Record({
 
 export const idlService = IDL.Service({
   '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
+  'addVatRate' : IDL.Func([IDL.Nat, VatRateEntry], [], []),
   'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
   'calculate' : IDL.Func([VatCalculation], [CalculationResult], []),
   'canICallApi' : IDL.Func([], [IDL.Text], ['query']),
@@ -157,12 +166,15 @@ export const idlService = IDL.Service({
       [IDL.Opt(UserProfile)],
       ['query'],
     ),
+  'getVatRates' : IDL.Func([], [IDL.Vec(VatRateEntry)], ['query']),
   'incrementUsage' : IDL.Func([IDL.Text], [IDL.Nat], []),
   'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
   'isStripeConfigured' : IDL.Func([], [IDL.Bool], ['query']),
   'listInvoices' : IDL.Func([], [IDL.Vec(InvoiceRecord)], ['query']),
   'logEvent' : IDL.Func([EventRecord], [], []),
   'permissionCheck' : IDL.Func([], [PlanType], ['query']),
+  'regressionTest' : IDL.Func([], [IDL.Bool], []),
+  'removeVatRate' : IDL.Func([IDL.Nat], [], []),
   'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
   'saveInvoice' : IDL.Func(
       [
@@ -190,6 +202,12 @@ export const idlService = IDL.Service({
 export const idlInitArgs = [];
 
 export const idlFactory = ({ IDL }) => {
+  const VatRateEntry = IDL.Record({
+    'country' : IDL.Text,
+    'vatId' : IDL.Opt(IDL.Nat),
+    'percent' : IDL.Float64,
+    'vatLabel' : IDL.Text,
+  });
   const UserRole = IDL.Variant({
     'admin' : IDL.Null,
     'user' : IDL.Null,
@@ -206,6 +224,7 @@ export const idlFactory = ({ IDL }) => {
     'vatIdNumber' : IDL.Opt(IDL.Text),
     'toCountry' : IDL.Text,
     'priceGrossCents' : IDL.Nat,
+    'vatRatePercent' : IDL.Float64,
     'category' : ServiceProductCategory,
     'fromCountry' : IDL.Text,
   });
@@ -213,6 +232,7 @@ export const idlFactory = ({ IDL }) => {
     'exchangeRateAdjustment' : IDL.Float64,
     'priceNetEuros' : IDL.Float64,
     'priceGrossEuros' : IDL.Float64,
+    'vatRate' : IDL.Float64,
     'ifReverseChargeRequired' : IDL.Bool,
   });
   const ShoppingItem = IDL.Record({
@@ -301,6 +321,7 @@ export const idlFactory = ({ IDL }) => {
   
   return IDL.Service({
     '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
+    'addVatRate' : IDL.Func([IDL.Nat, VatRateEntry], [], []),
     'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
     'calculate' : IDL.Func([VatCalculation], [CalculationResult], []),
     'canICallApi' : IDL.Func([], [IDL.Text], ['query']),
@@ -333,12 +354,15 @@ export const idlFactory = ({ IDL }) => {
         [IDL.Opt(UserProfile)],
         ['query'],
       ),
+    'getVatRates' : IDL.Func([], [IDL.Vec(VatRateEntry)], ['query']),
     'incrementUsage' : IDL.Func([IDL.Text], [IDL.Nat], []),
     'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
     'isStripeConfigured' : IDL.Func([], [IDL.Bool], ['query']),
     'listInvoices' : IDL.Func([], [IDL.Vec(InvoiceRecord)], ['query']),
     'logEvent' : IDL.Func([EventRecord], [], []),
     'permissionCheck' : IDL.Func([], [PlanType], ['query']),
+    'regressionTest' : IDL.Func([], [IDL.Bool], []),
+    'removeVatRate' : IDL.Func([IDL.Nat], [], []),
     'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
     'saveInvoice' : IDL.Func(
         [

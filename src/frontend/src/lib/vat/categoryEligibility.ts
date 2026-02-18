@@ -1,74 +1,74 @@
 // Category eligibility database for VAT rate determination
-// Uses explicit category lists (not keyword matching)
+// Uses explicit category lists with normalized identifier matching
 
 import { type ProductCategory } from './reducedEligibility';
+import { normalizeIdentifier, isInNormalizedList } from './identifierNormalization';
 
-// UK Zero Eligible (0%)
-export const UK_ZERO: ProductCategory[] = [
-  'basic-food',
-  'children-clothing',
-  'books',
-  'newspapers',
-  'public-transport',
-];
-
-// UK Reduced (5%)
-export const UK_REDUCED: ProductCategory[] = [
-  'domestic-fuel',
-  'energy-saving',
-  'child-car-seats',
-];
-
-// EU Reduced Eligible (Common Categories)
-export const EU_REDUCED: ProductCategory[] = [
-  'basic-food',
-  'books',
-  'newspapers',
-  'medicines',
-  'medical-equipment',
-  'passenger-transport',
-  'hotel-accommodation',
-  'cultural-events',
-  'social-housing',
-];
-
-// Exempt Categories (All Countries)
-// These are special categories that map to 'others' in ProductCategory
-// but are identified by their label in the dropdown
+// Exempt Categories (All Countries) - using snake_case as provided by user
 export const EXEMPT_CATEGORIES: string[] = [
-  'financial-services',
+  'financial_services',
   'insurance',
   'education',
   'healthcare',
-  'postal-services',
-  'social-care',
+  'postal_services',
+];
+
+// UK Zero Eligible (0%) - using snake_case as provided by user
+export const UK_ZERO: string[] = [
+  'basic_food',
+  'childrens_clothing',
+  'books',
+  'printed_media',
+  'public_transport',
+];
+
+// UK Reduced (5%) - using snake_case as provided by user
+export const UK_REDUCED: string[] = [
+  'domestic_fuel',
+  'energy_saving_materials',
+  'child_car_seats',
+];
+
+// EU Reduced Eligible (Common Categories) - using snake_case as provided by user
+export const EU_REDUCED: string[] = [
+  'basic_food',
+  'books',
+  'printed_media',
+  'medicine',
+  'medical_equipment',
+  'passenger_transport',
+  'hotel_accommodation',
+  'cultural_events',
 ];
 
 /**
- * Check if a product category is eligible for UK zero rate
+ * Check if a product category is eligible for UK zero rate.
+ * Uses normalized identifier matching to support both snake_case and kebab-case.
  */
-export function isUKZeroEligible(productCategory: ProductCategory): boolean {
-  return UK_ZERO.includes(productCategory);
+export function isUKZeroEligible(productCategory: ProductCategory | string): boolean {
+  return isInNormalizedList(productCategory, UK_ZERO);
 }
 
 /**
- * Check if a product category is eligible for UK reduced rate
+ * Check if a product category is eligible for UK reduced rate.
+ * Uses normalized identifier matching to support both snake_case and kebab-case.
  */
-export function isUKReducedEligible(productCategory: ProductCategory): boolean {
-  return UK_REDUCED.includes(productCategory);
+export function isUKReducedEligible(productCategory: ProductCategory | string): boolean {
+  return isInNormalizedList(productCategory, UK_REDUCED);
 }
 
 /**
- * Check if a product category is eligible for EU reduced rate
+ * Check if a product category is eligible for EU reduced rate.
+ * Uses normalized identifier matching to support both snake_case and kebab-case.
  */
-export function isEUReducedEligible(productCategory: ProductCategory): boolean {
-  return EU_REDUCED.includes(productCategory);
+export function isEUReducedEligible(productCategory: ProductCategory | string): boolean {
+  return isInNormalizedList(productCategory, EU_REDUCED);
 }
 
 /**
- * Check if a category identifier is an exempt category
- * This checks against the explicit exempt list
+ * Check if a category identifier is an exempt category.
+ * Uses normalized identifier matching to support both snake_case and kebab-case.
  */
 export function isExemptCategory(categoryIdentifier: string): boolean {
-  return EXEMPT_CATEGORIES.includes(categoryIdentifier);
+  return isInNormalizedList(categoryIdentifier, EXEMPT_CATEGORIES);
 }
