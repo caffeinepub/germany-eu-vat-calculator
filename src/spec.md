@@ -1,11 +1,15 @@
 # Specification
 
 ## Summary
-**Goal:** Add consistent in-flow Back navigation across all VAT calculator steps so users can review and adjust prior selections without losing entered data.
+**Goal:** Add required compliance fields to the invoice form with comprehensive validation that prevents PDF generation until all required information is provided.
 
 **Planned changes:**
-- Add a visible Back button on every step of the /calculator multi-step flow, wired into the existing CalculatorFlowPage step navigation.
-- Ensure Back navigation preserves existing step state so previously selected/entered values remain populated when returning to earlier steps.
-- Implement missing Back controls specifically on the “Select Country” step (navigate to prior location or home if no prior step) and the “Explanation” step (Back to “VAT Results”, Continue to “Invoice Preview”) using the shared Button component styling.
+- Add manual input fields for Supplier Legal Name, Supplier Address, Supplier VAT Number, Invoice Number, and Invoice Date to the invoice form
+- Mark all new fields as required with visual indicators
+- Implement validation that prevents PDF download when required fields are empty
+- Add validation to ensure at least one line item exists before PDF generation
+- Add validation to ensure invoice grand total is greater than zero
+- Display consolidated validation error list showing all missing or invalid fields when PDF download is attempted
+- Include all validated field values in the generated invoice PDF
 
-**User-visible outcome:** Users can move backward through the calculator steps (including Select Country and Explanation) to review and change earlier inputs, with their previous selections retained.
+**User-visible outcome:** Users must fill in all supplier compliance fields (legal name, address, VAT number), invoice details (number, date), add at least one line item, and ensure a positive grand total before they can download the invoice PDF. Clear validation errors guide users to complete any missing information.

@@ -39,6 +39,10 @@ export interface VATCalculationInput {
   taxPointDate?: string;
   currency?: string;
   legalVatTextOverride?: string;
+  // New supplier fields for compliance
+  supplierLegalName?: string;
+  supplierAddress?: string;
+  supplierVatNumber?: string;
   // UK-specific fields
   region?: 'EU' | 'UK' | 'USA' | 'APAC';
   ukScenario?: 'uk-domestic' | 'uk-export-zero' | 'uk-reverse-charge' | 'uk-exempt';

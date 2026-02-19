@@ -1,68 +1,173 @@
 {
   "kind": "build_request",
-  "title": "Add Back navigation across calculator flow tabs to review prior selections",
-  "projectName": "Glotaxa",
-  "priority": "normal",
+  "title": "Add manual invoice compliance fields with validation",
+  "projectName": "Invoice Manager",
+  "priority": "high",
   "requirements": [
     {
       "id": "REQ-1",
-      "text": "Add a visible Back button/navigation control on every step (“tab”) of the VAT calculator flow so users can return to previous steps to review and adjust previously selected options.",
+      "text": "Add manual input field for Supplier Legal Name in the invoice form with required validation that prevents PDF download if empty",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-1"
+          "msg-12"
         ],
         "quotes": [
-          "Amend the App,  add a Back button for all the tabs to check the options selected and changes made to previous tabs"
+          "Supplier legal name is required"
         ]
       },
       "acceptanceCriteria": [
-        "On /calculator, each step in the multi-step flow (Select Country, Transaction Details, VAT Results, Explanation, Invoice Preview) provides a Back action that returns to the immediately previous step in the flow.",
-        "The Back action uses the existing step state so that when returning to a prior step, previously selected/entered values are still shown (no loss of form selections due to navigation).",
-        "The Back button label is in English and consistently styled with existing buttons (using the shared Button component)."
+        "Supplier Legal Name field is present in the invoice details form",
+        "Field is marked as required with visual indicator",
+        "Validation error displays if field is empty when attempting PDF generation",
+        "Field value appears in the generated invoice PDF"
       ]
     },
     {
       "id": "REQ-2",
-      "text": "Implement Back navigation for the calculator flow steps that currently do not expose it to the user, specifically: (1) the initial “Select Country” step and (2) the “Explanation” step, wiring them into the existing step navigation in CalculatorFlowPage.",
+      "text": "Add manual input field for Supplier Address in the invoice form with required validation that prevents PDF download if empty",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-1"
+          "msg-12"
         ],
         "quotes": [
-          "add a Back button for all the tabs"
+          "Supplier address is required"
         ]
       },
       "acceptanceCriteria": [
-        "The “Select Country” step UI includes a Back button that returns the user to the previous location (or, if there is no prior step, navigates back to the app home/landing route) without breaking the flow.",
-        "The “Explanation” step UI includes both Back and Continue actions: Back returns to “VAT Results”; Continue advances to “Invoice Preview”.",
-        "CalculatorFlowPage step transitions remain consistent (i.e., no step skipping, and currentStep updates correctly when using Back/Continue)."
+        "Supplier Address field is present in the invoice details form",
+        "Field is marked as required with visual indicator",
+        "Validation error displays if field is empty when attempting PDF generation",
+        "Field value appears in the generated invoice PDF"
+      ]
+    },
+    {
+      "id": "REQ-3",
+      "text": "Add manual input field for Supplier VAT Number in the invoice form with required validation that prevents PDF download if empty",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-12"
+        ],
+        "quotes": [
+          "Supplier VAT number is required"
+        ]
+      },
+      "acceptanceCriteria": [
+        "Supplier VAT Number field is present in the invoice details form",
+        "Field is marked as required with visual indicator",
+        "Validation error displays if field is empty when attempting PDF generation",
+        "Field value appears in the generated invoice PDF"
+      ]
+    },
+    {
+      "id": "REQ-4",
+      "text": "Add manual input field for Invoice Number in the invoice form with required validation that prevents PDF download if empty",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-12"
+        ],
+        "quotes": [
+          "Invoice number is required"
+        ]
+      },
+      "acceptanceCriteria": [
+        "Invoice Number field is present in the invoice details form",
+        "Field is marked as required with visual indicator",
+        "Validation error displays if field is empty when attempting PDF generation",
+        "Field value appears in the generated invoice PDF"
+      ]
+    },
+    {
+      "id": "REQ-5",
+      "text": "Add manual input field for Invoice Date in the invoice form with required validation that prevents PDF download if empty",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-12"
+        ],
+        "quotes": [
+          "Invoice date is required"
+        ]
+      },
+      "acceptanceCriteria": [
+        "Invoice Date field is present in the invoice details form with date picker",
+        "Field is marked as required with visual indicator",
+        "Validation error displays if field is empty when attempting PDF generation",
+        "Field value appears formatted correctly in the generated invoice PDF"
+      ]
+    },
+    {
+      "id": "REQ-6",
+      "text": "Enforce validation that at least one line item must be present before allowing PDF download",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-12"
+        ],
+        "quotes": [
+          "At least one line item is required"
+        ]
+      },
+      "acceptanceCriteria": [
+        "Validation prevents PDF download when line items array is empty",
+        "Clear error message displays when user attempts to download with no line items",
+        "PDF download button is disabled or shows validation error when no line items exist"
+      ]
+    },
+    {
+      "id": "REQ-7",
+      "text": "Add validation that invoice grand total must be greater than zero before allowing PDF download",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-12"
+        ],
+        "quotes": [
+          "Invoice grand total must be greater than zero"
+        ]
+      },
+      "acceptanceCriteria": [
+        "Validation checks that calculated grand total is greater than zero",
+        "Clear error message displays when grand total is zero or negative",
+        "PDF download is prevented when grand total validation fails"
+      ]
+    },
+    {
+      "id": "REQ-8",
+      "text": "Display all validation errors in a consolidated validation error list before PDF download, showing which required fields are missing or invalid",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-12"
+        ],
+        "quotes": [
+          "Please fix all validation errors before downloading PDF"
+        ]
+      },
+      "acceptanceCriteria": [
+        "All validation errors are collected and displayed together",
+        "Each error message clearly indicates which field or requirement is failing",
+        "Error display is visible and prominent when user attempts PDF download",
+        "PDF download is blocked until all validation errors are resolved"
       ]
     }
   ],
   "constraints": [
-    "Do not edit files under frontend/src/components/ui (shadcn components); compose them instead.",
-    "Do not modify immutable frontend hook files listed in SYSTEM_CONTEXT (e.g., frontend/src/hooks/useInternetIdentity.ts(x), useActor.ts, frontend/src/main.tsx).",
-    "Keep backend as a single-actor Motoko canister; no backend changes are required for this request."
+    "All validation must happen before PDF generation, not during or after",
+    "Validation errors must be user-friendly and clearly indicate what needs to be fixed",
+    "Existing invoice functionality and VAT calculation logic must not be affected"
   ],
   "nonGoals": [
-    "Adding new calculation logic or changing VAT category logic.",
-    "Adding new routes or replacing the top-level header navigation tabs (Calculator/Invoices/Pricing).",
-    "Implementing browser-history-based navigation beyond the in-flow Back buttons."
+    "Backend data model changes for storing supplier information",
+    "Auto-filling supplier information from previous invoices",
+    "VAT number format validation beyond required field check",
+    "Invoice number uniqueness validation across all invoices"
   ],
   "imageRequirements": {
     "required": [],
     "edits": []
-  },
-  "userProfileUpdate": {
-    "goalsToAdd": [],
-    "goalsToRemove": [],
-    "preferencesToAdd": [],
-    "preferencesToRemove": [],
-    "miscToAdd": [],
-    "miscToRemove": [],
-    "fieldsToSet": {},
-    "fieldsToDelete": []
   }
 }

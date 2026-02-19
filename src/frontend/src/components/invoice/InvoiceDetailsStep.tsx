@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -28,6 +29,9 @@ interface InvoiceDetailsStepProps {
 export interface InvoiceData {
   invoiceNumber: string;
   invoiceDate: string;
+  supplierLegalName: string;
+  supplierAddress: string;
+  supplierVatNumber: string;
   sellerName: string;
   sellerAddress: string;
   sellerVatId: string;
@@ -63,6 +67,9 @@ export default function InvoiceDetailsStep({
 
   const [invoiceNumber, setInvoiceNumber] = useState(defaultInvoiceNumber);
   const [invoiceDate, setInvoiceDate] = useState(today);
+  const [supplierLegalName, setSupplierLegalName] = useState('');
+  const [supplierAddress, setSupplierAddress] = useState('');
+  const [supplierVatNumber, setSupplierVatNumber] = useState('');
   const [sellerName, setSellerName] = useState('');
   const [sellerAddress, setSellerAddress] = useState('');
   const [sellerVatId, setSellerVatId] = useState('');
@@ -166,6 +173,9 @@ export default function InvoiceDetailsStep({
     const invoiceData: InvoiceData = {
       invoiceNumber,
       invoiceDate,
+      supplierLegalName,
+      supplierAddress,
+      supplierVatNumber,
       sellerName,
       sellerAddress,
       sellerVatId,
@@ -188,21 +198,32 @@ export default function InvoiceDetailsStep({
   // Create combined input for validation
   const validationInput: VATCalculationInput = {
     ...calculationInput,
+    supplierLegalName,
+    supplierAddress,
+    supplierVatNumber,
+    invoiceNumber,
+    invoiceDate,
     sellerName,
     sellerAddress,
     sellerVatId,
     sellerCountry,
     customerName,
     customerAddress,
-    invoiceNumber,
-    invoiceDate,
     legalVatTextOverride: legalVatText,
   };
 
   // Generate auto legal text for validation
   const autoLegalText = getAutoLegalVatText(vatResult.scenario, sellerCountry);
 
-  const mandatoryFieldsValidation = validateInvoiceMandatoryFields(validationInput, vatResult, autoLegalText);
+  // Remove the categorySelected flag for validation
+  const cleanedLineItems: InvoiceLineItem[] = lineItems.map(({ categorySelected, ...item }) => item);
+
+  const mandatoryFieldsValidation = validateInvoiceMandatoryFields(
+    validationInput, 
+    vatResult, 
+    autoLegalText,
+    cleanedLineItems
+  );
   const riskCheck = performInvoiceRiskCheck(validationInput, vatResult);
 
   return (
@@ -224,28 +245,77 @@ export default function InvoiceDetailsStep({
           {/* Invoice Metadata */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="invoice-number">Invoice Number</Label>
+              <Label htmlFor="invoice-number">
+                Invoice Number <span className="text-red-600">*</span>
+              </Label>
               <Input
                 id="invoice-number"
                 value={invoiceNumber}
                 onChange={(e) => setInvoiceNumber(e.target.value)}
                 placeholder="INV-001"
+                required
               />
             </div>
             <div>
-              <Label htmlFor="invoice-date">Invoice Date</Label>
+              <Label htmlFor="invoice-date">
+                Invoice Date <span className="text-red-600">*</span>
+              </Label>
               <Input
                 id="invoice-date"
                 type="date"
                 value={invoiceDate}
                 onChange={(e) => setInvoiceDate(e.target.value)}
+                required
+              />
+            </div>
+          </div>
+
+          {/* Supplier Information (New Required Fields) */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold">Supplier Information</h3>
+            <div>
+              <Label htmlFor="supplier-legal-name">
+                Supplier Legal Name <span className="text-red-600">*</span>
+              </Label>
+              <Input
+                id="supplier-legal-name"
+                value={supplierLegalName}
+                onChange={(e) => setSupplierLegalName(e.target.value)}
+                placeholder="Your Legal Company Name"
+                required
+              />
+            </div>
+            <div>
+              <Label htmlFor="supplier-address">
+                Supplier Address <span className="text-red-600">*</span>
+              </Label>
+              <Textarea
+                id="supplier-address"
+                value={supplierAddress}
+                onChange={(e) => setSupplierAddress(e.target.value)}
+                placeholder="Street, City, Postal Code, Country"
+                rows={3}
+                required
+              />
+            </div>
+            <div>
+              <Label htmlFor="supplier-vat-number">
+                Supplier VAT Number <span className="text-red-600">*</span>
+              </Label>
+              <Input
+                id="supplier-vat-number"
+                value={supplierVatNumber}
+                onChange={(e) => setSupplierVatNumber(e.target.value)}
+                placeholder="DE123456789"
+                className="font-mono"
+                required
               />
             </div>
           </div>
 
           {/* Seller Information */}
           <div className="space-y-4">
-            <h3 className="text-lg font-semibold">Seller Information</h3>
+            <h3 className="text-lg font-semibold">Seller Information (Optional)</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="seller-name">Seller Name</Label>
@@ -329,7 +399,9 @@ export default function InvoiceDetailsStep({
           {/* Line Items */}
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold">Line Items</h3>
+              <h3 className="text-lg font-semibold">
+                Line Items <span className="text-red-600">*</span>
+              </h3>
               <Button variant="outline" size="sm" onClick={handleAddLineItem}>
                 <Plus className="w-4 h-4 mr-2" />
                 Add Item

@@ -1,57 +1,204 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Add Back navigation across VAT calculator flow steps",
+  "title": "Add manual invoice compliance fields with validation",
   "requirements": [
     {
       "id": "REQ-1",
-      "summary": "Ensure every calculator step exposes a visible Back action that navigates to the immediately previous step while preserving in-flow state and using the shared Button styling.",
+      "summary": "Add manual input field for Supplier Legal Name with required validation",
       "acceptanceCriteria": [
-        "On /calculator, each step in the multi-step flow (Select Country, Transaction Details, VAT Results, Explanation, Invoice Preview) provides a Back action that returns to the immediately previous step in the flow.",
-        "The Back action uses the existing step state so that when returning to a prior step, previously selected/entered values are still shown (no loss of form selections due to navigation).",
-        "The Back button label is in English and consistently styled with existing buttons (using the shared Button component)."
+        "Supplier Legal Name field is present in the invoice details form",
+        "Field is marked as required with visual indicator",
+        "Validation error displays if field is empty when attempting PDF generation",
+        "Field value appears in the generated invoice PDF"
       ],
       "file_operations": [
         {
-          "path": "frontend/src/pages/CalculatorFlowPage.tsx",
+          "path": "frontend/src/components/invoice/InvoiceDetailsStep.tsx",
           "operation": "modify",
-          "description": "Wire Back navigation into every step render by passing the existing handleBack callback to steps that currently lack it, and ensure step transitions use currentStep decrement (no state reset) so previously entered selections remain visible when navigating back."
+          "description": "Add Supplier Legal Name text input field to the invoice details form with required indicator. Include this field in the form state management and pass it to the invoice preview component for validation and PDF generation."
         },
         {
-          "path": "frontend/src/components/vat/CountrySelectionStep.tsx",
+          "path": "frontend/src/lib/invoice/validateInvoiceMandatoryFields.ts",
           "operation": "modify",
-          "description": "Add a visible Back button (using the shared Button component) to the Select Country step UI and call an injected onBack handler so the flow can navigate to the previous step/location without clearing selection state."
+          "description": "Add validation check for Supplier Legal Name field. Include this field in the mandatory fields validation logic that returns missing field information."
         },
         {
-          "path": "frontend/src/components/vat/ExplainVatPanel.tsx",
+          "path": "frontend/src/lib/invoice/buildInvoiceHtml.ts",
           "operation": "modify",
-          "description": "Add Back/Continue navigation controls (using the shared Button component) to the Explanation step UI, driven by injected onBack/onNext callbacks, without altering the existing explanation/tabs/paywall behavior."
+          "description": "Include Supplier Legal Name in the generated invoice HTML template. Display this field in the supplier information section of the invoice."
         }
       ]
     },
     {
       "id": "REQ-2",
-      "summary": "Add Back navigation specifically to Select Country and Explanation steps, integrating them with CalculatorFlowPage step navigation (including Back-to-home behavior from the initial step and Back/Continue actions on Explanation).",
+      "summary": "Add manual input field for Supplier Address with required validation",
       "acceptanceCriteria": [
-        "The “Select Country” step UI includes a Back button that returns the user to the previous location (or, if there is no prior step, navigates back to the app home/landing route) without breaking the flow.",
-        "The “Explanation” step UI includes both Back and Continue actions: Back returns to “VAT Results”; Continue advances to “Invoice Preview”.",
-        "CalculatorFlowPage step transitions remain consistent (i.e., no step skipping, and currentStep updates correctly when using Back/Continue)."
+        "Supplier Address field is present in the invoice details form",
+        "Field is marked as required with visual indicator",
+        "Validation error displays if field is empty when attempting PDF generation",
+        "Field value appears in the generated invoice PDF"
       ],
       "file_operations": [
         {
-          "path": "frontend/src/pages/CalculatorFlowPage.tsx",
+          "path": "frontend/src/components/invoice/InvoiceDetailsStep.tsx",
           "operation": "modify",
-          "description": "Update step wiring so: (1) CountrySelectionStep receives an onBack that invokes the existing handleBack logic (which navigates to '/' when currentStep is 0), and (2) ExplainVatPanel receives onBack (to return to VAT Results) and onNext/Continue (to advance to Invoice Preview) via the existing handleBack/handleNext logic, keeping currentStep consistent."
+          "description": "Add Supplier Address textarea input field to the invoice details form with required indicator. Include this field in the form state management and pass it to the invoice preview component for validation and PDF generation."
         },
         {
-          "path": "frontend/src/components/vat/CountrySelectionStep.tsx",
+          "path": "frontend/src/lib/invoice/validateInvoiceMandatoryFields.ts",
           "operation": "modify",
-          "description": "Extend props to accept onBack and render a Back button that triggers it; ensure UI placement does not interfere with country selection controls."
+          "description": "Add validation check for Supplier Address field. Include this field in the mandatory fields validation logic that returns missing field information."
         },
         {
-          "path": "frontend/src/components/vat/ExplainVatPanel.tsx",
+          "path": "frontend/src/lib/invoice/buildInvoiceHtml.ts",
           "operation": "modify",
-          "description": "Extend props to accept onBack and onNext, and render a Back button (goes to VAT Results) plus a Continue button (goes to Invoice Preview) in addition to the existing Export PDF control."
+          "description": "Include Supplier Address in the generated invoice HTML template. Display this field in the supplier information section of the invoice with proper formatting for multi-line addresses."
+        }
+      ]
+    },
+    {
+      "id": "REQ-3",
+      "summary": "Add manual input field for Supplier VAT Number with required validation",
+      "acceptanceCriteria": [
+        "Supplier VAT Number field is present in the invoice details form",
+        "Field is marked as required with visual indicator",
+        "Validation error displays if field is empty when attempting PDF generation",
+        "Field value appears in the generated invoice PDF"
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/components/invoice/InvoiceDetailsStep.tsx",
+          "operation": "modify",
+          "description": "Add Supplier VAT Number text input field to the invoice details form with required indicator. Include this field in the form state management and pass it to the invoice preview component for validation and PDF generation."
+        },
+        {
+          "path": "frontend/src/lib/invoice/validateInvoiceMandatoryFields.ts",
+          "operation": "modify",
+          "description": "Add validation check for Supplier VAT Number field. Include this field in the mandatory fields validation logic that returns missing field information."
+        },
+        {
+          "path": "frontend/src/lib/invoice/buildInvoiceHtml.ts",
+          "operation": "modify",
+          "description": "Include Supplier VAT Number in the generated invoice HTML template. Display this field in the supplier information section of the invoice."
+        }
+      ]
+    },
+    {
+      "id": "REQ-4",
+      "summary": "Add manual input field for Invoice Number with required validation",
+      "acceptanceCriteria": [
+        "Invoice Number field is present in the invoice details form",
+        "Field is marked as required with visual indicator",
+        "Validation error displays if field is empty when attempting PDF generation",
+        "Field value appears in the generated invoice PDF"
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/components/invoice/InvoiceDetailsStep.tsx",
+          "operation": "modify",
+          "description": "Add Invoice Number text input field to the invoice details form with required indicator. Include this field in the form state management and pass it to the invoice preview component for validation and PDF generation."
+        },
+        {
+          "path": "frontend/src/lib/invoice/validateInvoiceMandatoryFields.ts",
+          "operation": "modify",
+          "description": "Add validation check for Invoice Number field. Include this field in the mandatory fields validation logic that returns missing field information."
+        },
+        {
+          "path": "frontend/src/lib/invoice/buildInvoiceHtml.ts",
+          "operation": "modify",
+          "description": "Include Invoice Number in the generated invoice HTML template. Display this field prominently in the invoice header section."
+        }
+      ]
+    },
+    {
+      "id": "REQ-5",
+      "summary": "Add manual input field for Invoice Date with required validation",
+      "acceptanceCriteria": [
+        "Invoice Date field is present in the invoice details form with date picker",
+        "Field is marked as required with visual indicator",
+        "Validation error displays if field is empty when attempting PDF generation",
+        "Field value appears formatted correctly in the generated invoice PDF"
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/components/invoice/InvoiceDetailsStep.tsx",
+          "operation": "modify",
+          "description": "Add Invoice Date input field with date picker to the invoice details form with required indicator. Include this field in the form state management and pass it to the invoice preview component for validation and PDF generation."
+        },
+        {
+          "path": "frontend/src/lib/invoice/validateInvoiceMandatoryFields.ts",
+          "operation": "modify",
+          "description": "Add validation check for Invoice Date field. Include this field in the mandatory fields validation logic that returns missing field information."
+        },
+        {
+          "path": "frontend/src/lib/invoice/buildInvoiceHtml.ts",
+          "operation": "modify",
+          "description": "Include Invoice Date in the generated invoice HTML template. Display this field formatted according to locale standards in the invoice header section."
+        }
+      ]
+    },
+    {
+      "id": "REQ-6",
+      "summary": "Enforce validation that at least one line item must be present",
+      "acceptanceCriteria": [
+        "Validation prevents PDF download when line items array is empty",
+        "Clear error message displays when user attempts to download with no line items",
+        "PDF download button is disabled or shows validation error when no line items exist"
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/lib/invoice/validateInvoiceMandatoryFields.ts",
+          "operation": "modify",
+          "description": "Add validation check that ensures at least one line item exists in the invoice. Return appropriate error information when the line items array is empty."
+        },
+        {
+          "path": "frontend/src/components/invoice/InvoicePreview.tsx",
+          "operation": "modify",
+          "description": "Update PDF download button to check line item validation before allowing download. Display validation error when no line items are present and prevent PDF generation."
+        }
+      ]
+    },
+    {
+      "id": "REQ-7",
+      "summary": "Add validation that invoice grand total must be greater than zero",
+      "acceptanceCriteria": [
+        "Validation checks that calculated grand total is greater than zero",
+        "Clear error message displays when grand total is zero or negative",
+        "PDF download is prevented when grand total validation fails"
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/lib/invoice/validateInvoiceMandatoryFields.ts",
+          "operation": "modify",
+          "description": "Add validation check that ensures the calculated invoice grand total is greater than zero. Return appropriate error information when the total is zero or negative."
+        },
+        {
+          "path": "frontend/src/components/invoice/InvoicePreview.tsx",
+          "operation": "modify",
+          "description": "Update PDF download button to check grand total validation before allowing download. Display validation error when the total is zero or negative and prevent PDF generation."
+        }
+      ]
+    },
+    {
+      "id": "REQ-8",
+      "summary": "Display consolidated validation error list before PDF download",
+      "acceptanceCriteria": [
+        "All validation errors are collected and displayed together",
+        "Each error message clearly indicates which field or requirement is failing",
+        "Error display is visible and prominent when user attempts PDF download",
+        "PDF download is blocked until all validation errors are resolved"
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/components/invoice/InvoicePreview.tsx",
+          "operation": "modify",
+          "description": "Collect all validation errors from the validateInvoiceMandatoryFields function and display them in a consolidated error list. Show this list prominently when PDF download is attempted with validation failures. Block the download action until all errors are resolved."
+        },
+        {
+          "path": "frontend/src/components/invoice/InvoiceMandatoryFieldsChecklist.tsx",
+          "operation": "modify",
+          "description": "Update the mandatory fields checklist component to display all new supplier information fields and validation requirements. Show clear indicators for missing or invalid fields including the new supplier fields, line item requirement, and grand total validation."
         }
       ]
     }

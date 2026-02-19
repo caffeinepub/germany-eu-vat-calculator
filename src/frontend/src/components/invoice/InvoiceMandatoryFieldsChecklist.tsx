@@ -11,7 +11,7 @@ export default function InvoiceMandatoryFieldsChecklist({ validation }: InvoiceM
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base">Invoice Mandatory Fields</CardTitle>
+        <CardTitle className="text-base">Invoice Compliance Checklist</CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
         {validation.checks
@@ -31,8 +31,12 @@ export default function InvoiceMandatoryFieldsChecklist({ validation }: InvoiceM
           <Alert variant="destructive" className="mt-4">
             <AlertTriangle className="h-4 w-4" />
             <AlertDescription className="ml-2">
-              <strong>⚠ Missing mandatory field:</strong> {validation.missingFields[0]}
-              {validation.missingFields.length > 1 && ` (+${validation.missingFields.length - 1} more)`}
+              <strong>Missing required fields:</strong>
+              <ul className="list-disc list-inside mt-2 space-y-1">
+                {validation.missingFields.map((field, index) => (
+                  <li key={index} className="text-sm">{field}</li>
+                ))}
+              </ul>
             </AlertDescription>
           </Alert>
         )}

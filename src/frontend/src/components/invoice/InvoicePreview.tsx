@@ -5,7 +5,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { ArrowLeft, Download, Save, AlertTriangle } from 'lucide-react';
 import { buildInvoiceHtml } from '../../lib/invoice/buildInvoiceHtml';
 import { performInvoiceRiskCheck } from '../../lib/invoice/riskCheck';
-import { validateInvoiceComplianceSync } from '../../lib/invoice/validateInvoiceCompliance';
+import { validateInvoiceMandatoryFields } from '../../lib/invoice/validateInvoiceMandatoryFields';
 import { deriveInvoiceVatOutcome } from '../../lib/invoice/deriveInvoiceVatOutcome';
 import { type VATCalculationInput, type VATCalculationResult } from '../../lib/vat/calculateVat';
 import { calculateInvoiceTotals } from '../../lib/invoice/invoiceLineItems';
@@ -16,6 +16,7 @@ import { useEventLogger } from '../../hooks/useEventLogger';
 import { useInternetIdentity } from '../../hooks/useInternetIdentity';
 import { CORE_EVENTS } from '../../lib/analytics/coreEvents';
 import { downloadFile } from '../../utils/downloadFile';
+import { getAutoLegalVatText } from '../../lib/invoice/getAutoLegalVatText';
 import InvoiceRiskCheckPanel from './InvoiceRiskCheckPanel';
 import LimitReachedModal from '../usage/LimitReachedModal';
 import { toast } from 'sonner';
@@ -23,10 +24,11 @@ import { toast } from 'sonner';
 interface InvoicePreviewProps {
   result: VATCalculationResult;
   calculationInput: VATCalculationInput;
+  invoiceData: InvoiceData;
   onBack: () => void;
 }
 
-export default function InvoicePreview({ result, calculationInput, onBack }: InvoicePreviewProps) {
+export default function InvoicePreview({ result, calculationInput, invoiceData, onBack }: InvoicePreviewProps) {
   const { saveInvoice, canSaveInvoice, remaining, activePlan } = useInvoiceQuota();
   const downloadPdf = useDownloadInvoicePdf();
   const { log } = useEventLogger();
@@ -36,46 +38,38 @@ export default function InvoicePreview({ result, calculationInput, onBack }: Inv
   const [savedInvoiceId, setSavedInvoiceId] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   
-  // Create a mock InvoiceData from calculationInput for preview
-  const mockInvoiceData: InvoiceData = {
-    invoiceNumber: calculationInput.invoiceNumber || 'INV-PREVIEW',
-    invoiceDate: calculationInput.invoiceDate || new Date().toISOString().split('T')[0],
-    sellerName: calculationInput.sellerName || '',
-    sellerAddress: calculationInput.sellerAddress || '',
-    sellerVatId: calculationInput.sellerVatId || '',
-    sellerCountry: calculationInput.sellerCountry,
-    customerName: calculationInput.customerName || '',
-    customerAddress: calculationInput.customerAddress || '',
-    customerVatId: calculationInput.vatId || '',
-    lineItems: [],
-    legalVatText: calculationInput.legalVatTextOverride || '',
-    notes: '',
-  };
-  
-  const invoiceHtml = buildInvoiceHtml(mockInvoiceData, result);
+  const invoiceHtml = buildInvoiceHtml(invoiceData, result);
   
   const riskCheck = performInvoiceRiskCheck(calculationInput, result);
 
-  // Final compliance validation
-  const finalValidation = validateInvoiceComplianceSync(
+  // Generate auto legal text for validation
+  const autoLegalText = getAutoLegalVatText(result.scenario, calculationInput.sellerCountry);
+
+  // Final mandatory fields validation with line items
+  const mandatoryFieldsValidation = validateInvoiceMandatoryFields(
     calculationInput,
     result,
-    mockInvoiceData.lineItems || [],
-    invoiceHtml
+    autoLegalText,
+    invoiceData.lineItems
   );
 
-  const [complianceErrors, setComplianceErrors] = useState<string[]>([]);
+  const [validationErrors, setValidationErrors] = useState<string[]>([]);
 
   useEffect(() => {
-    setComplianceErrors(
-      finalValidation.errors.filter(e => e.blocking).map(e => e.message)
-    );
-  }, [finalValidation]);
+    const errors: string[] = [];
+    
+    // Check all mandatory fields
+    if (!mandatoryFieldsValidation.allPassed) {
+      errors.push(...mandatoryFieldsValidation.missingFields.map(field => `${field} is required.`));
+    }
 
-  const canDownloadPdf = complianceErrors.length === 0;
+    setValidationErrors(errors);
+  }, [mandatoryFieldsValidation]);
+
+  const canDownloadPdf = validationErrors.length === 0;
 
   // Calculate VAT outcome using the VAT engine
-  const invoiceTotals = calculateInvoiceTotals(mockInvoiceData.lineItems || []);
+  const invoiceTotals = calculateInvoiceTotals(invoiceData.lineItems || []);
   const vatOutcome = deriveInvoiceVatOutcome(calculationInput, result, invoiceTotals.netAmount);
 
   const handleSaveInvoice = async () => {
@@ -95,8 +89,8 @@ export default function InvoicePreview({ result, calculationInput, onBack }: Inv
       
       await saveInvoice({
         id: invoiceId,
-        invoiceNumber: mockInvoiceData.invoiceNumber,
-        invoiceDate: mockInvoiceData.invoiceDate,
+        invoiceNumber: invoiceData.invoiceNumber,
+        invoiceDate: invoiceData.invoiceDate,
         htmlSource: invoiceHtml,
         vatAmount: vatOutcome.vatAmount,
         vatRate: vatOutcome.vatRate,
@@ -141,13 +135,13 @@ export default function InvoicePreview({ result, calculationInput, onBack }: Inv
         </CardContent>
       </Card>
 
-      {complianceErrors.length > 0 && (
+      {validationErrors.length > 0 && (
         <Alert variant="destructive">
           <AlertTriangle className="h-4 w-4" />
           <AlertDescription>
-            <p className="font-medium mb-2">Compliance Errors:</p>
+            <p className="font-medium mb-2">Please fix all validation errors before downloading PDF:</p>
             <ul className="list-disc list-inside space-y-1">
-              {complianceErrors.map((error, index) => (
+              {validationErrors.map((error, index) => (
                 <li key={index} className="text-sm">{error}</li>
               ))}
             </ul>

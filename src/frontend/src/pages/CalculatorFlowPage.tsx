@@ -1,156 +1,145 @@
 import { useState } from 'react';
 import { useNavigate, useSearch } from '@tanstack/react-router';
-import FlowStepper from '../components/vat/FlowStepper';
 import CountrySelectionStep from '../components/vat/CountrySelectionStep';
-import CountryTransactionStep from '../components/vat/CountryTransactionStep';
+import TransactionDetailsStep from '../components/vat/TransactionDetailsStep';
 import VatResultsStep from '../components/vat/VatResultsStep';
 import ExplainVatPanel from '../components/vat/ExplainVatPanel';
+import InvoiceDetailsStep, { type InvoiceData } from '../components/invoice/InvoiceDetailsStep';
 import InvoicePreview from '../components/invoice/InvoicePreview';
+import FlowStepper from '../components/vat/FlowStepper';
 import { type VATCalculationInput, type VATCalculationResult } from '../lib/vat/calculateVat';
 import { calculateUnifiedVat } from '../lib/vat/calculateUnifiedVat';
-import { toBackendVatCalculation } from '../lib/vat/toBackendVatCalculation';
-import { useActor } from '../hooks/useActor';
-import { toast } from 'sonner';
 
-const STEPS = [
-  { id: 'select-country', label: 'Select Country' },
-  { id: 'transaction-details', label: 'Transaction Details' },
-  { id: 'vat-results', label: 'VAT Results' },
-  { id: 'explanation', label: 'Explanation' },
-  { id: 'invoice-preview', label: 'Invoice Preview' },
+type Step = 'country' | 'transaction' | 'results' | 'explain' | 'invoice-details' | 'invoice-preview';
+
+const STEP_CONFIGS = [
+  { id: 'country', label: 'Country' },
+  { id: 'transaction', label: 'Transaction' },
+  { id: 'results', label: 'Results' },
+  { id: 'explain', label: 'Explain' },
+  { id: 'invoice-details', label: 'Invoice' },
+  { id: 'invoice-preview', label: 'Preview' },
 ];
 
 export default function CalculatorFlowPage() {
   const navigate = useNavigate();
   const search = useSearch({ from: '/calculator' });
-  const { actor } = useActor();
-
-  const [currentStep, setCurrentStep] = useState(0);
-  const [selectedCountry, setSelectedCountry] = useState<string>(search.country || '');
-  const [isCalculating, setIsCalculating] = useState(false);
-
-  const [formData, setFormData] = useState<VATCalculationInput>({
-    sellerCountry: selectedCountry,
-    customerCountry: selectedCountry,
-    buyerCountry: selectedCountry,
-    customerType: 'B2C',
-    vatId: '',
-    serviceCategory: 'digital',
-    netAmount: 0,
-    previousYearTurnover: 0,
-    currentYearTurnover: 0,
-    vatRate: 'standard',
-    isExport: false,
-    supplyType: 'services',
+  const [currentStep, setCurrentStep] = useState<Step>('country');
+  const [formData, setFormData] = useState<Partial<VATCalculationInput>>({
+    sellerCountry: search.country || '',
   });
+  const [result, setResult] = useState<VATCalculationResult | null>(null);
+  const [invoiceData, setInvoiceData] = useState<InvoiceData | null>(null);
 
-  const [vatResult, setVatResult] = useState<VATCalculationResult | null>(null);
-
-  const handleCountrySelect = (countryCode: string) => {
-    setSelectedCountry(countryCode);
-    setFormData((prev) => ({
-      ...prev,
-      sellerCountry: countryCode,
-      customerCountry: countryCode,
-      buyerCountry: countryCode,
-    }));
-    setCurrentStep(1);
+  const handleCountrySelect = (country: string) => {
+    setFormData({ ...formData, sellerCountry: country });
+    setCurrentStep('transaction');
   };
 
-  const handleTransactionNext = async (data: Partial<VATCalculationInput>) => {
+  const handleTransactionComplete = (data: Partial<VATCalculationInput>) => {
     const updatedFormData = { ...formData, ...data };
     setFormData(updatedFormData);
-    setIsCalculating(true);
 
-    try {
-      // Calculate using frontend unified VAT engine
-      const frontendResult = calculateUnifiedVat(updatedFormData);
-      
-      // Also call backend for consistency check
-      if (actor) {
-        const backendPayload = toBackendVatCalculation(updatedFormData);
-        const backendResult = await actor.calculate(backendPayload);
-        
-        // Verify consistency (allow small floating-point differences)
-        const netDiff = Math.abs(frontendResult.netAmountCents / 100 - backendResult.priceNetEuros);
-        const grossDiff = Math.abs(frontendResult.grossAmountCents / 100 - backendResult.priceGrossEuros);
-        
-        if (netDiff > 0.02 || grossDiff > 0.02) {
-          console.warn('Frontend/backend calculation mismatch:', {
-            frontend: frontendResult,
-            backend: backendResult,
-          });
-        }
-      }
+    const calculationResult = calculateUnifiedVat(updatedFormData as VATCalculationInput);
+    setResult(calculationResult);
+    setCurrentStep('results');
+  };
 
-      setVatResult(frontendResult);
-      setCurrentStep(2);
-    } catch (error) {
-      console.error('VAT calculation error:', error);
-      toast.error('Failed to calculate VAT. Please try again.');
-    } finally {
-      setIsCalculating(false);
-    }
+  const handleResultsNext = () => {
+    setCurrentStep('explain');
+  };
+
+  const handleExplainNext = () => {
+    setCurrentStep('invoice-details');
+  };
+
+  const handleInvoiceDetailsNext = (data: InvoiceData) => {
+    setInvoiceData(data);
+    
+    // Merge invoice data into formData for preview
+    const updatedFormData: VATCalculationInput = {
+      ...formData,
+      invoiceNumber: data.invoiceNumber,
+      invoiceDate: data.invoiceDate,
+      supplierLegalName: data.supplierLegalName,
+      supplierAddress: data.supplierAddress,
+      supplierVatNumber: data.supplierVatNumber,
+      sellerName: data.sellerName,
+      sellerAddress: data.sellerAddress,
+      sellerVatId: data.sellerVatId,
+      customerName: data.customerName,
+      customerAddress: data.customerAddress,
+      legalVatTextOverride: data.legalVatText,
+    } as VATCalculationInput;
+    
+    setFormData(updatedFormData);
+    setCurrentStep('invoice-preview');
   };
 
   const handleBack = () => {
-    if (currentStep > 0) {
-      setCurrentStep(currentStep - 1);
+    const steps: Step[] = ['country', 'transaction', 'results', 'explain', 'invoice-details', 'invoice-preview'];
+    const currentIndex = steps.indexOf(currentStep);
+    if (currentIndex > 0) {
+      setCurrentStep(steps[currentIndex - 1]);
     } else {
       navigate({ to: '/', search: {} });
     }
   };
 
-  const handleNext = () => {
-    if (currentStep < STEPS.length - 1) {
-      setCurrentStep(currentStep + 1);
-    }
-  };
+  const currentStepIndex = STEP_CONFIGS.findIndex(s => s.id === currentStep);
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl">
-      <FlowStepper steps={STEPS} currentStep={currentStep} />
+      <FlowStepper steps={STEP_CONFIGS} currentStep={currentStepIndex} />
 
       <div className="mt-8">
-        {currentStep === 0 && (
-          <CountrySelectionStep 
+        {currentStep === 'country' && (
+          <CountrySelectionStep
             onSelectCountry={handleCountrySelect}
             onBack={handleBack}
           />
         )}
 
-        {currentStep === 1 && selectedCountry && (
-          <CountryTransactionStep
-            countryCode={selectedCountry}
-            initialData={formData}
-            onNext={handleTransactionNext}
+        {currentStep === 'transaction' && (
+          <TransactionDetailsStep
+            initialData={formData as VATCalculationInput}
+            onNext={handleTransactionComplete}
             onBack={handleBack}
-            isCalculating={isCalculating}
           />
         )}
 
-        {currentStep === 2 && vatResult && (
+        {currentStep === 'results' && result && (
           <VatResultsStep
-            result={vatResult}
-            countryCode={selectedCountry}
-            onNext={handleNext}
+            result={result}
+            countryCode={formData.sellerCountry || ''}
+            onNext={handleResultsNext}
             onBack={handleBack}
           />
         )}
 
-        {currentStep === 3 && vatResult && (
+        {currentStep === 'explain' && result && (
           <ExplainVatPanel
-            formData={formData}
-            result={vatResult}
+            formData={formData as VATCalculationInput}
+            result={result}
             onBack={handleBack}
-            onNext={handleNext}
+            onNext={handleExplainNext}
           />
         )}
 
-        {currentStep === 4 && vatResult && (
+        {currentStep === 'invoice-details' && result && (
+          <InvoiceDetailsStep
+            vatResult={result}
+            calculationInput={formData as VATCalculationInput}
+            onNext={handleInvoiceDetailsNext}
+            onBack={handleBack}
+          />
+        )}
+
+        {currentStep === 'invoice-preview' && result && invoiceData && (
           <InvoicePreview
-            result={vatResult}
-            calculationInput={formData}
+            result={result}
+            calculationInput={formData as VATCalculationInput}
+            invoiceData={invoiceData}
             onBack={handleBack}
           />
         )}

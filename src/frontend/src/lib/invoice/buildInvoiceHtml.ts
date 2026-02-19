@@ -18,6 +18,8 @@ export function buildInvoiceHtml(
   const legalVatText = details.legalVatTextOverride || result.legalNote || '';
   
   // Translate if requested
+  const supplierLegalName = details.translateToEnglish ? translateGermanToEnglish(details.supplierLegalName) : details.supplierLegalName;
+  const supplierAddress = details.translateToEnglish ? translateGermanToEnglish(details.supplierAddress) : details.supplierAddress;
   const sellerName = details.translateToEnglish ? translateGermanToEnglish(details.sellerName) : details.sellerName;
   const sellerAddress = details.translateToEnglish ? translateGermanToEnglish(details.sellerAddress) : details.sellerAddress;
   const customerName = details.translateToEnglish ? translateGermanToEnglish(details.customerName) : details.customerName;
@@ -144,11 +146,20 @@ export function buildInvoiceHtml(
   </div>
 
   <div class="party-info">
+    <div class="party-label">Supplier:</div>
+    <div>${supplierLegalName}</div>
+    <div style="white-space: pre-wrap;">${supplierAddress}</div>
+    <div>VAT Number: ${details.supplierVatNumber}</div>
+  </div>
+
+  ${sellerName ? `
+  <div class="party-info">
     <div class="party-label">Seller:</div>
     <div>${sellerName}</div>
     <div>${sellerAddress}</div>
     <div>VAT ID: ${details.sellerVatId}</div>
   </div>
+  ` : ''}
 
   <div class="party-info">
     <div class="party-label">Buyer:</div>
@@ -194,6 +205,8 @@ export function buildInvoiceHtml(
   </table>
 
   ${legalVatText ? `<div class="legal-text">${legalVatText}</div>` : ''}
+  
+  ${details.notes ? `<div class="legal-text" style="border-left-color: #10b981;"><strong>Notes:</strong><br/>${details.notes}</div>` : ''}
   
   <div class="disclaimer">
     ${GLOBAL_VAT_DISCLAIMER}

@@ -1,41 +1,19 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-18T12:07:32.487Z",
-  "summary": "Diff adds an explicit Back button to the initial Country selection step and adds Back/Continue controls to the VAT Explanation step, plus a generic `handleBack` in `CalculatorFlowPage` that decrements `currentStep` or navigates to `/` when on the first step. However, the diff summary does not provide clear evidence that *every* calculator step (Transaction Details, VAT Results, Invoice Preview) now exposes a visible Back control, and it introduces unrelated features (PDF export/paywall and backend calculation consistency checking).",
-  "missing_requirements": [
-    {
-      "id": "REQ-1",
-      "requirement": "Add a visible Back button/navigation control on every step (“tab”) of the VAT calculator flow (Select Country, Transaction Details, VAT Results, Explanation, Invoice Preview).",
-      "reason": "The diff shows Back buttons added for Select Country (`CountrySelectionStep.tsx`) and for Explanation (`ExplainVatPanel.tsx`), but there is no direct evidence in the provided diff content that the Transaction Details step, VAT Results step, and Invoice Preview step UIs include a visible Back action/button.",
-      "evidence": [
-        "frontend/src/components/vat/CountrySelectionStep.tsx",
-        "frontend/src/components/vat/ExplainVatPanel.tsx",
-        "frontend/src/pages/CalculatorFlowPage.tsx (truncated)"
-      ]
-    }
-  ],
-  "hallucinated_features": [
-    {
-      "description": "Pro-only “Export as PDF” functionality (with paywall dialog/alert) added to the VAT Explanation panel.",
-      "reason": "BuildRequest only asks for Back navigation across steps; it explicitly notes non-goals around changing logic/routing and does not request PDF export or paywall behavior.",
-      "evidence": [
-        "frontend/src/components/vat/ExplainVatPanel.tsx"
-      ]
-    },
-    {
-      "description": "Backend calculation consistency check calling `actor.calculate(...)` in the calculator flow.",
-      "reason": "BuildRequest states no backend changes are required and focuses on Back navigation UI; adding extra backend calls/consistency checking is not requested for this change.",
-      "evidence": [
-        "frontend/src/pages/CalculatorFlowPage.tsx (truncated)"
-      ]
-    }
-  ],
-  "confidence": 0.68,
+  "generatedAt": "2026-02-19T07:23:00.468Z",
+  "summary": "All requested invoice compliance fields and validation logic have been implemented. Supplier Legal Name, Supplier Address, Supplier VAT Number, Invoice Number, and Invoice Date fields are present with required validation. Line item and grand total validation logic exists. Consolidated error display is implemented in InvoicePreview and InvoiceMandatoryFieldsChecklist components. No missing requirements or hallucinated features detected.",
+  "missing_requirements": [],
+  "hallucinated_features": [],
+  "confidence": 0.95,
   "changed_files": [
     "frontend-file-summaries.txt",
-    "frontend/src/components/vat/CountrySelectionStep.tsx",
-    "frontend/src/components/vat/ExplainVatPanel.tsx",
+    "frontend/src/components/invoice/InvoiceDetailsStep.tsx",
+    "frontend/src/components/invoice/InvoiceMandatoryFieldsChecklist.tsx",
+    "frontend/src/components/invoice/InvoicePreview.tsx",
+    "frontend/src/lib/invoice/buildInvoiceHtml.ts",
+    "frontend/src/lib/invoice/validateInvoiceMandatoryFields.ts",
+    "frontend/src/lib/vat/calculateVat.ts",
     "frontend/src/pages/CalculatorFlowPage.tsx",
     "project_state.json"
   ]
