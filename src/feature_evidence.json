@@ -2,12 +2,12 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-add-manual-input-field-for-supplier-legal-name-in-the-invoice-form-with-required-validation-that-prevents-pdf-download-if-empty",
-      "featureTitle": "Add manual input field for Supplier Legal Name in the invoice form with required validation that prevents PDF download if empty",
+      "featureId": "feature-fix-the-cannot-read-properties-of-undefined-reading-tostring-error-that-occurs-when-a-country-is-selected-in-the-vat-calculator-flow",
+      "featureTitle": "Fix the 'Cannot read properties of undefined (reading toString)' error that occurs when a country is selected in the VAT calculator flow",
       "files": [
-        "frontend/src/components/invoice/InvoiceDetailsStep.tsx",
-        "frontend/src/lib/invoice/buildInvoiceHtml.ts",
-        "frontend/src/lib/invoice/validateInvoiceMandatoryFields.ts"
+        "frontend/src/components/vat/CountrySelectionStep.tsx",
+        "frontend/src/lib/vat/euCountryConfig.ts",
+        "frontend/src/lib/vat/vatTable.ts"
       ],
       "components": [
         "stripe@3.0.0",
@@ -25,12 +25,15 @@
       "confidence": "high"
     },
     {
-      "featureId": "feature-add-manual-input-field-for-supplier-address-in-the-invoice-form-with-required-validation-that-prevents-pdf-download-if-empty",
-      "featureTitle": "Add manual input field for Supplier Address in the invoice form with required validation that prevents PDF download if empty",
+      "featureId": "feature-add-defensive-null-undefined-checks-in-vat-calculation-and-country-selection-logic-to-prevent-similar-runtime-errors",
+      "featureTitle": "Add defensive null/undefined checks in VAT calculation and country selection logic to prevent similar runtime errors",
       "files": [
-        "frontend/src/components/invoice/InvoiceDetailsStep.tsx",
-        "frontend/src/lib/invoice/buildInvoiceHtml.ts",
-        "frontend/src/lib/invoice/validateInvoiceMandatoryFields.ts"
+        "frontend/src/components/vat/CountryTransactionStep.tsx",
+        "frontend/src/lib/invoice/currency.ts",
+        "frontend/src/lib/vat/calculateUnifiedVat.ts",
+        "frontend/src/lib/vat/determineVatRate.ts",
+        "frontend/src/lib/vat/selectedSellerCountry.ts",
+        "frontend/src/lib/vat/toBackendVatCalculation.ts"
       ],
       "components": [
         "stripe@3.0.0",
@@ -44,141 +47,6 @@
       ],
       "testIds": [
         "REQ-2"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-add-manual-input-field-for-supplier-vat-number-in-the-invoice-form-with-required-validation-that-prevents-pdf-download-if-empty",
-      "featureTitle": "Add manual input field for Supplier VAT Number in the invoice form with required validation that prevents PDF download if empty",
-      "files": [
-        "frontend/src/components/invoice/InvoiceDetailsStep.tsx",
-        "frontend/src/lib/invoice/buildInvoiceHtml.ts",
-        "frontend/src/lib/invoice/validateInvoiceMandatoryFields.ts"
-      ],
-      "components": [
-        "stripe@3.0.0",
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0",
-        "http-outcalls@3.0.0",
-        "authorization@4.0.0"
-      ],
-      "testIds": [
-        "REQ-3"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-add-manual-input-field-for-invoice-number-in-the-invoice-form-with-required-validation-that-prevents-pdf-download-if-empty",
-      "featureTitle": "Add manual input field for Invoice Number in the invoice form with required validation that prevents PDF download if empty",
-      "files": [
-        "frontend/src/components/invoice/InvoiceDetailsStep.tsx",
-        "frontend/src/lib/invoice/buildInvoiceHtml.ts",
-        "frontend/src/lib/invoice/validateInvoiceMandatoryFields.ts"
-      ],
-      "components": [
-        "stripe@3.0.0",
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0",
-        "http-outcalls@3.0.0",
-        "authorization@4.0.0"
-      ],
-      "testIds": [
-        "REQ-4"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-add-manual-input-field-for-invoice-date-in-the-invoice-form-with-required-validation-that-prevents-pdf-download-if-empty",
-      "featureTitle": "Add manual input field for Invoice Date in the invoice form with required validation that prevents PDF download if empty",
-      "files": [
-        "frontend/src/components/invoice/InvoiceDetailsStep.tsx",
-        "frontend/src/lib/invoice/buildInvoiceHtml.ts",
-        "frontend/src/lib/invoice/validateInvoiceMandatoryFields.ts"
-      ],
-      "components": [
-        "stripe@3.0.0",
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0",
-        "http-outcalls@3.0.0",
-        "authorization@4.0.0"
-      ],
-      "testIds": [
-        "REQ-5"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-enforce-validation-that-at-least-one-line-item-must-be-present-before-allowing-pdf-download",
-      "featureTitle": "Enforce validation that at least one line item must be present before allowing PDF download",
-      "files": [
-        "frontend/src/components/invoice/InvoicePreview.tsx",
-        "frontend/src/lib/invoice/validateInvoiceMandatoryFields.ts"
-      ],
-      "components": [
-        "stripe@3.0.0",
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0",
-        "http-outcalls@3.0.0",
-        "authorization@4.0.0"
-      ],
-      "testIds": [
-        "REQ-6"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-add-validation-that-invoice-grand-total-must-be-greater-than-zero-before-allowing-pdf-download",
-      "featureTitle": "Add validation that invoice grand total must be greater than zero before allowing PDF download",
-      "files": [
-        "frontend/src/components/invoice/InvoicePreview.tsx",
-        "frontend/src/lib/invoice/validateInvoiceMandatoryFields.ts"
-      ],
-      "components": [
-        "stripe@3.0.0",
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0",
-        "http-outcalls@3.0.0",
-        "authorization@4.0.0"
-      ],
-      "testIds": [
-        "REQ-7"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-display-all-validation-errors-in-a-consolidated-validation-error-list-before-pdf-download-showing-which-required-fields-are-missing-or-invalid",
-      "featureTitle": "Display all validation errors in a consolidated validation error list before PDF download, showing which required fields are missing or invalid",
-      "files": [
-        "frontend/src/components/invoice/InvoiceMandatoryFieldsChecklist.tsx",
-        "frontend/src/components/invoice/InvoicePreview.tsx"
-      ],
-      "components": [
-        "stripe@3.0.0",
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0",
-        "http-outcalls@3.0.0",
-        "authorization@4.0.0"
-      ],
-      "testIds": [
-        "REQ-8"
       ],
       "confidence": "high"
     }

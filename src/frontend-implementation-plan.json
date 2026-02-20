@@ -1,204 +1,82 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Add manual invoice compliance fields with validation",
+  "title": "Fix toString error on country selection",
   "requirements": [
     {
       "id": "REQ-1",
-      "summary": "Add manual input field for Supplier Legal Name with required validation",
+      "summary": "Fix the 'Cannot read properties of undefined (reading toString)' error that occurs when a country is selected in the VAT calculator flow",
       "acceptanceCriteria": [
-        "Supplier Legal Name field is present in the invoice details form",
-        "Field is marked as required with visual indicator",
-        "Validation error displays if field is empty when attempting PDF generation",
-        "Field value appears in the generated invoice PDF"
+        "Country selection completes without throwing toString errors",
+        "User can successfully proceed through the calculator flow after selecting a country",
+        "All country selection components handle undefined/null values gracefully"
       ],
       "file_operations": [
         {
-          "path": "frontend/src/components/invoice/InvoiceDetailsStep.tsx",
+          "path": "frontend/src/components/vat/CountrySelectionStep.tsx",
           "operation": "modify",
-          "description": "Add Supplier Legal Name text input field to the invoice details form with required indicator. Include this field in the form state management and pass it to the invoice preview component for validation and PDF generation."
+          "description": "Add null/undefined checks before any toString() calls on country objects. Ensure country data is validated before rendering country buttons. Add defensive guards around country code access and display logic."
         },
         {
-          "path": "frontend/src/lib/invoice/validateInvoiceMandatoryFields.ts",
+          "path": "frontend/src/components/vat/EuVatIntroStep.tsx",
           "operation": "modify",
-          "description": "Add validation check for Supplier Legal Name field. Include this field in the mandatory fields validation logic that returns missing field information."
+          "description": "Add null/undefined validation for country data before rendering the country grid. Ensure VAT rate access uses optional chaining and provides fallback values when rates are undefined."
         },
         {
-          "path": "frontend/src/lib/invoice/buildInvoiceHtml.ts",
+          "path": "frontend/src/components/vat/CountryVatDetailsStep.tsx",
           "operation": "modify",
-          "description": "Include Supplier Legal Name in the generated invoice HTML template. Display this field in the supplier information section of the invoice."
+          "description": "Add defensive checks for country-specific VAT information access. Use optional chaining when accessing VAT rates and country configuration data. Handle cases where country details may be undefined or incomplete."
+        },
+        {
+          "path": "frontend/src/lib/vat/vatTable.ts",
+          "operation": "modify",
+          "description": "Add type guards and validation to country lookup functions. Ensure all functions that return country data handle missing entries gracefully and return safe default values or null instead of undefined. Add explicit null checks before any data transformations."
+        },
+        {
+          "path": "frontend/src/lib/vat/euCountryConfig.ts",
+          "operation": "modify",
+          "description": "Add defensive null/undefined checks in the country config retrieval function. Ensure the function returns a safe fallback structure when country data is missing. Validate country codes before lookup operations."
         }
       ]
     },
     {
       "id": "REQ-2",
-      "summary": "Add manual input field for Supplier Address with required validation",
+      "summary": "Add defensive null/undefined checks in VAT calculation and country selection logic to prevent similar runtime errors",
       "acceptanceCriteria": [
-        "Supplier Address field is present in the invoice details form",
-        "Field is marked as required with visual indicator",
-        "Validation error displays if field is empty when attempting PDF generation",
-        "Field value appears in the generated invoice PDF"
+        "All country-related data access uses optional chaining or explicit null checks",
+        "VAT rate lookups handle missing country data safely",
+        "Currency formatting functions validate input before calling toString()"
       ],
       "file_operations": [
         {
-          "path": "frontend/src/components/invoice/InvoiceDetailsStep.tsx",
+          "path": "frontend/src/lib/vat/calculateUnifiedVat.ts",
           "operation": "modify",
-          "description": "Add Supplier Address textarea input field to the invoice details form with required indicator. Include this field in the form state management and pass it to the invoice preview component for validation and PDF generation."
+          "description": "Add null/undefined guards before accessing country configuration and VAT rates. Validate input parameters at function entry points and provide safe fallbacks for missing data. Use optional chaining when accessing nested country properties."
         },
         {
-          "path": "frontend/src/lib/invoice/validateInvoiceMandatoryFields.ts",
+          "path": "frontend/src/lib/vat/determineVatRate.ts",
           "operation": "modify",
-          "description": "Add validation check for Supplier Address field. Include this field in the mandatory fields validation logic that returns missing field information."
+          "description": "Add explicit null checks before VAT rate calculations. Ensure all country and category lookups validate their results before proceeding. Use optional chaining when accessing rate data and provide default values when rates are undefined."
         },
         {
-          "path": "frontend/src/lib/invoice/buildInvoiceHtml.ts",
+          "path": "frontend/src/lib/invoice/currency.ts",
           "operation": "modify",
-          "description": "Include Supplier Address in the generated invoice HTML template. Display this field in the supplier information section of the invoice with proper formatting for multi-line addresses."
-        }
-      ]
-    },
-    {
-      "id": "REQ-3",
-      "summary": "Add manual input field for Supplier VAT Number with required validation",
-      "acceptanceCriteria": [
-        "Supplier VAT Number field is present in the invoice details form",
-        "Field is marked as required with visual indicator",
-        "Validation error displays if field is empty when attempting PDF generation",
-        "Field value appears in the generated invoice PDF"
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/components/invoice/InvoiceDetailsStep.tsx",
-          "operation": "modify",
-          "description": "Add Supplier VAT Number text input field to the invoice details form with required indicator. Include this field in the form state management and pass it to the invoice preview component for validation and PDF generation."
+          "description": "Add input validation to all currency formatting functions before calling toString() on numeric values. Check that amount parameters are defined and valid numbers before formatting. Use optional chaining when accessing currency configuration from country data."
         },
         {
-          "path": "frontend/src/lib/invoice/validateInvoiceMandatoryFields.ts",
+          "path": "frontend/src/components/vat/CountryTransactionStep.tsx",
           "operation": "modify",
-          "description": "Add validation check for Supplier VAT Number field. Include this field in the mandatory fields validation logic that returns missing field information."
+          "description": "Add null/undefined validation for country and VAT rate data before rendering form fields. Ensure VAT ID validation handles undefined country codes gracefully. Use optional chaining when accessing country-specific configuration."
         },
         {
-          "path": "frontend/src/lib/invoice/buildInvoiceHtml.ts",
+          "path": "frontend/src/lib/vat/toBackendVatCalculation.ts",
           "operation": "modify",
-          "description": "Include Supplier VAT Number in the generated invoice HTML template. Display this field in the supplier information section of the invoice."
-        }
-      ]
-    },
-    {
-      "id": "REQ-4",
-      "summary": "Add manual input field for Invoice Number with required validation",
-      "acceptanceCriteria": [
-        "Invoice Number field is present in the invoice details form",
-        "Field is marked as required with visual indicator",
-        "Validation error displays if field is empty when attempting PDF generation",
-        "Field value appears in the generated invoice PDF"
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/components/invoice/InvoiceDetailsStep.tsx",
-          "operation": "modify",
-          "description": "Add Invoice Number text input field to the invoice details form with required indicator. Include this field in the form state management and pass it to the invoice preview component for validation and PDF generation."
+          "description": "Add validation for all input parameters before constructing the backend payload. Ensure country codes are defined and valid before normalization. Add null checks before accessing nested properties in the form state."
         },
         {
-          "path": "frontend/src/lib/invoice/validateInvoiceMandatoryFields.ts",
+          "path": "frontend/src/lib/vat/selectedSellerCountry.ts",
           "operation": "modify",
-          "description": "Add validation check for Invoice Number field. Include this field in the mandatory fields validation logic that returns missing field information."
-        },
-        {
-          "path": "frontend/src/lib/invoice/buildInvoiceHtml.ts",
-          "operation": "modify",
-          "description": "Include Invoice Number in the generated invoice HTML template. Display this field prominently in the invoice header section."
-        }
-      ]
-    },
-    {
-      "id": "REQ-5",
-      "summary": "Add manual input field for Invoice Date with required validation",
-      "acceptanceCriteria": [
-        "Invoice Date field is present in the invoice details form with date picker",
-        "Field is marked as required with visual indicator",
-        "Validation error displays if field is empty when attempting PDF generation",
-        "Field value appears formatted correctly in the generated invoice PDF"
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/components/invoice/InvoiceDetailsStep.tsx",
-          "operation": "modify",
-          "description": "Add Invoice Date input field with date picker to the invoice details form with required indicator. Include this field in the form state management and pass it to the invoice preview component for validation and PDF generation."
-        },
-        {
-          "path": "frontend/src/lib/invoice/validateInvoiceMandatoryFields.ts",
-          "operation": "modify",
-          "description": "Add validation check for Invoice Date field. Include this field in the mandatory fields validation logic that returns missing field information."
-        },
-        {
-          "path": "frontend/src/lib/invoice/buildInvoiceHtml.ts",
-          "operation": "modify",
-          "description": "Include Invoice Date in the generated invoice HTML template. Display this field formatted according to locale standards in the invoice header section."
-        }
-      ]
-    },
-    {
-      "id": "REQ-6",
-      "summary": "Enforce validation that at least one line item must be present",
-      "acceptanceCriteria": [
-        "Validation prevents PDF download when line items array is empty",
-        "Clear error message displays when user attempts to download with no line items",
-        "PDF download button is disabled or shows validation error when no line items exist"
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/lib/invoice/validateInvoiceMandatoryFields.ts",
-          "operation": "modify",
-          "description": "Add validation check that ensures at least one line item exists in the invoice. Return appropriate error information when the line items array is empty."
-        },
-        {
-          "path": "frontend/src/components/invoice/InvoicePreview.tsx",
-          "operation": "modify",
-          "description": "Update PDF download button to check line item validation before allowing download. Display validation error when no line items are present and prevent PDF generation."
-        }
-      ]
-    },
-    {
-      "id": "REQ-7",
-      "summary": "Add validation that invoice grand total must be greater than zero",
-      "acceptanceCriteria": [
-        "Validation checks that calculated grand total is greater than zero",
-        "Clear error message displays when grand total is zero or negative",
-        "PDF download is prevented when grand total validation fails"
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/lib/invoice/validateInvoiceMandatoryFields.ts",
-          "operation": "modify",
-          "description": "Add validation check that ensures the calculated invoice grand total is greater than zero. Return appropriate error information when the total is zero or negative."
-        },
-        {
-          "path": "frontend/src/components/invoice/InvoicePreview.tsx",
-          "operation": "modify",
-          "description": "Update PDF download button to check grand total validation before allowing download. Display validation error when the total is zero or negative and prevent PDF generation."
-        }
-      ]
-    },
-    {
-      "id": "REQ-8",
-      "summary": "Display consolidated validation error list before PDF download",
-      "acceptanceCriteria": [
-        "All validation errors are collected and displayed together",
-        "Each error message clearly indicates which field or requirement is failing",
-        "Error display is visible and prominent when user attempts PDF download",
-        "PDF download is blocked until all validation errors are resolved"
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/components/invoice/InvoicePreview.tsx",
-          "operation": "modify",
-          "description": "Collect all validation errors from the validateInvoiceMandatoryFields function and display them in a consolidated error list. Show this list prominently when PDF download is attempted with validation failures. Block the download action until all errors are resolved."
-        },
-        {
-          "path": "frontend/src/components/invoice/InvoiceMandatoryFieldsChecklist.tsx",
-          "operation": "modify",
-          "description": "Update the mandatory fields checklist component to display all new supplier information fields and validation requirements. Show clear indicators for missing or invalid fields including the new supplier fields, line item requirement, and grand total validation."
+          "description": "Add robust null/undefined handling in URL parameter parsing. Ensure country code validation returns safe error states instead of allowing undefined values to propagate. Add explicit checks before country code normalization operations."
         }
       ]
     }

@@ -78,13 +78,12 @@ export default function CountryTransactionStep({
   // Compute effective VAT rate using the decision engine
   const getEffectiveVatRate = (): number => {
     try {
-      return determineVATRate({
-        country: countryCode,
+      return determineVATRate(
+        countryCode,
         vatCategory,
-        productCategory: exemptIdentifier || productCategory,
-        isExport,
-        isB2B: customerType === 'B2B',
-      });
+        null, // selectedReducedRate
+        false // reverseCharge
+      );
     } catch (error) {
       console.error('Error determining VAT rate:', error);
       return country?.standardRate || 0;

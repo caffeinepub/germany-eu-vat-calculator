@@ -1,143 +1,72 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-19T07:23:00.472Z",
+  "generatedAt": "2026-02-20T07:21:54.279Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 8,
-    "implemented": 8,
+    "total": 2,
+    "implemented": 2,
     "items": [
       {
         "id": "REQ-1",
-        "summary": "Add manual input field for Supplier Legal Name in the invoice form with required validation that prevents PDF download if empty",
+        "summary": "Fix the 'Cannot read properties of undefined (reading toString)' error that occurs when a country is selected in the VAT calculator flow",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/components/invoice/InvoiceDetailsStep.tsx",
-          "frontend/src/lib/invoice/validateInvoiceMandatoryFields.ts",
-          "frontend/src/lib/invoice/buildInvoiceHtml.ts"
+          "frontend/src/components/vat/CountrySelectionStep.tsx",
+          "frontend/src/components/vat/EuVatIntroStep.tsx",
+          "frontend/src/components/vat/CountryVatDetailsStep.tsx",
+          "frontend/src/lib/vat/vatTable.ts",
+          "frontend/src/lib/vat/euCountryConfig.ts"
         ],
         "matchedFiles": [
-          "frontend/src/components/invoice/InvoiceDetailsStep.tsx",
-          "frontend/src/lib/invoice/validateInvoiceMandatoryFields.ts",
-          "frontend/src/lib/invoice/buildInvoiceHtml.ts"
+          "frontend/src/components/vat/CountrySelectionStep.tsx",
+          "frontend/src/lib/vat/vatTable.ts",
+          "frontend/src/lib/vat/euCountryConfig.ts"
         ]
       },
       {
         "id": "REQ-2",
-        "summary": "Add manual input field for Supplier Address in the invoice form with required validation that prevents PDF download if empty",
+        "summary": "Add defensive null/undefined checks in VAT calculation and country selection logic to prevent similar runtime errors",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/components/invoice/InvoiceDetailsStep.tsx",
-          "frontend/src/lib/invoice/validateInvoiceMandatoryFields.ts",
-          "frontend/src/lib/invoice/buildInvoiceHtml.ts"
+          "frontend/src/lib/vat/calculateUnifiedVat.ts",
+          "frontend/src/lib/vat/determineVatRate.ts",
+          "frontend/src/lib/invoice/currency.ts",
+          "frontend/src/components/vat/CountryTransactionStep.tsx",
+          "frontend/src/lib/vat/toBackendVatCalculation.ts",
+          "frontend/src/lib/vat/selectedSellerCountry.ts"
         ],
         "matchedFiles": [
-          "frontend/src/components/invoice/InvoiceDetailsStep.tsx",
-          "frontend/src/lib/invoice/validateInvoiceMandatoryFields.ts",
-          "frontend/src/lib/invoice/buildInvoiceHtml.ts"
-        ]
-      },
-      {
-        "id": "REQ-3",
-        "summary": "Add manual input field for Supplier VAT Number in the invoice form with required validation that prevents PDF download if empty",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/components/invoice/InvoiceDetailsStep.tsx",
-          "frontend/src/lib/invoice/validateInvoiceMandatoryFields.ts",
-          "frontend/src/lib/invoice/buildInvoiceHtml.ts"
-        ],
-        "matchedFiles": [
-          "frontend/src/components/invoice/InvoiceDetailsStep.tsx",
-          "frontend/src/lib/invoice/validateInvoiceMandatoryFields.ts",
-          "frontend/src/lib/invoice/buildInvoiceHtml.ts"
-        ]
-      },
-      {
-        "id": "REQ-4",
-        "summary": "Add manual input field for Invoice Number in the invoice form with required validation that prevents PDF download if empty",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/components/invoice/InvoiceDetailsStep.tsx",
-          "frontend/src/lib/invoice/validateInvoiceMandatoryFields.ts",
-          "frontend/src/lib/invoice/buildInvoiceHtml.ts"
-        ],
-        "matchedFiles": [
-          "frontend/src/components/invoice/InvoiceDetailsStep.tsx",
-          "frontend/src/lib/invoice/validateInvoiceMandatoryFields.ts",
-          "frontend/src/lib/invoice/buildInvoiceHtml.ts"
-        ]
-      },
-      {
-        "id": "REQ-5",
-        "summary": "Add manual input field for Invoice Date in the invoice form with required validation that prevents PDF download if empty",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/components/invoice/InvoiceDetailsStep.tsx",
-          "frontend/src/lib/invoice/validateInvoiceMandatoryFields.ts",
-          "frontend/src/lib/invoice/buildInvoiceHtml.ts"
-        ],
-        "matchedFiles": [
-          "frontend/src/components/invoice/InvoiceDetailsStep.tsx",
-          "frontend/src/lib/invoice/validateInvoiceMandatoryFields.ts",
-          "frontend/src/lib/invoice/buildInvoiceHtml.ts"
-        ]
-      },
-      {
-        "id": "REQ-6",
-        "summary": "Enforce validation that at least one line item must be present before allowing PDF download",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/lib/invoice/validateInvoiceMandatoryFields.ts",
-          "frontend/src/components/invoice/InvoicePreview.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/lib/invoice/validateInvoiceMandatoryFields.ts",
-          "frontend/src/components/invoice/InvoicePreview.tsx"
-        ]
-      },
-      {
-        "id": "REQ-7",
-        "summary": "Add validation that invoice grand total must be greater than zero before allowing PDF download",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/lib/invoice/validateInvoiceMandatoryFields.ts",
-          "frontend/src/components/invoice/InvoicePreview.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/lib/invoice/validateInvoiceMandatoryFields.ts",
-          "frontend/src/components/invoice/InvoicePreview.tsx"
-        ]
-      },
-      {
-        "id": "REQ-8",
-        "summary": "Display all validation errors in a consolidated validation error list before PDF download, showing which required fields are missing or invalid",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/components/invoice/InvoicePreview.tsx",
-          "frontend/src/components/invoice/InvoiceMandatoryFieldsChecklist.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/components/invoice/InvoicePreview.tsx",
-          "frontend/src/components/invoice/InvoiceMandatoryFieldsChecklist.tsx"
+          "frontend/src/lib/vat/calculateUnifiedVat.ts",
+          "frontend/src/lib/vat/determineVatRate.ts",
+          "frontend/src/lib/invoice/currency.ts",
+          "frontend/src/components/vat/CountryTransactionStep.tsx",
+          "frontend/src/lib/vat/toBackendVatCalculation.ts",
+          "frontend/src/lib/vat/selectedSellerCountry.ts"
         ]
       }
     ]
   },
   "changedFiles": [
     "build-request.json",
-    "caffeine.lock.json",
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
-    "frontend/src/components/invoice/InvoiceDetailsStep.tsx",
-    "frontend/src/components/invoice/InvoiceMandatoryFieldsChecklist.tsx",
-    "frontend/src/components/invoice/InvoicePreview.tsx",
-    "frontend/src/lib/invoice/buildInvoiceHtml.ts",
-    "frontend/src/lib/invoice/validateInvoiceMandatoryFields.ts",
-    "frontend/src/lib/vat/calculateVat.ts",
+    "frontend/src/components/vat/CountrySelectionStep.tsx",
+    "frontend/src/components/vat/CountryTransactionStep.tsx",
+    "frontend/src/lib/invoice/currency.ts",
+    "frontend/src/lib/vat/calculateUnifiedVat.ts",
+    "frontend/src/lib/vat/deriveVatRatePercentForBackend.ts",
+    "frontend/src/lib/vat/determineCrossBorderVAT.ts",
+    "frontend/src/lib/vat/determineVatRate.ts",
+    "frontend/src/lib/vat/euCountryConfig.ts",
+    "frontend/src/lib/vat/selectedSellerCountry.ts",
+    "frontend/src/lib/vat/toBackendVatCalculation.ts",
+    "frontend/src/lib/vat/vatCategoryRateRules.ts",
+    "frontend/src/lib/vat/vatTable.ts",
     "frontend/src/pages/CalculatorFlowPage.tsx",
     "project_state.json",
     "scratch/component-selection.json",

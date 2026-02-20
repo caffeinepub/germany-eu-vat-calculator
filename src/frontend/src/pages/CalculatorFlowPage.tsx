@@ -32,6 +32,12 @@ export default function CalculatorFlowPage() {
   const [invoiceData, setInvoiceData] = useState<InvoiceData | null>(null);
 
   const handleCountrySelect = (country: string) => {
+    // Add defensive check
+    if (!country) {
+      console.error('Country selection failed: no country provided');
+      return;
+    }
+    
     setFormData({ ...formData, sellerCountry: country });
     setCurrentStep('transaction');
   };
@@ -40,9 +46,29 @@ export default function CalculatorFlowPage() {
     const updatedFormData = { ...formData, ...data };
     setFormData(updatedFormData);
 
-    const calculationResult = calculateUnifiedVat(updatedFormData as VATCalculationInput);
-    setResult(calculationResult);
-    setCurrentStep('results');
+    // Add defensive check before calculation
+    if (!updatedFormData.sellerCountry) {
+      console.error('Cannot calculate VAT: seller country is missing');
+      return;
+    }
+
+    try {
+      const calculationResult = calculateUnifiedVat(
+        updatedFormData.sellerCountry,
+        updatedFormData.customerCountry || updatedFormData.sellerCountry,
+        updatedFormData.customerType === 'B2B' ? 'business' : 'consumer',
+        updatedFormData.supplyType || 'services',
+        updatedFormData.vatCategory || 'standard',
+        updatedFormData.netAmount || 0,
+        updatedFormData.vatId,
+        updatedFormData.selectedReducedRate ?? undefined // Convert null to undefined
+      );
+      setResult(calculationResult);
+      setCurrentStep('results');
+    } catch (error) {
+      console.error('VAT calculation error:', error);
+      // Show error to user or handle gracefully
+    }
   };
 
   const handleResultsNext = () => {
@@ -95,12 +121,12 @@ export default function CalculatorFlowPage() {
       <div className="mt-8">
         {currentStep === 'country' && (
           <CountrySelectionStep
-            onSelectCountry={handleCountrySelect}
+            onCountrySelect={handleCountrySelect}
             onBack={handleBack}
           />
         )}
 
-        {currentStep === 'transaction' && (
+        {currentStep === 'transaction' && formData.sellerCountry && (
           <TransactionDetailsStep
             initialData={formData as VATCalculationInput}
             onNext={handleTransactionComplete}
@@ -108,10 +134,10 @@ export default function CalculatorFlowPage() {
           />
         )}
 
-        {currentStep === 'results' && result && (
+        {currentStep === 'results' && result && formData.sellerCountry && (
           <VatResultsStep
             result={result}
-            countryCode={formData.sellerCountry || ''}
+            countryCode={formData.sellerCountry}
             onNext={handleResultsNext}
             onBack={handleBack}
           />

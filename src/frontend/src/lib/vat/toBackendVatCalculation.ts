@@ -1,55 +1,60 @@
-import { type VATCalculationInput } from './calculateVat';
-import { type VatCalculation, type ServiceProductCategory } from '../../backend';
-import { determineVATRate } from './determineVatRate';
+import type { VatCalculation, ServiceProductCategory } from '../../backend';
+import { deriveVatRatePercentForBackend } from './deriveVatRatePercentForBackend';
+import type { VatCategory } from './vatCategoryRateRules';
 
 /**
- * Converts the calculator form state into the backend VatCalculation payload shape,
- * using the determineVATRate decision engine to derive the correct VAT rate.
+ * Maps calculator form state to backend VatCalculation payload.
+ * Uses determineVATRate decision engine for rate computation.
  */
-export function toBackendVatCalculation(input: VATCalculationInput): VatCalculation {
-  // Normalize UK -> GB for backend
-  const normalizedSellerCountry = input.sellerCountry.toUpperCase() === 'UK' ? 'GB' : input.sellerCountry;
-  const normalizedCustomerCountry = input.customerCountry ? 
-    (input.customerCountry.toUpperCase() === 'UK' ? 'GB' : input.customerCountry) : 
-    normalizedSellerCountry;
+export function toBackendVatCalculation(
+  sellerCountry: string | null | undefined,
+  customerCountry: string | null | undefined,
+  vatIdNumber: string | null | undefined,
+  category: string,
+  netAmount: number,
+  vatCategory: VatCategory,
+  selectedReducedRate: number | null | undefined,
+  reverseCharge: boolean
+): VatCalculation {
+  // Defensive checks for undefined/null values
+  if (!sellerCountry) {
+    throw new Error('Seller country is required');
+  }
+  
+  if (!customerCountry) {
+    throw new Error('Customer country is required');
+  }
 
-  // Map service category to backend enum
-  const categoryMap: Record<string, ServiceProductCategory> = {
-    'digital': 'consultingDevelopment' as ServiceProductCategory,
-    'consulting': 'consultingDevelopment' as ServiceProductCategory,
-    'hardware': 'hardware' as ServiceProductCategory,
-    'content': 'contentMediaDesign' as ServiceProductCategory,
-    'hosting': 'hostingSupport' as ServiceProductCategory,
-    'others': 'others' as ServiceProductCategory,
-  };
+  const vatRatePercent = deriveVatRatePercentForBackend(
+    sellerCountry,
+    vatCategory,
+    selectedReducedRate,
+    reverseCharge
+  );
 
-  const backendCategory = categoryMap[input.serviceCategory] || 'others' as ServiceProductCategory;
-
-  // Determine if this is an export
-  const isCrossBorder = normalizedSellerCountry !== normalizedCustomerCountry;
-  const isExport: boolean = input.isExport !== undefined ? Boolean(input.isExport) : isCrossBorder;
-
-  // Get exempt identifier if present
-  const exemptIdentifier = (input as any).exemptIdentifier || '';
-
-  // Derive VAT rate using the decision engine
-  const vatRatePercent = determineVATRate({
-    country: normalizedSellerCountry,
-    vatCategory: input.vatCategory || 'standard',
-    productCategory: exemptIdentifier || (input.productCategory as string) || 'others',
-    isExport,
-    isB2B: input.customerType === 'B2B',
-  });
-
-  // Convert net amount to cents
-  const priceGrossCents = BigInt(Math.round(input.netAmount * 100));
+  const priceGrossCents = Math.round(netAmount * 100);
 
   return {
-    fromCountry: normalizedSellerCountry,
-    toCountry: normalizedCustomerCountry,
-    vatIdNumber: input.customerType === 'B2B' && input.vatId ? input.vatId : undefined,
-    category: backendCategory,
-    priceGrossCents,
+    fromCountry: sellerCountry.toUpperCase(),
+    toCountry: customerCountry.toUpperCase(),
+    vatIdNumber: vatIdNumber || undefined,
+    category: mapCategoryToBackend(category),
+    priceGrossCents: BigInt(priceGrossCents),
     vatRatePercent,
   };
+}
+
+function mapCategoryToBackend(category: string): ServiceProductCategory {
+  switch (category) {
+    case 'consulting_development':
+      return 'consultingDevelopment' as ServiceProductCategory;
+    case 'hardware':
+      return 'hardware' as ServiceProductCategory;
+    case 'content_media_design':
+      return 'contentMediaDesign' as ServiceProductCategory;
+    case 'hosting_support':
+      return 'hostingSupport' as ServiceProductCategory;
+    default:
+      return 'others' as ServiceProductCategory;
+  }
 }

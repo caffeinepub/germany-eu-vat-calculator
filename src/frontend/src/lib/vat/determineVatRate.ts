@@ -1,88 +1,43 @@
-/**
- * VAT Rate Decision Engine
- * Implements the exact priority flow for determining VAT rate based on:
- * - Country configuration
- * - VAT category
- * - Product category
- * - Export status
- * - B2B status
- */
-
-import { VAT_CONFIG } from './vatConfig';
-import {
-  isExemptCategory,
-  isUKZeroEligible,
-  isUKReducedEligible,
-  isEUReducedEligible,
-  EXEMPT_CATEGORIES,
-} from './categoryEligibility';
-import { normalizeIdentifier } from './identifierNormalization';
-
-export interface DetermineVatRateInput {
-  country: string;
-  vatCategory: string;
-  productCategory: string;
-  isExport: boolean;
-  isB2B: boolean;
-}
+import { getCountryConfig } from './euCountryConfig';
+import { computeVatRateForCategory } from './vatCategoryRateRules';
+import type { VatCategory } from './vatCategoryRateRules';
 
 /**
- * Determine the VAT rate based on the exact priority flow:
- * 1. Reverse Charge (vatCategory=reverse AND isB2B)
- * 2. Export (isExport=true)
- * 3. Exempt (vatCategory=exempt OR productCategory in EXEMPT_CATEGORIES)
- * 4. UK Zero (country=GB AND vatCategory=zero AND productCategory in UK_ZERO)
- * 5. Reduced (vatCategory=reduced with eligibility checks and auto-fallback)
- * 6. Standard (default fallback)
+ * VAT rate decision engine implementing priority flow:
+ * 1. Reverse charge → 0%
+ * 2. Explicit reduced rate selection → use that
+ * 3. Category-based rate → compute from country config
  */
-export function determineVATRate(input: DetermineVatRateInput): number {
-  const { country, vatCategory, productCategory, isExport, isB2B } = input;
+export function determineVATRate(
+  country: string | null | undefined,
+  vatCategory: VatCategory,
+  selectedReducedRate: number | null | undefined,
+  reverseCharge: boolean
+): number {
+  // Defensive check for undefined/null country
+  if (!country) {
+    console.warn('determineVATRate: country is undefined/null, defaulting to 0');
+    return 0;
+  }
 
-  // Normalize country code (UK -> GB)
-  const normalizedCountry = country.toUpperCase() === 'UK' ? 'GB' : country.toUpperCase();
+  // Priority 1: Reverse charge
+  if (reverseCharge) {
+    return 0;
+  }
 
-  // Get country config
-  const config = VAT_CONFIG[normalizedCountry];
+  // Priority 2: Explicit reduced rate selection
+  if (vatCategory === 'reduced' && selectedReducedRate != null) {
+    return selectedReducedRate;
+  }
+
+  // Priority 3: Category-based rate
+  const normalizedCountry = country.toUpperCase();
+  const config = getCountryConfig(normalizedCountry);
+  
   if (!config) {
-    throw new Error('Unsupported country selected');
-  }
-
-  // PRIORITY 1: Reverse Charge (only when B2B)
-  if (vatCategory === 'reverse' && isB2B) {
+    console.warn(`determineVATRate: No config for country ${normalizedCountry}, defaulting to 0`);
     return 0;
   }
 
-  // PRIORITY 2: Export
-  if (isExport) {
-    return 0;
-  }
-
-  // PRIORITY 3: Exempt
-  if (vatCategory === 'exempt' || isExemptCategory(productCategory)) {
-    return 0;
-  }
-
-  // PRIORITY 4: UK Zero Rate
-  if (normalizedCountry === 'GB' && vatCategory === 'zero' && isUKZeroEligible(productCategory)) {
-    return 0;
-  }
-
-  // PRIORITY 5: Reduced Rate
-  if (vatCategory === 'reduced') {
-    // UK reduced rate eligibility
-    if (normalizedCountry === 'GB' && isUKReducedEligible(productCategory)) {
-      return config.reduced;
-    }
-
-    // EU reduced rate eligibility
-    if (normalizedCountry !== 'GB' && isEUReducedEligible(productCategory)) {
-      return config.reduced;
-    }
-
-    // Auto-fallback protection: if reduced is selected but not eligible, use standard
-    return config.standard;
-  }
-
-  // PRIORITY 6: Standard (default)
-  return config.standard;
+  return computeVatRateForCategory(normalizedCountry, vatCategory, config.standardRate);
 }

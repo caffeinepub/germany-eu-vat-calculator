@@ -1,144 +1,43 @@
-export interface EUCountryConfig {
-  code: string;
-  name: string;
-  flag: string;
-  standardRate: number;
-  reducedRates: number[];
-  zeroRate?: number;
-  invoiceLabel: string;
-  reverseChargeText: string;
-  configured: boolean;
-}
+import { getVatTableEntry, type VatTableEntry } from './vatTable';
 
-export const EU_COUNTRIES: Record<string, EUCountryConfig> = {
-  DE: {
-    code: 'DE',
-    name: 'Germany',
-    flag: '🇩🇪',
-    standardRate: 19,
-    reducedRates: [7],
-    invoiceLabel: 'Umsatzsteuer (MwSt)',
-    reverseChargeText: 'Reverse charge applies under EU VAT Directive Article 44/196',
-    configured: true,
-  },
-  FR: {
-    code: 'FR',
-    name: 'France',
-    flag: '🇫🇷',
-    standardRate: 20,
-    reducedRates: [10, 5.5],
-    invoiceLabel: 'TVA',
-    reverseChargeText: 'Autoliquidation – Article 283 CGI',
-    configured: true,
-  },
-  NL: {
-    code: 'NL',
-    name: 'Netherlands',
-    flag: '🇳🇱',
-    standardRate: 21,
-    reducedRates: [9],
-    invoiceLabel: 'BTW',
-    reverseChargeText: 'BTW verlegd',
-    configured: true,
-  },
-  PL: {
-    code: 'PL',
-    name: 'Poland',
-    flag: '🇵🇱',
-    standardRate: 23,
-    reducedRates: [8, 5],
-    invoiceLabel: 'VAT',
-    reverseChargeText: 'Odwrotne obciążenie',
-    configured: true,
-  },
-  SE: {
-    code: 'SE',
-    name: 'Sweden',
-    flag: '🇸🇪',
-    standardRate: 25,
-    reducedRates: [12, 6],
-    invoiceLabel: 'Moms',
-    reverseChargeText: 'Omvänd betalningsskyldighet',
-    configured: true,
-  },
-  IT: {
-    code: 'IT',
-    name: 'Italy',
-    flag: '🇮🇹',
-    standardRate: 22,
-    reducedRates: [10, 5, 4],
-    invoiceLabel: 'IVA',
-    reverseChargeText: 'Inversione contabile',
-    configured: true,
-  },
-  BE: {
-    code: 'BE',
-    name: 'Belgium',
-    flag: '🇧🇪',
-    standardRate: 21,
-    reducedRates: [12, 6],
-    invoiceLabel: 'TVA / BTW',
-    reverseChargeText: 'Autoliquidation',
-    configured: true,
-  },
-  AT: {
-    code: 'AT',
-    name: 'Austria',
-    flag: '🇦🇹',
-    standardRate: 20,
-    reducedRates: [10, 13],
-    invoiceLabel: 'Umsatzsteuer',
-    reverseChargeText: 'Reverse-Charge-Verfahren',
-    configured: true,
-  },
-  HU: {
-    code: 'HU',
-    name: 'Hungary',
-    flag: '🇭🇺',
-    standardRate: 27,
-    reducedRates: [18, 5],
-    invoiceLabel: 'ÁFA',
-    reverseChargeText: 'Fordított adózás',
-    configured: true,
-  },
-  ES: {
-    code: 'ES',
-    name: 'Spain',
-    flag: '🇪🇸',
-    standardRate: 21,
-    reducedRates: [10, 4],
-    invoiceLabel: 'IVA',
-    reverseChargeText: 'Inversión del sujeto pasivo',
-    configured: true,
-  },
-  GB: {
-    code: 'GB',
-    name: 'United Kingdom',
-    flag: '🇬🇧',
-    standardRate: 20,
-    reducedRates: [5],
-    zeroRate: 0,
-    invoiceLabel: 'VAT',
-    reverseChargeText: 'Reverse charge',
-    configured: true,
-  },
-};
-
-export const COUNTRY_LIST = Object.values(EU_COUNTRIES);
+// Re-export VatTableEntry as CountryConfig for semantic clarity
+export type CountryConfig = VatTableEntry;
 
 /**
- * Get country configuration by code
- * Normalizes UK -> GB
+ * Get country configuration with UK/GB normalization.
+ * Returns null if country is undefined/null or not found.
  */
-export function getCountryConfig(countryCode: string): EUCountryConfig | null {
-  if (!countryCode) return null;
-  
-  const normalized = countryCode.trim().toUpperCase();
-  
-  // UK alias
-  if (normalized === 'UK') {
-    return EU_COUNTRIES['GB'];
+export function getCountryConfig(country: string | null | undefined): CountryConfig | null {
+  if (!country) {
+    return null;
   }
-  
-  return EU_COUNTRIES[normalized] || null;
+
+  const entry = getVatTableEntry(country);
+  return entry;
 }
+
+/**
+ * Get all EU country configs (excludes UK).
+ */
+export function getEUCountryConfigs(): CountryConfig[] {
+  const euCountries = ['DE', 'FR', 'NL', 'PL', 'SE', 'IT', 'BE', 'AT', 'HU', 'ES'];
+  return euCountries
+    .map(code => getCountryConfig(code))
+    .filter((config): config is CountryConfig => config !== null);
+}
+
+/**
+ * Get UK country config.
+ */
+export function getUKCountryConfig(): CountryConfig | null {
+  return getCountryConfig('GB');
+}
+
+/**
+ * Get all country configs as a list (constant, not a function).
+ */
+export const COUNTRY_LIST: CountryConfig[] = [
+  ...['DE', 'FR', 'NL', 'PL', 'SE', 'IT', 'BE', 'AT', 'HU', 'ES', 'GB']
+    .map(code => getCountryConfig(code))
+    .filter((config): config is CountryConfig => config !== null)
+];

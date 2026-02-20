@@ -1,5 +1,5 @@
 // VAT Category type and labels
-import { lookupVatConfig } from './vatTable';
+import { getVatTableEntry } from './vatTable';
 
 export type VatCategory =
   | 'standard'
@@ -62,17 +62,21 @@ export const VAT_CATEGORIES: VatCategory[] = [
 export function computeVatRateForCategory(
   countryCode: string,
   category: VatCategory,
-  standardRate: number
+  standardRate?: number
 ): number {
   // "Others" always returns standard rate
   if (category === 'others' || category === 'standard') {
-    return standardRate;
+    if (standardRate !== undefined) {
+      return standardRate;
+    }
+    const vatConfig = getVatTableEntry(countryCode);
+    return vatConfig?.standardRate || 19;
   }
 
   // Lookup VAT config from VAT_TABLE
-  const vatConfig = lookupVatConfig(countryCode);
-  const tableStandardRate = vatConfig?.standard || standardRate;
-  const tableReducedRate = vatConfig?.reduced || standardRate;
+  const vatConfig = getVatTableEntry(countryCode);
+  const tableStandardRate = standardRate !== undefined ? standardRate : (vatConfig?.standardRate || 19);
+  const tableReducedRate = vatConfig?.reducedRates?.[0] || tableStandardRate;
 
   // Normalize UK -> GB
   const normalizedCode = countryCode.toUpperCase() === 'UK' ? 'GB' : countryCode;

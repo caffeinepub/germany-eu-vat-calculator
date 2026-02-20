@@ -1,170 +1,51 @@
 {
   "kind": "build_request",
-  "title": "Add manual invoice compliance fields with validation",
-  "projectName": "Invoice Manager",
+  "title": "Fix toString error on country selection",
   "priority": "high",
   "requirements": [
     {
       "id": "REQ-1",
-      "text": "Add manual input field for Supplier Legal Name in the invoice form with required validation that prevents PDF download if empty",
+      "text": "Fix the 'Cannot read properties of undefined (reading toString)' error that occurs when a country is selected in the VAT calculator flow",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-12"
+          "msg-4"
         ],
         "quotes": [
-          "Supplier legal name is required"
+          "Once country selected, getting an error- Cannot read properties of undefined (reading 'toString'), please fix this"
         ]
       },
       "acceptanceCriteria": [
-        "Supplier Legal Name field is present in the invoice details form",
-        "Field is marked as required with visual indicator",
-        "Validation error displays if field is empty when attempting PDF generation",
-        "Field value appears in the generated invoice PDF"
+        "Country selection completes without throwing toString errors",
+        "User can successfully proceed through the calculator flow after selecting a country",
+        "All country selection components handle undefined/null values gracefully"
       ]
     },
     {
       "id": "REQ-2",
-      "text": "Add manual input field for Supplier Address in the invoice form with required validation that prevents PDF download if empty",
+      "text": "Add defensive null/undefined checks in VAT calculation and country selection logic to prevent similar runtime errors",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-12"
-        ],
-        "quotes": [
-          "Supplier address is required"
+          "msg-4"
         ]
       },
       "acceptanceCriteria": [
-        "Supplier Address field is present in the invoice details form",
-        "Field is marked as required with visual indicator",
-        "Validation error displays if field is empty when attempting PDF generation",
-        "Field value appears in the generated invoice PDF"
-      ]
-    },
-    {
-      "id": "REQ-3",
-      "text": "Add manual input field for Supplier VAT Number in the invoice form with required validation that prevents PDF download if empty",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-12"
-        ],
-        "quotes": [
-          "Supplier VAT number is required"
-        ]
-      },
-      "acceptanceCriteria": [
-        "Supplier VAT Number field is present in the invoice details form",
-        "Field is marked as required with visual indicator",
-        "Validation error displays if field is empty when attempting PDF generation",
-        "Field value appears in the generated invoice PDF"
-      ]
-    },
-    {
-      "id": "REQ-4",
-      "text": "Add manual input field for Invoice Number in the invoice form with required validation that prevents PDF download if empty",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-12"
-        ],
-        "quotes": [
-          "Invoice number is required"
-        ]
-      },
-      "acceptanceCriteria": [
-        "Invoice Number field is present in the invoice details form",
-        "Field is marked as required with visual indicator",
-        "Validation error displays if field is empty when attempting PDF generation",
-        "Field value appears in the generated invoice PDF"
-      ]
-    },
-    {
-      "id": "REQ-5",
-      "text": "Add manual input field for Invoice Date in the invoice form with required validation that prevents PDF download if empty",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-12"
-        ],
-        "quotes": [
-          "Invoice date is required"
-        ]
-      },
-      "acceptanceCriteria": [
-        "Invoice Date field is present in the invoice details form with date picker",
-        "Field is marked as required with visual indicator",
-        "Validation error displays if field is empty when attempting PDF generation",
-        "Field value appears formatted correctly in the generated invoice PDF"
-      ]
-    },
-    {
-      "id": "REQ-6",
-      "text": "Enforce validation that at least one line item must be present before allowing PDF download",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-12"
-        ],
-        "quotes": [
-          "At least one line item is required"
-        ]
-      },
-      "acceptanceCriteria": [
-        "Validation prevents PDF download when line items array is empty",
-        "Clear error message displays when user attempts to download with no line items",
-        "PDF download button is disabled or shows validation error when no line items exist"
-      ]
-    },
-    {
-      "id": "REQ-7",
-      "text": "Add validation that invoice grand total must be greater than zero before allowing PDF download",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-12"
-        ],
-        "quotes": [
-          "Invoice grand total must be greater than zero"
-        ]
-      },
-      "acceptanceCriteria": [
-        "Validation checks that calculated grand total is greater than zero",
-        "Clear error message displays when grand total is zero or negative",
-        "PDF download is prevented when grand total validation fails"
-      ]
-    },
-    {
-      "id": "REQ-8",
-      "text": "Display all validation errors in a consolidated validation error list before PDF download, showing which required fields are missing or invalid",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-12"
-        ],
-        "quotes": [
-          "Please fix all validation errors before downloading PDF"
-        ]
-      },
-      "acceptanceCriteria": [
-        "All validation errors are collected and displayed together",
-        "Each error message clearly indicates which field or requirement is failing",
-        "Error display is visible and prominent when user attempts PDF download",
-        "PDF download is blocked until all validation errors are resolved"
+        "All country-related data access uses optional chaining or explicit null checks",
+        "VAT rate lookups handle missing country data safely",
+        "Currency formatting functions validate input before calling toString()"
       ]
     }
   ],
   "constraints": [
-    "All validation must happen before PDF generation, not during or after",
-    "Validation errors must be user-friendly and clearly indicate what needs to be fixed",
-    "Existing invoice functionality and VAT calculation logic must not be affected"
+    "Do not modify backend/main.mo",
+    "Preserve existing VAT calculation logic and accuracy",
+    "Maintain compatibility with existing URL parameter handling"
   ],
   "nonGoals": [
-    "Backend data model changes for storing supplier information",
-    "Auto-filling supplier information from previous invoices",
-    "VAT number format validation beyond required field check",
-    "Invoice number uniqueness validation across all invoices"
+    "Redesigning the country selection UI",
+    "Adding new VAT calculation features",
+    "Changing the calculator flow structure"
   ],
   "imageRequirements": {
     "required": [],

@@ -1,58 +1,49 @@
-// Helper to read and validate the seller country from URL query parameter
+/**
+ * Helper to read and validate seller country from URL search params.
+ * Returns null if invalid or missing.
+ */
+export function getSelectedSellerCountry(searchParams: URLSearchParams): string | null {
+  const country = searchParams.get('country');
+  
+  // Defensive null/undefined check
+  if (!country) {
+    return null;
+  }
 
-import { lookupVatConfig, getSupportedCountryCodes } from './vatTable';
+  // Validate country code format (2-3 uppercase letters)
+  const normalized = country.trim().toUpperCase();
+  
+  if (!/^[A-Z]{2,3}$/.test(normalized)) {
+    console.warn(`Invalid country code format: ${country}`);
+    return null;
+  }
 
-export interface SelectedSellerCountryResult {
-  countryCode: string;
-  isValid: boolean;
-  errorMessage?: string;
+  return normalized;
 }
 
 /**
- * Read the 'country' query parameter from URL and validate it
- * Returns normalized country code (e.g., UK -> GB)
- * If no country param, returns empty string (not DE default) for explicit country selection flow
+ * Sets the seller country in URL search params.
  */
-export function getSelectedSellerCountry(): SelectedSellerCountryResult {
-  try {
-    const urlParams = new URLSearchParams(window.location.search);
-    const countryParam = urlParams.get('country');
-    
-    // No country param - return empty (no default)
-    if (!countryParam) {
-      return {
-        countryCode: '',
-        isValid: true,
-      };
-    }
-    
-    // Normalize to uppercase
-    const normalized = countryParam.trim().toUpperCase();
-    
-    // UK alias
-    const countryCode = normalized === 'UK' ? 'GB' : normalized;
-    
-    // Validate against VAT_TABLE
-    const vatConfig = lookupVatConfig(countryCode);
-    
-    if (!vatConfig) {
-      const supported = getSupportedCountryCodes().join(', ');
-      return {
-        countryCode: 'DE', // Fallback for error display
-        isValid: false,
-        errorMessage: `Country "${countryParam}" is not supported. Supported countries: ${supported}`,
-      };
-    }
-    
-    return {
-      countryCode,
-      isValid: true,
-    };
-  } catch (error) {
-    return {
-      countryCode: 'DE',
-      isValid: false,
-      errorMessage: 'Failed to read country parameter from URL',
-    };
+export function setSelectedSellerCountry(
+  searchParams: URLSearchParams,
+  country: string | null | undefined
+): URLSearchParams {
+  const newParams = new URLSearchParams(searchParams);
+  
+  // Defensive check before normalization
+  if (!country) {
+    newParams.delete('country');
+    return newParams;
   }
+
+  const normalized = country.trim().toUpperCase();
+  
+  if (!/^[A-Z]{2,3}$/.test(normalized)) {
+    console.warn(`Invalid country code format: ${country}`);
+    newParams.delete('country');
+    return newParams;
+  }
+
+  newParams.set('country', normalized);
+  return newParams;
 }
