@@ -71,6 +71,57 @@ export default function UkTransactionStep({ initialData, onNext, onBack }: UkTra
     onNext(data);
   };
 
+  const handleTransactionTypeChange = (value: string | null | undefined) => {
+    // Comprehensive validation
+    if (value === null || value === undefined) {
+      console.warn("Invalid transaction type: null or undefined");
+      return;
+    }
+    
+    const validValue = typeof value === 'string' ? value : String(value);
+    
+    if (!validValue || validValue === 'undefined' || validValue === 'null' || validValue.trim() === '') {
+      console.warn("Invalid transaction type value:", value);
+      return;
+    }
+    
+    setTransactionType(validValue as UkTransactionType);
+  };
+
+  const handleCustomerTypeChange = (value: string | null | undefined) => {
+    // Comprehensive validation
+    if (value === null || value === undefined) {
+      console.warn("Invalid customer type: null or undefined");
+      return;
+    }
+    
+    const validValue = typeof value === 'string' ? value : String(value);
+    
+    if (!validValue || validValue === 'undefined' || validValue === 'null' || validValue.trim() === '') {
+      console.warn("Invalid customer type value:", value);
+      return;
+    }
+    
+    setCustomerType(validValue as UkCustomerType);
+  };
+
+  const handleVatCategoryChange = (value: string | null | undefined) => {
+    // Comprehensive validation
+    if (value === null || value === undefined) {
+      console.warn("Invalid VAT category: null or undefined");
+      return;
+    }
+    
+    const validValue = typeof value === 'string' ? value : String(value);
+    
+    if (!validValue || validValue === 'undefined' || validValue === 'null' || validValue.trim() === '') {
+      console.warn("Invalid VAT category value:", value);
+      return;
+    }
+    
+    setVatCategory(validValue as UkVatCategory);
+  };
+
   const isGoodsExport = transactionType === 'goods-export';
   const isServiceEuBusiness = transactionType === 'service-eu-business';
   const showEuBusinessOption = isServiceEuBusiness;
@@ -80,7 +131,7 @@ export default function UkTransactionStep({ initialData, onNext, onBack }: UkTra
       <div className="space-y-4">
         <div className="space-y-2">
           <Label htmlFor="transactionType">Supply Type</Label>
-          <Select value={transactionType} onValueChange={(value) => setTransactionType(value as UkTransactionType)}>
+          <Select value={transactionType} onValueChange={handleTransactionTypeChange}>
             <SelectTrigger id="transactionType">
               <SelectValue />
             </SelectTrigger>
@@ -113,7 +164,7 @@ export default function UkTransactionStep({ initialData, onNext, onBack }: UkTra
 
         <div className="space-y-2">
           <Label htmlFor="customerType">Customer Type</Label>
-          <Select value={customerType} onValueChange={(value) => setCustomerType(value as UkCustomerType)}>
+          <Select value={customerType} onValueChange={handleCustomerTypeChange}>
             <SelectTrigger id="customerType">
               <SelectValue />
             </SelectTrigger>
@@ -142,7 +193,7 @@ export default function UkTransactionStep({ initialData, onNext, onBack }: UkTra
 
         <div className="space-y-2">
           <Label htmlFor="vatCategory">VAT Category</Label>
-          <Select value={vatCategory} onValueChange={(value) => setVatCategory(value as UkVatCategory)}>
+          <Select value={vatCategory} onValueChange={handleVatCategoryChange}>
             <SelectTrigger id="vatCategory">
               <SelectValue />
             </SelectTrigger>

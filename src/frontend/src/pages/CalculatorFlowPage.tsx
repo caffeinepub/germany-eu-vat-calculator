@@ -31,14 +31,21 @@ export default function CalculatorFlowPage() {
   const [result, setResult] = useState<VATCalculationResult | null>(null);
   const [invoiceData, setInvoiceData] = useState<InvoiceData | null>(null);
 
-  const handleCountrySelect = (country: string) => {
-    // Add defensive check
+  const handleCountrySelect = (country: string | null | undefined) => {
+    // Enhanced defensive check
     if (!country) {
       console.error('Country selection failed: no country provided');
       return;
     }
     
-    setFormData({ ...formData, sellerCountry: country });
+    // Validate country is a non-empty string
+    const validCountry = String(country);
+    if (!validCountry || validCountry === 'undefined' || validCountry === 'null') {
+      console.error('Country selection failed: invalid country value', country);
+      return;
+    }
+    
+    setFormData({ ...formData, sellerCountry: validCountry });
     setCurrentStep('transaction');
   };
 
@@ -46,9 +53,14 @@ export default function CalculatorFlowPage() {
     const updatedFormData = { ...formData, ...data };
     setFormData(updatedFormData);
 
-    // Add defensive check before calculation
+    // Add defensive checks before calculation
     if (!updatedFormData.sellerCountry) {
       console.error('Cannot calculate VAT: seller country is missing');
+      return;
+    }
+
+    if (!updatedFormData.customerCountry && !updatedFormData.sellerCountry) {
+      console.error('Cannot calculate VAT: customer country is missing');
       return;
     }
 

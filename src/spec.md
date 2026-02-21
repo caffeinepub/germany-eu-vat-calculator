@@ -1,11 +1,11 @@
 # Specification
 
 ## Summary
-**Goal:** Fix the toString error that occurs when selecting a country in the VAT calculator flow.
+**Goal:** Fix the 'Cannot read property toString' error that occurs during country selection.
 
 **Planned changes:**
-- Add null/undefined checks in country selection and VAT calculation logic
-- Implement defensive programming patterns (optional chaining, explicit null checks) for all country-related data access
-- Ensure currency formatting functions validate input before calling toString()
+- Add null safety checks to all country selection onChange handlers
+- Guard country code references with optional chaining or explicit null checks
+- Add null/undefined validation to country object property access (like .toString())
 
-**User-visible outcome:** Users can successfully select a country and proceed through the VAT calculator without encountering runtime errors.
+**User-visible outcome:** Users can select countries without encountering toString errors, and the country selection flow completes smoothly across all flows (EU VAT intro, UK, and country transaction steps).

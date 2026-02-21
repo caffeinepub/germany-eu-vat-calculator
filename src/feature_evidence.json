@@ -2,12 +2,13 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-fix-the-cannot-read-properties-of-undefined-reading-tostring-error-that-occurs-when-a-country-is-selected-in-the-vat-calculator-flow",
-      "featureTitle": "Fix the 'Cannot read properties of undefined (reading toString)' error that occurs when a country is selected in the VAT calculator flow",
+      "featureId": "feature-fix-the-cannot-read-property-tostring-error-that-occurs-when-a-country-is-selected-in-the-country-selection-flow",
+      "featureTitle": "Fix the 'Cannot read property toString' error that occurs when a country is selected in the country selection flow",
       "files": [
         "frontend/src/components/vat/CountrySelectionStep.tsx",
-        "frontend/src/lib/vat/euCountryConfig.ts",
-        "frontend/src/lib/vat/vatTable.ts"
+        "frontend/src/components/vat/CountryTransactionStep.tsx",
+        "frontend/src/components/vat/EuVatIntroStep.tsx",
+        "frontend/src/lib/vat/selectedSellerCountry.ts"
       ],
       "components": [
         "stripe@3.0.0",
@@ -25,15 +26,10 @@
       "confidence": "high"
     },
     {
-      "featureId": "feature-add-defensive-null-undefined-checks-in-vat-calculation-and-country-selection-logic-to-prevent-similar-runtime-errors",
-      "featureTitle": "Add defensive null/undefined checks in VAT calculation and country selection logic to prevent similar runtime errors",
+      "featureId": "feature-add-null-safety-checks-to-all-country-selection-onchange-handlers-to-prevent-undefined-crashes-when-accessing-country-properties",
+      "featureTitle": "Add null safety checks to all country selection onChange handlers to prevent undefined crashes when accessing country properties",
       "files": [
-        "frontend/src/components/vat/CountryTransactionStep.tsx",
-        "frontend/src/lib/invoice/currency.ts",
-        "frontend/src/lib/vat/calculateUnifiedVat.ts",
-        "frontend/src/lib/vat/determineVatRate.ts",
-        "frontend/src/lib/vat/selectedSellerCountry.ts",
-        "frontend/src/lib/vat/toBackendVatCalculation.ts"
+        "frontend/src/components/vat/uk/UkTransactionStep.tsx"
       ],
       "components": [
         "stripe@3.0.0",

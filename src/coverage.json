@@ -1,7 +1,7 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-20T07:21:54.279Z",
+  "generatedAt": "2026-02-21T09:29:18.670Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
@@ -12,40 +12,31 @@
     "items": [
       {
         "id": "REQ-1",
-        "summary": "Fix the 'Cannot read properties of undefined (reading toString)' error that occurs when a country is selected in the VAT calculator flow",
+        "summary": "Fix the 'Cannot read property toString' error that occurs when a country is selected in the country selection flow",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/components/vat/CountrySelectionStep.tsx",
           "frontend/src/components/vat/EuVatIntroStep.tsx",
-          "frontend/src/components/vat/CountryVatDetailsStep.tsx",
-          "frontend/src/lib/vat/vatTable.ts",
-          "frontend/src/lib/vat/euCountryConfig.ts"
+          "frontend/src/components/vat/CountrySelectionStep.tsx",
+          "frontend/src/components/vat/CountryTransactionStep.tsx",
+          "frontend/src/lib/vat/selectedSellerCountry.ts"
         ],
         "matchedFiles": [
+          "frontend/src/components/vat/EuVatIntroStep.tsx",
           "frontend/src/components/vat/CountrySelectionStep.tsx",
-          "frontend/src/lib/vat/vatTable.ts",
-          "frontend/src/lib/vat/euCountryConfig.ts"
+          "frontend/src/components/vat/CountryTransactionStep.tsx",
+          "frontend/src/lib/vat/selectedSellerCountry.ts"
         ]
       },
       {
         "id": "REQ-2",
-        "summary": "Add defensive null/undefined checks in VAT calculation and country selection logic to prevent similar runtime errors",
+        "summary": "Add null safety checks to all country selection onChange handlers to prevent undefined crashes when accessing country properties",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/lib/vat/calculateUnifiedVat.ts",
-          "frontend/src/lib/vat/determineVatRate.ts",
-          "frontend/src/lib/invoice/currency.ts",
-          "frontend/src/components/vat/CountryTransactionStep.tsx",
-          "frontend/src/lib/vat/toBackendVatCalculation.ts",
-          "frontend/src/lib/vat/selectedSellerCountry.ts"
+          "frontend/src/components/vat/uk/UkTransactionStep.tsx",
+          "frontend/src/utils/urlParams.ts"
         ],
         "matchedFiles": [
-          "frontend/src/lib/vat/calculateUnifiedVat.ts",
-          "frontend/src/lib/vat/determineVatRate.ts",
-          "frontend/src/lib/invoice/currency.ts",
-          "frontend/src/components/vat/CountryTransactionStep.tsx",
-          "frontend/src/lib/vat/toBackendVatCalculation.ts",
-          "frontend/src/lib/vat/selectedSellerCountry.ts"
+          "frontend/src/components/vat/uk/UkTransactionStep.tsx"
         ]
       }
     ]
@@ -57,17 +48,9 @@
     "frontend-implementation-plan.json",
     "frontend/src/components/vat/CountrySelectionStep.tsx",
     "frontend/src/components/vat/CountryTransactionStep.tsx",
-    "frontend/src/lib/invoice/currency.ts",
-    "frontend/src/lib/vat/calculateUnifiedVat.ts",
-    "frontend/src/lib/vat/deriveVatRatePercentForBackend.ts",
-    "frontend/src/lib/vat/determineCrossBorderVAT.ts",
-    "frontend/src/lib/vat/determineVatRate.ts",
-    "frontend/src/lib/vat/euCountryConfig.ts",
+    "frontend/src/components/vat/EuVatIntroStep.tsx",
+    "frontend/src/components/vat/uk/UkTransactionStep.tsx",
     "frontend/src/lib/vat/selectedSellerCountry.ts",
-    "frontend/src/lib/vat/toBackendVatCalculation.ts",
-    "frontend/src/lib/vat/vatCategoryRateRules.ts",
-    "frontend/src/lib/vat/vatTable.ts",
-    "frontend/src/pages/CalculatorFlowPage.tsx",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

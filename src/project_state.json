@@ -4,21 +4,21 @@
   "summary": "New project",
   "architectural_notes": [],
   "known_issues": [
-    "Country selection causes 'Cannot read properties of undefined (reading toString)' error"
+    "(reading 'toString') error occurs when country is selected"
   ],
   "isFixRequest": true,
   "existing_features": [
     {
-      "id": "feature-fix-the-cannot-read-properties-of-undefined-reading-tostring-error-that-occurs-when-a-country-is-selected-in-the-vat-calculator-flow",
-      "title": "Fix the 'Cannot read properties of undefined (reading toString)' error that occurs when a country is selected in the VAT calculator flow",
+      "id": "feature-fix-the-cannot-read-property-tostring-error-that-occurs-when-a-country-is-selected-in-the-country-selection-flow",
+      "title": "Fix the 'Cannot read property toString' error that occurs when a country is selected in the country selection flow",
       "reqIds": [
         "REQ-1"
       ],
       "version": 1
     },
     {
-      "id": "feature-add-defensive-null-undefined-checks-in-vat-calculation-and-country-selection-logic-to-prevent-similar-runtime-errors",
-      "title": "Add defensive null/undefined checks in VAT calculation and country selection logic to prevent similar runtime errors",
+      "id": "feature-add-null-safety-checks-to-all-country-selection-onchange-handlers-to-prevent-undefined-crashes-when-accessing-country-properties",
+      "title": "Add null safety checks to all country selection onChange handlers to prevent undefined crashes when accessing country properties",
       "reqIds": [
         "REQ-2"
       ],
@@ -26,7 +26,7 @@
     }
   ],
   "new_feature_requests": [],
-  "projectName": "Fix toString error on country selection",
+  "projectName": "Fix 'reading toString' error on country selection",
   "clarification_mode": "instant",
   "clarification_rounds": 0
 }

@@ -1,82 +1,57 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Fix toString error on country selection",
+  "title": "Fix country selection toString error",
   "requirements": [
     {
       "id": "REQ-1",
-      "summary": "Fix the 'Cannot read properties of undefined (reading toString)' error that occurs when a country is selected in the VAT calculator flow",
+      "summary": "Fix the 'Cannot read property toString' error that occurs when a country is selected in the country selection flow",
       "acceptanceCriteria": [
         "Country selection completes without throwing toString errors",
-        "User can successfully proceed through the calculator flow after selecting a country",
-        "All country selection components handle undefined/null values gracefully"
+        "All country selection flows (EU VAT intro, UK, country transaction steps) handle undefined/null values safely",
+        "Error does not reoccur after country is selected"
       ],
       "file_operations": [
         {
-          "path": "frontend/src/components/vat/CountrySelectionStep.tsx",
-          "operation": "modify",
-          "description": "Add null/undefined checks before any toString() calls on country objects. Ensure country data is validated before rendering country buttons. Add defensive guards around country code access and display logic."
-        },
-        {
           "path": "frontend/src/components/vat/EuVatIntroStep.tsx",
           "operation": "modify",
-          "description": "Add null/undefined validation for country data before rendering the country grid. Ensure VAT rate access uses optional chaining and provides fallback values when rates are undefined."
+          "description": "Add null safety checks to the country selection onChange handler. Ensure the selected country object is validated before accessing properties like code or calling methods. Guard against undefined/null country values when setting the selected country in the URL parameters or state."
         },
         {
-          "path": "frontend/src/components/vat/CountryVatDetailsStep.tsx",
+          "path": "frontend/src/components/vat/CountrySelectionStep.tsx",
           "operation": "modify",
-          "description": "Add defensive checks for country-specific VAT information access. Use optional chaining when accessing VAT rates and country configuration data. Handle cases where country details may be undefined or incomplete."
+          "description": "Add null safety checks to all country selection onChange handlers in both EU and UK tabs. Validate country object existence before accessing properties or calling toString-like methods. Ensure safe handling when updating URL parameters or triggering navigation after country selection."
         },
         {
-          "path": "frontend/src/lib/vat/vatTable.ts",
+          "path": "frontend/src/components/vat/CountryTransactionStep.tsx",
           "operation": "modify",
-          "description": "Add type guards and validation to country lookup functions. Ensure all functions that return country data handle missing entries gracefully and return safe default values or null instead of undefined. Add explicit null checks before any data transformations."
+          "description": "Add null safety checks to the customer country selection onChange handler. Validate the selected country object before accessing its code property or passing it to other functions. Guard against undefined/null values when the country selection changes."
         },
         {
-          "path": "frontend/src/lib/vat/euCountryConfig.ts",
+          "path": "frontend/src/lib/vat/selectedSellerCountry.ts",
           "operation": "modify",
-          "description": "Add defensive null/undefined checks in the country config retrieval function. Ensure the function returns a safe fallback structure when country data is missing. Validate country codes before lookup operations."
+          "description": "Review and strengthen the setSelectedSellerCountry function to handle edge cases where the country parameter might be undefined or null. Add explicit validation before calling any methods on the country object or accessing its properties."
         }
       ]
     },
     {
       "id": "REQ-2",
-      "summary": "Add defensive null/undefined checks in VAT calculation and country selection logic to prevent similar runtime errors",
+      "summary": "Add null safety checks to all country selection onChange handlers to prevent undefined crashes when accessing country properties",
       "acceptanceCriteria": [
-        "All country-related data access uses optional chaining or explicit null checks",
-        "VAT rate lookups handle missing country data safely",
-        "Currency formatting functions validate input before calling toString()"
+        "All country code references are guarded with optional chaining or explicit null checks",
+        "Country object property access (like .toString()) includes null/undefined validation",
+        "No console errors appear during country selection interactions"
       ],
       "file_operations": [
         {
-          "path": "frontend/src/lib/vat/calculateUnifiedVat.ts",
+          "path": "frontend/src/components/vat/uk/UkTransactionStep.tsx",
           "operation": "modify",
-          "description": "Add null/undefined guards before accessing country configuration and VAT rates. Validate input parameters at function entry points and provide safe fallbacks for missing data. Use optional chaining when accessing nested country properties."
+          "description": "Add null safety checks to any country selection handlers if present. Validate country objects before accessing properties or converting to strings. Ensure safe handling of optional customer country selections in UK transaction flows."
         },
         {
-          "path": "frontend/src/lib/vat/determineVatRate.ts",
+          "path": "frontend/src/utils/urlParams.ts",
           "operation": "modify",
-          "description": "Add explicit null checks before VAT rate calculations. Ensure all country and category lookups validate their results before proceeding. Use optional chaining when accessing rate data and provide default values when rates are undefined."
-        },
-        {
-          "path": "frontend/src/lib/invoice/currency.ts",
-          "operation": "modify",
-          "description": "Add input validation to all currency formatting functions before calling toString() on numeric values. Check that amount parameters are defined and valid numbers before formatting. Use optional chaining when accessing currency configuration from country data."
-        },
-        {
-          "path": "frontend/src/components/vat/CountryTransactionStep.tsx",
-          "operation": "modify",
-          "description": "Add null/undefined validation for country and VAT rate data before rendering form fields. Ensure VAT ID validation handles undefined country codes gracefully. Use optional chaining when accessing country-specific configuration."
-        },
-        {
-          "path": "frontend/src/lib/vat/toBackendVatCalculation.ts",
-          "operation": "modify",
-          "description": "Add validation for all input parameters before constructing the backend payload. Ensure country codes are defined and valid before normalization. Add null checks before accessing nested properties in the form state."
-        },
-        {
-          "path": "frontend/src/lib/vat/selectedSellerCountry.ts",
-          "operation": "modify",
-          "description": "Add robust null/undefined handling in URL parameter parsing. Ensure country code validation returns safe error states instead of allowing undefined values to propagate. Add explicit checks before country code normalization operations."
+          "description": "Review URL parameter extraction and setting functions to ensure they handle undefined/null values gracefully. Add validation when setting country-related parameters to prevent toString errors on undefined values."
         }
       ]
     }

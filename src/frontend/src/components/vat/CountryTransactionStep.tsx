@@ -43,7 +43,7 @@ export default function CountryTransactionStep({
   const [customerType, setCustomerType] = useState<'B2C' | 'B2B'>(initialData.customerType);
   const [customerCountry, setCustomerCountry] = useState(initialData.customerCountry || countryCode);
   const [buyerCountry, setBuyerCountry] = useState(initialData.buyerCountry || initialData.customerCountry || countryCode);
-  const [vatId, setVatId] = useState(initialData.vatId);
+  const [vatId, setVatId] = useState(initialData.vatId || '');
   const [serviceCategory, setServiceCategory] = useState<ServiceCategory>(initialData.serviceCategory || 'digital');
   const [netAmount, setNetAmount] = useState(initialData.netAmount.toString());
   const [vatCategory, setVatCategory] = useState<VatCategory>(initialData.vatCategory || 'others');
@@ -58,11 +58,12 @@ export default function CountryTransactionStep({
   // Get all supported countries for customer country selection
   const supportedCountries = getSupportedCountryCodes();
 
-  // Get currency for the country
+  // Get currency for the country with null safety
   const currencyInfo = getCountryCurrency(countryCode);
 
-  // Check if transaction is cross-border
-  const isCrossBorder = countryCode.toUpperCase() !== customerCountry.toUpperCase() && 
+  // Check if transaction is cross-border with null safety
+  const isCrossBorder = countryCode && customerCountry && 
+                        countryCode.toUpperCase() !== customerCountry.toUpperCase() && 
                         countryCode.toUpperCase() !== (customerCountry.toUpperCase() === 'UK' ? 'GB' : customerCountry.toUpperCase());
 
   // Get product category options for this country
@@ -70,7 +71,7 @@ export default function CountryTransactionStep({
 
   // Sync buyerCountry with customerCountry when customerCountry changes
   useEffect(() => {
-    if (!initialData.buyerCountry) {
+    if (!initialData.buyerCountry && customerCountry) {
       setBuyerCountry(customerCountry);
     }
   }, [customerCountry, initialData.buyerCountry]);
@@ -78,6 +79,8 @@ export default function CountryTransactionStep({
   // Compute effective VAT rate using the decision engine
   const getEffectiveVatRate = (): number => {
     try {
+      if (!countryCode) return 0;
+      
       return determineVATRate(
         countryCode,
         vatCategory,
@@ -121,7 +124,7 @@ export default function CountryTransactionStep({
       customerType,
       customerCountry,
       buyerCountry,
-      vatId: customerType === 'B2B' ? vatId : '',
+      vatId: customerType === 'B2B' ? (vatId || '') : '',
       serviceCategory,
       netAmount: parseFloat(netAmount) || 0,
       vatCategory,
@@ -138,12 +141,46 @@ export default function CountryTransactionStep({
     setExemptIdentifier(option.exemptIdentifier || '');
   };
 
+  const handleCustomerCountryChange = (value: string | null | undefined) => {
+    // Comprehensive validation before setting state
+    if (value === null || value === undefined) {
+      console.warn("Invalid customer country value: null or undefined");
+      return;
+    }
+    
+    const validValue = typeof value === 'string' ? value : String(value);
+    
+    if (!validValue || validValue === 'undefined' || validValue === 'null' || validValue.trim() === '') {
+      console.warn("Invalid customer country value:", value);
+      return;
+    }
+    
+    setCustomerCountry(validValue);
+  };
+
+  const handleBuyerCountryChange = (value: string | null | undefined) => {
+    // Comprehensive validation before setting state
+    if (value === null || value === undefined) {
+      console.warn("Invalid buyer country value: null or undefined");
+      return;
+    }
+    
+    const validValue = typeof value === 'string' ? value : String(value);
+    
+    if (!validValue || validValue === 'undefined' || validValue === 'null' || validValue.trim() === '') {
+      console.warn("Invalid buyer country value:", value);
+      return;
+    }
+    
+    setBuyerCountry(validValue);
+  };
+
   return (
     <div className="space-y-4">
       {/* Country VAT Info Section - Compact */}
       <div className="text-center pb-3 border-b">
-        <div className="text-4xl mb-2">{country.flag}</div>
-        <h2 className="text-lg font-bold mb-0.5">{country.name} VAT Calculator</h2>
+        <div className="text-4xl mb-2">{country.flag || '🏳️'}</div>
+        <h2 className="text-lg font-bold mb-0.5">{country.name || countryCode} VAT Calculator</h2>
       </div>
 
       {!country.configured ? (
@@ -205,16 +242,17 @@ export default function CountryTransactionStep({
               <Label htmlFor="customer-country" className="text-base font-semibold mb-3 block">
                 Customer Country
               </Label>
-              <Select value={customerCountry} onValueChange={setCustomerCountry}>
+              <Select value={customerCountry} onValueChange={handleCustomerCountryChange}>
                 <SelectTrigger id="customer-country" className="select-trigger-safe dropdown-safe">
                   <SelectValue placeholder="Select customer country" />
                 </SelectTrigger>
                 <SelectContent className="dropdown-safe" style={{ overflow: 'visible' }}>
                   {supportedCountries.map((code) => {
+                    if (!code) return null;
                     const countryConfig = getCountryConfig(code);
                     return (
                       <SelectItem key={code} value={code}>
-                        {countryConfig?.flag} {countryConfig?.name || code}
+                        {countryConfig?.flag || '🏳️'} {countryConfig?.name || code}
                       </SelectItem>
                     );
                   })}
@@ -231,16 +269,17 @@ export default function CountryTransactionStep({
               <Label htmlFor="buyer-country" className="text-base font-semibold mb-3 block">
                 Buyer Country
               </Label>
-              <Select value={buyerCountry} onValueChange={setBuyerCountry}>
+              <Select value={buyerCountry} onValueChange={handleBuyerCountryChange}>
                 <SelectTrigger id="buyer-country" className="select-trigger-safe dropdown-safe">
                   <SelectValue placeholder="Select buyer country" />
                 </SelectTrigger>
                 <SelectContent className="dropdown-safe" style={{ overflow: 'visible' }}>
                   {supportedCountries.map((code) => {
+                    if (!code) return null;
                     const countryConfig = getCountryConfig(code);
                     return (
                       <SelectItem key={code} value={code}>
-                        {countryConfig?.flag} {countryConfig?.name || code}
+                        {countryConfig?.flag || '🏳️'} {countryConfig?.name || code}
                       </SelectItem>
                     );
                   })}
@@ -260,7 +299,7 @@ export default function CountryTransactionStep({
                 Export Transaction
               </Label>
               <p className="text-sm text-muted-foreground">
-                Enable for cross-border sales outside your country
+                Goods or services exported outside the EU
               </p>
             </div>
             <Switch
@@ -272,30 +311,7 @@ export default function CountryTransactionStep({
         </CardContent>
       </Card>
 
-      {/* Product Category Selection */}
-      <Card>
-        <CardContent className="pt-6">
-          <ProductCategoryItemsPicker
-            options={productCategoryOptions}
-            selectedValue={productCategory}
-            selectedExemptIdentifier={exemptIdentifier}
-            onSelect={handleProductCategorySelect}
-          />
-        </CardContent>
-      </Card>
-
-      {/* VAT Category Selection */}
-      <Card>
-        <CardContent className="pt-6">
-          <VatCategoryItemsPicker
-            categories={VAT_CATEGORIES}
-            selectedValue={vatCategory}
-            onSelect={setVatCategory}
-          />
-        </CardContent>
-      </Card>
-
-      {/* VAT ID Input for B2B */}
+      {/* B2B VAT ID Input */}
       {customerType === 'B2B' && (
         <Card>
           <CardContent className="pt-6">
@@ -308,7 +324,7 @@ export default function CountryTransactionStep({
               onChange={(e) => setVatId(e.target.value)}
               placeholder="e.g., DE123456789"
             />
-            {vatId && (
+            {vatId && customerCountry && (
               <div className="mt-3">
                 <ReverseChargeProofChecker
                   vatId={vatId}
@@ -321,38 +337,62 @@ export default function CountryTransactionStep({
         </Card>
       )}
 
-      {/* Net Amount Input */}
+      {/* Product Category Selection */}
       <Card>
         <CardContent className="pt-6">
-          <Label htmlFor="net-amount" className="text-base font-semibold mb-3 block">
-            Net Amount ({currencyInfo.symbol})
-          </Label>
-          <Input
-            id="net-amount"
-            type="number"
-            step="0.01"
-            value={netAmount}
-            onChange={(e) => setNetAmount(e.target.value)}
-            placeholder="0.00"
+          <Label className="text-base font-semibold mb-3 block">Product Category</Label>
+          <ProductCategoryItemsPicker
+            options={productCategoryOptions}
+            selectedValue={productCategory}
+            onSelect={handleProductCategorySelect}
           />
         </CardContent>
       </Card>
 
-      {/* Effective VAT Rate Display */}
+      {/* VAT Category Selection */}
       <Card>
         <CardContent className="pt-6">
-          <div className="flex items-center justify-between">
-            <Label className="text-base font-semibold">Effective VAT Rate</Label>
-            <Badge variant="secondary" className="text-lg font-bold">
-              {effectiveRate}%
+          <Label className="text-base font-semibold mb-3 block">VAT Category</Label>
+          <VatCategoryItemsPicker
+            categories={VAT_CATEGORIES}
+            selectedValue={vatCategory}
+            onSelect={setVatCategory}
+          />
+          <div className="mt-3 flex items-center gap-2">
+            <Badge variant="outline" className="text-sm">
+              Effective Rate: {effectiveRate}%
             </Badge>
           </div>
         </CardContent>
       </Card>
 
+      {/* Net Amount Input */}
+      <Card>
+        <CardContent className="pt-6">
+          <Label htmlFor="net-amount" className="text-base font-semibold mb-3 block">
+            Net Amount ({currencyInfo?.symbol || '€'})
+          </Label>
+          <Input
+            id="net-amount"
+            type="number"
+            step="0.01"
+            min="0"
+            value={netAmount}
+            onChange={(e) => setNetAmount(e.target.value)}
+            placeholder="1000.00"
+          />
+        </CardContent>
+      </Card>
+
       {/* Action Buttons */}
       <div className="flex gap-3 pt-4">
-        <Button onClick={onBack} variant="outline" className="flex-1">
+        <Button
+          type="button"
+          variant="outline"
+          onClick={onBack}
+          disabled={isCalculating}
+          className="flex-1"
+        >
           Back
         </Button>
         <Button

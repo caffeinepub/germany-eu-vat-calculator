@@ -1,51 +1,51 @@
 {
   "kind": "build_request",
-  "title": "Fix toString error on country selection",
+  "title": "Fix 'reading toString' error on country selection",
   "priority": "high",
   "requirements": [
     {
       "id": "REQ-1",
-      "text": "Fix the 'Cannot read properties of undefined (reading toString)' error that occurs when a country is selected in the VAT calculator flow",
+      "text": "Fix the 'Cannot read property toString' error that occurs when a country is selected in the country selection flow",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-4"
+          "msg-latest"
         ],
         "quotes": [
-          "Once country selected, getting an error- Cannot read properties of undefined (reading 'toString'), please fix this"
+          "(reading 'toString' )error showing up once country is selected"
         ]
       },
       "acceptanceCriteria": [
         "Country selection completes without throwing toString errors",
-        "User can successfully proceed through the calculator flow after selecting a country",
-        "All country selection components handle undefined/null values gracefully"
+        "All country selection flows (EU VAT intro, UK, country transaction steps) handle undefined/null values safely",
+        "Error does not reoccur after country is selected"
       ]
     },
     {
       "id": "REQ-2",
-      "text": "Add defensive null/undefined checks in VAT calculation and country selection logic to prevent similar runtime errors",
+      "text": "Add null safety checks to all country selection onChange handlers to prevent undefined crashes when accessing country properties",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-4"
+          "msg-latest"
         ]
       },
       "acceptanceCriteria": [
-        "All country-related data access uses optional chaining or explicit null checks",
-        "VAT rate lookups handle missing country data safely",
-        "Currency formatting functions validate input before calling toString()"
+        "All country code references are guarded with optional chaining or explicit null checks",
+        "Country object property access (like .toString()) includes null/undefined validation",
+        "No console errors appear during country selection interactions"
       ]
     }
   ],
   "constraints": [
-    "Do not modify backend/main.mo",
-    "Preserve existing VAT calculation logic and accuracy",
-    "Maintain compatibility with existing URL parameter handling"
+    "Do not modify backend code",
+    "Preserve existing country selection UI and user experience",
+    "Maintain compatibility with existing VAT calculation flows"
   ],
   "nonGoals": [
-    "Redesigning the country selection UI",
-    "Adding new VAT calculation features",
-    "Changing the calculator flow structure"
+    "Redesigning the country selection interface",
+    "Adding new countries or VAT rates",
+    "Changing the country data structure"
   ],
   "imageRequirements": {
     "required": [],

@@ -11,6 +11,25 @@ interface EuVatIntroStepProps {
 export default function EuVatIntroStep({ onCountrySelect }: EuVatIntroStepProps) {
   const [selectedCountry, setSelectedCountry] = useState<string | null>(null);
 
+  const handleCountryClick = (countryCode: string | null | undefined) => {
+    // Comprehensive null safety check
+    if (countryCode === null || countryCode === undefined) {
+      console.warn("Invalid country code: null or undefined");
+      return;
+    }
+    
+    // Ensure we have a valid string
+    const validCode = typeof countryCode === 'string' ? countryCode : String(countryCode);
+    
+    // Additional validation to prevent invalid values
+    if (!validCode || validCode === 'undefined' || validCode === 'null' || validCode.trim() === '') {
+      console.warn("Invalid country code value:", countryCode);
+      return;
+    }
+    
+    setSelectedCountry(validCode);
+  };
+
   const handleContinue = () => {
     if (selectedCountry) {
       onCountrySelect(selectedCountry);
@@ -27,36 +46,40 @@ export default function EuVatIntroStep({ onCountrySelect }: EuVatIntroStepProps)
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        {COUNTRY_LIST.map((country) => (
-          <button
-            key={country.code}
-            onClick={() => setSelectedCountry(country.code)}
-            className={`relative p-4 rounded-lg border-2 transition-all text-left hover:border-primary/50 ${
-              selectedCountry === country.code
-                ? 'border-primary bg-primary/5'
-                : 'border-border bg-card'
-            }`}
-          >
-            <div className="flex items-center gap-3">
-              <span className="text-3xl">{country.flag}</span>
-              <div className="flex-1">
-                <div className="font-medium">{country.name}</div>
-                {country.configured ? (
-                  <div className="text-xs text-muted-foreground">
-                    Standard: {country.standardRate}%
-                  </div>
-                ) : (
-                  <div className="text-xs text-amber-600 dark:text-amber-400">
-                    Configuration pending
-                  </div>
+        {COUNTRY_LIST.map((country) => {
+          if (!country || !country.code) return null;
+          
+          return (
+            <button
+              key={country.code}
+              onClick={() => handleCountryClick(country.code)}
+              className={`relative p-4 rounded-lg border-2 transition-all text-left hover:border-primary/50 ${
+                selectedCountry === country.code
+                  ? 'border-primary bg-primary/5'
+                  : 'border-border bg-card'
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <span className="text-3xl">{country.flag || '🏳️'}</span>
+                <div className="flex-1">
+                  <div className="font-medium">{country.name || country.code}</div>
+                  {country.configured ? (
+                    <div className="text-xs text-muted-foreground">
+                      Standard: {country.standardRate || 0}%
+                    </div>
+                  ) : (
+                    <div className="text-xs text-amber-600 dark:text-amber-400">
+                      Configuration pending
+                    </div>
+                  )}
+                </div>
+                {selectedCountry === country.code && (
+                  <Check className="h-5 w-5 text-primary" />
                 )}
               </div>
-              {selectedCountry === country.code && (
-                <Check className="h-5 w-5 text-primary" />
-              )}
-            </div>
-          </button>
-        ))}
+            </button>
+          );
+        })}
       </div>
 
       <Button

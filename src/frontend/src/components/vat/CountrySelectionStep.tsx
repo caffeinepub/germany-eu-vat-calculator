@@ -16,12 +16,22 @@ export default function CountrySelectionStep({ onCountrySelect, onBack }: Countr
   const ukConfig = getUKCountryConfig();
 
   const handleCountryClick = (countryCode: string | null | undefined) => {
-    // Defensive check before calling callback
-    if (!countryCode) {
-      console.error('Country code is undefined');
+    // Comprehensive null/undefined check
+    if (countryCode === null || countryCode === undefined) {
+      console.warn("Invalid country code: null or undefined");
       return;
     }
-    onCountrySelect(countryCode);
+
+    // Ensure we have a valid string type
+    const validCountryCode = typeof countryCode === 'string' ? countryCode : String(countryCode);
+    
+    // Validate the string value
+    if (!validCountryCode || validCountryCode === 'undefined' || validCountryCode === 'null' || validCountryCode.trim() === '') {
+      console.warn("Invalid country code value:", countryCode);
+      return;
+    }
+
+    onCountrySelect(validCountryCode);
   };
 
   const handleBack = () => {
@@ -59,7 +69,7 @@ export default function CountrySelectionStep({ onCountrySelect, onBack }: Countr
         <TabsContent value="eu" className="space-y-4">
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
             {euCountries.map((config) => {
-              if (!config) return null;
+              if (!config || !config.country) return null;
               
               return (
                 <Button
@@ -68,10 +78,10 @@ export default function CountrySelectionStep({ onCountrySelect, onBack }: Countr
                   className="h-auto flex-col gap-2 p-4 hover:bg-accent"
                   onClick={() => handleCountryClick(config.country)}
                 >
-                  <span className="text-3xl">{config.flag}</span>
-                  <span className="font-medium">{config.countryName}</span>
+                  <span className="text-3xl">{config.flag || '🏳️'}</span>
+                  <span className="font-medium">{config.countryName || config.country}</span>
                   <span className="text-sm text-muted-foreground">
-                    {config.standardRate}% VAT
+                    {config.standardRate || 0}% VAT
                   </span>
                 </Button>
               );
@@ -80,17 +90,17 @@ export default function CountrySelectionStep({ onCountrySelect, onBack }: Countr
         </TabsContent>
 
         <TabsContent value="uk" className="space-y-4">
-          {ukConfig && (
+          {ukConfig && ukConfig.country && (
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
               <Button
                 variant="outline"
                 className="h-auto flex-col gap-2 p-4 hover:bg-accent"
                 onClick={() => handleCountryClick(ukConfig.country)}
               >
-                <span className="text-3xl">{ukConfig.flag}</span>
-                <span className="font-medium">{ukConfig.countryName}</span>
+                <span className="text-3xl">{ukConfig.flag || '🏳️'}</span>
+                <span className="font-medium">{ukConfig.countryName || ukConfig.country}</span>
                 <span className="text-sm text-muted-foreground">
-                  {ukConfig.standardRate}% VAT
+                  {ukConfig.standardRate || 0}% VAT
                 </span>
               </Button>
             </div>
